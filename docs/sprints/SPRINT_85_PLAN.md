@@ -609,7 +609,23 @@ enable path (Settings > Background) runs on all three platforms; a cause found t
 **Model**: Opus (main session) -- *why not Sonnet*: native-thread deep debugging across the plugin and the engine, and
 it needs the emulator and the Fold interactively.
 **Delegation checklist included in the sub-agent prompt** (when delegated): N/A (main session).
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Opus main session as assigned. PARTIAL: R-1 and R-5 done; R-2 (Fold) waits for
+Manual Validation.
+**Result (Phase 5) -- R-1, emulator `pixel34_updated` (Android 14, 2 GB RAM, 1.5 GB swap), 2026-11-10**: 9 tries, 0 ANR
+(no "isn't responding" dialog in a uiautomator dump 20 s after each tap; 0 `ANR in` / `Input dispatching timed out` /
+`am_anr` lines in logcat). Every try started `dev.fluttercommunity.workmanager.BackgroundWorker` within 1 s of the tap,
+the path of the Sprint 84 trace.
+- Debug build (`app-prod-debug.apk`, 21:32-21:51 build), tries 1-3 on kimmeyh@gmail.com 21:54-21:59: each scan stopped
+  after about 2 s at "Gmail needs you to sign in again" (expired emulator token); MemAvailable 511-657 MB, SwapFree
+  154-338 MB. Tries 4-6 on the Demo account (the Sprint 84 set-up) 22:38-22:40: MemAvailable 643-673 MB, SwapFree
+  549-550 MB.
+- Release build (`app-prod-release.apk`, fresh install, 22:41-22:47 build), Demo account 22:48-22:51: tries 1 and 2
+  showed the Android notification prompt (as Sprint 84 did) and were answered "Don't allow"; no ANR with the prompt open
+  15 s or after it; try 3 had no prompt. MemAvailable 706-737 MB, SwapFree 703-791 MB.
+- Not the same as Sprint 84: the emulator was cold-booted for this run (Sprint 84: 1.24 GB of 1.5 GB swap in use; here
+  at most about 1.36 GB in use during the debug tries), and the Sprint 84 build was the dev flavor. Evidence:
+  `<SCRATCH>\s85_f355\` (screens, dumps, logcats per try). R-5: the Sprint 84 `mv6_android\` folder is already in this
+  session's scratchpad; no copy needed.
 **Step-types**: DIAG `[no-history]`, MANUAL. **Est-Effort**: 30-90m.
 
 ## Task 6 -- F357: Background scan rows marked `interrupted`: the recent-scan check and the completion overwrite (Priority 34)
@@ -689,6 +705,14 @@ difference found is recorded as a parity gap or a declared exception.
 
 **Model**: main session (interactive with Harold) -- N/A.
 **Executed-by** (filled at completion):
+**Result (Phase 5) -- R-1 check 6, Android emulator** (`pixel34_updated`, release 0.25.0 fresh install, 2026-11-10
+22:52-23:00): a Custom IMAP account for the local GreenMail test server (`10.0.2.2:3993`, user `tester`; certificate
+trusted through the app's own dialog; "[OK] Connection successful!") was saved and NOT scanned; app force-stopped and
+started again. The start screen read **"No unaddressed items" / "All "No rule" emails have been reviewed."** with
+No rule (0), All Accounts (0); Scan History totals all 0 (no scan ever ran). CONFIRMED misleading: nothing was reviewed.
+Also seen: the toolbar title "Review No Rule Items" is not visible (its text box is 68 px wide, F356 observation 1
+family); on Custom IMAP setup, Username comes before Email Address. Screens: `<SCRATCH>\s85_f355\c6_relaunch.png`,
+`c6_history.png`, `c_5.png`.
 **Step-types**: MANUAL, DOCS. **Est-Effort**: 90-150m.
 
 ## Task 8 -- F307: Remove the "Create rule" page (RuleQuickAddScreen) (Priority 36)
