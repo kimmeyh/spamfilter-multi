@@ -363,7 +363,11 @@ message on the same dead connection, and each later command waited its own 2 min
 
 **SecureCredentialsStore** (ADR-0008):
 - Platform-native encrypted storage via `flutter_secure_storage`
-- Windows: Credential Manager, Android: Keystore, iOS: Keychain, Linux: libsecret
+- Windows: one DPAPI-encrypted file, `flutter_secure_storage.dat`, in the executable's support folder
+  (`flutter_secure_storage_windows` 4.1.0; not Credential Manager). DEV builds carry ProductName
+  `MyEmailSpamFilter_Dev`, so DEV and production keep separate files (F354, Sprint 85,
+  [ADR-0035](adr/0035-production-development-side-by-side.md) "Sprint 85 Update"). Android: Keystore, iOS: Keychain,
+  Linux: libsecret
 - Methods: `getCredentials()`, `saveCredentials()`, `deleteCredentials()`, `getSavedAccounts()`
 - Legacy migration: `migrateFromLegacyTokenStore()`
 
