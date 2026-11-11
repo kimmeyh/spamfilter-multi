@@ -495,7 +495,10 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   3. The Help walkthrough is out of date.
   4. No message appears after the user refuses the notification permission.
   5. Some titles are cut off.
-  6. The "Background" tab label breaks inside the word ("Backgrou / nd").
+  6. The "Background" tab label breaks inside the word ("Backgrou / nd"). Also seen on the iPhone 17 Simulator
+     (Sprint 85 F341 R-5, iOS run 42916648939, `iphone-4-settings.png`).
+  7. (Sprint 85 F341 R-5, DEV builds only) Settings > General "Content history" says "in a file on this computer" on
+     a phone (`content_history_row.dart:107`; seen on the iPhone 17 Simulator).
 - Do: confirm each one on the current build, then fix it or close it with a reason.
 - AC: each observation has a fix with a test, or a written reason it stays; a screenshot of each fixed screen.
 

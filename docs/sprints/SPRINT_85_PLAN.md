@@ -1090,3 +1090,11 @@ by the port; a decision for Harold.
 
 _**Risk & rollback**_: risk: a release bundle built without a credential property. Mitigation: AC-2 mutation, and the
 built AAB checked for the OAuth scheme (`GOOGLE_PLAY_RELEASE_PROCESS.md` Step 4). Rollback: revert the commit.
+
+## Phase 5 evidence
+
+- **5.2 tests and analyze**: 2026-11-10 21:04-21:09 at e110499b. `python scripts/run-full-suite.py --concurrency 6`: 3,672 passed, 15 skipped, 0 failed, 0 load failures. `flutter analyze`: No issues found (21:10). A stale gitignored probe, `test/scratch/s84_mv_f342_history_rehearsal_test.dart`, failed earlier full runs; it was backed up to the scratchpad and deleted.
+- **Android JVM unit tests**: N/A -- the sprint diff touches no file under `mobile-app/android/app/src`.
+- **5.1.6 runtime launch gate**: N/A -- `build.gradle.kts` changed in comments and message text only (F335); no manifest, plugin or native change.
+- **5.1.5 WinWright sweep**: 2026-11-10, sweep-head: e110499b (newer than the last `lib/` commit 7fea8327), DEV build from `build-windows.ps1`, workstation unlocked, 3 scripts. Sweep 21:10-21:16: test_f320_no_rule_review PASS; test_f124_rule_labels and test_s75_new_controls FAIL (every cursor step, "SetCursorPos failed") while an unsecured screen saver (`Mystify.scr`) had run since 17:19. The lock gate reported "unlocked", which is correct: Microsoft's "Desktops" page states "Unsecured screen savers run on Winsta0\Default", so the saver did not switch the input desktop; the mechanism is unknown. After the saver process was ended: test_s75_new_controls 27/27 PASS (21:21); test_f124_rule_labels failed once at step 29 ("IsEnabled [#30010] is not supported" on the second Back; its retry failed at step 2, "No main window found", the Sprint 84 symptom), then 29/29 PASS run alone (21:22-21:23). Tray icon PASS; DB drift none in every run. Prevention: the runner now ends a running unsecured screen saver in its preflight and says so (`Stop-UnsecuredScreenSaver`, `run-winwright-tests.ps1`); it leaves a secure saver alone and fails loudly if a saver cannot be ended. Tested both ways (saver running: ended, 1 -> 0 processes; none running: empty list).
+  sweep-head: e110499b
