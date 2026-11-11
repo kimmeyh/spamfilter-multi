@@ -676,7 +676,7 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
 - AC: the inventory with a disposition per prompt; the shared helpers exist under `scripts/` with `.SYNOPSIS`
   headers and are called by the prompts.
 - Also (Sprint 83 MV Question D = 2, Harold 2026-11-04): move the hook registrations in `.claude/settings*.json` from
-  `python` (3.12.10 on PATH) to Python 3.14 (`py -3.14`), then run `.claude\hooks\run-test-cases.ps1`. A `.claude`
+  `python` (3.12.10 on PATH) to Python 3.14 (`py -3.14`), then run `python .claude/hooks/run-test-cases.py`. A `.claude`
   settings change: confirm with Harold at the start of that sprint.
 
 **F273. Privacy policy and Data safety revision for the content history and learning (~60m) Priority 40**
@@ -748,7 +748,7 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   3. Run the Windows token-path tests (`gmail_adapter_sign_in_flag_test.dart`, 5 cases) on CI: an injectable platform check in `GmailApiAdapter` (Class-2: a production seam -- surface at planning).
   4. Android `initialize` EXCEPTION path (review M-2: network -> ConnectionException, other -> AuthenticationException, never flagged) needs a seam in `GoogleAuthService`; no host test reaches it today.
   5. Sign In Again: the button disappears after success; the `_running` double-tap guard; `showLiveRefusal`'s `isViewingHistory` negative case.
-  6. A self-test for `scripts/mutation-test.ps1` BASELINE and INVALID verdicts (a false INVALID would hide a SURVIVED mutant).
+  6. DONE in Sprint 85 (F329): `scripts/tests/test_mutation_test.py` covers the BASELINE and INVALID verdicts of `scripts/mutation-test.py`.
 
 **F241. Remove or wire `ScanResultStore.getActiveBackgroundScan` Priority 60 -- backlog (Sprint 74 retro Category 14b)**
 - No production caller since the manual-scan dialog moved to the per-account `getActiveScanForAccount`; kept with its tests. Delete with its tests, or wire it. F238 shipped without it (Sprint 75).

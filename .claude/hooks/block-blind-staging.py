@@ -19,7 +19,7 @@ check and swept a 0* working file into a version-bump commit with no mention).
 Port notes (regex differences from PowerShell/.NET): -match is case-insensitive in PowerShell,
 -cmatch is not, so each pattern below carries re.I only where the original was insensitive; Python
 3.11+ rejects an inline (?i) that is not at the start of the pattern, so those became flags.
-Tests: .claude/hooks/test-cases/staging-guard/ (run-test-cases.ps1) and
+Tests: .claude/hooks/test-cases/staging-guard/ (run-test-cases.py) and
 .claude/hooks/tests/test_pylib.py.
 """
 import os

@@ -15,7 +15,7 @@ same message text. Enforces CLAUDE.md IMP-3 (Sprint 72):
 Port notes: every regex here was case-sensitive in the PowerShell original ([regex]::new), except
 the `cat > file` segment test (-match, insensitive), which carries re.I. An internal error ALLOWS
 the command (hooklib.run), with a note on stderr.
-Tests: .claude/hooks/test-cases/heredoc-guard/ (run-test-cases.ps1) and
+Tests: .claude/hooks/test-cases/heredoc-guard/ (run-test-cases.py) and
 .claude/hooks/tests/test_pylib.py.
 """
 import os

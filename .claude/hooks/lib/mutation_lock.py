@@ -1,21 +1,21 @@
 """Mutation-lock library and command line (F321 pilot, Sprint 83; ADR-0051).
 
-Python port of the logic in mutation-lock.ps1. An agent that deliberately breaks a tracked file
+Python port of the logic in the PowerShell mutation-lock (retired in F329, Sprint 85). An agent that deliberately breaks a tracked file
 to prove a test goes red takes a lock first; block-commit-during-mutation.py refuses any
 `git commit` while a lock is held (Sprint 65: two commits captured a live mutation).
 
 Lock files: <project>/.claude/mutation-locks/<safe file name>.json, one per mutated file, JSON
-{file, reason, agent, createdUtc}. The format and the name sanitizing are unchanged, so a lock
-written by the PowerShell version is read by this one and the other way round.
+{file, reason, agent, createdUtc}. The format and the name sanitizing are those of the PowerShell version,
+so a lock it wrote is read by this one.
 
-Command line (what the PowerShell shim mutation-lock.ps1 calls):
+Command line (the way agents and scripts take and release a lock; scripts/mutation-test.py imports the functions):
 
     python mutation_lock.py new    --file F --reason R [--agent A]   take a lock
     python mutation_lock.py remove [--file F]                        release one lock, or all
     python mutation_lock.py list                                     print held locks
     python mutation_lock.py info                                     JSON array with ageMinutes
 
-The lock folder is found as mutation-lock.ps1 found it: CLAUDE_PROJECT_DIR, else walk up from the
+The lock folder is found as the PowerShell version found it: CLAUDE_PROJECT_DIR, else walk up from the
 working folder to the first folder with `.git` (or `.claude`).
 """
 from __future__ import annotations
@@ -128,7 +128,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.action == "new":
         new_lock(args.file, args.reason, args.agent)
-        print(f"[mutation-lock] HELD on {args.file} -- commits are blocked until Remove-MutationLock.")
+        print(f"[mutation-lock] HELD on {args.file} -- commits are blocked until the lock is released (mutation_lock.py remove).")
     elif args.action == "remove":
         if args.file:
             if remove_lock(args.file):

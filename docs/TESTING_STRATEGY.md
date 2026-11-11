@@ -785,7 +785,7 @@ void main() {
 
 ## Testing Tools and Scripts
 
-**A tool never reports success when it did nothing (Sprint 83 retro IMP-3, Harold: *"the script should never crash with a success"*).** Every script, hook and tool in this repo answers three cases before it ships: the input matched nothing, the call it made did nothing, and the thing it runs crashed. Each prints what happened and none of them exits 0 as a pass. A verdict mapping (`switch` on an exit code, a status string) always has a default branch that reports an error. Model: `scripts/test-hook.ps1` -- exit 2 is BLOCK, 0 is ALLOW, any other exit is "HOOK ERROR" and the probe exits 1 with or without `-ExpectBlock` / `-ExpectAllow`. Prove it by feeding the tool the failing case (a hook that crashes, an empty input) and reading the exit code.
+**A tool never reports success when it did nothing (Sprint 83 retro IMP-3, Harold: *"the script should never crash with a success"*).** Every script, hook and tool in this repo answers three cases before it ships: the input matched nothing, the call it made did nothing, and the thing it runs crashed. Each prints what happened and none of them exits 0 as a pass. A verdict mapping (`switch` on an exit code, a status string) always has a default branch that reports an error. Model: `scripts/test-hook.py` -- exit 2 is BLOCK, 0 is ALLOW, any other exit is "HOOK ERROR" and the probe exits 1 with or without `--expect-block` / `--expect-allow`. Prove it by feeding the tool the failing case (a hook that crashes, an empty input) and reading the exit code.
 
 ### Test Monitoring Script
 
@@ -1119,15 +1119,16 @@ Vigilance was not the missing ingredient.
 Two lines around every mutation of a TRACKED file:
 
 ```powershell
-. .claude\hooks\mutation-lock.ps1
-New-MutationLock -File "docs/SOME_FILE.md" -Reason "flip X to prove the gate fails"
+python .claude/hooks/lib/mutation_lock.py new --file "docs/SOME_FILE.md" --reason "flip X to prove the gate fails"
 # ... break it, run the test, confirm RED, restore it ...
-Remove-MutationLock
+python .claude/hooks/lib/mutation_lock.py remove
 ```
 
 While a lock is held, `.claude/hooks/block-commit-during-mutation.py` (a PreToolUse hook)
-refuses any `git commit` in the repository and names the locked files. `Get-MutationLock`
-lists what is held.
+refuses any `git commit` in the repository and names the locked files. `mutation_lock.py list`
+lists what is held (`info` prints the same as JSON with each lock's age in minutes). `scripts/mutation-test.py`
+takes and releases the lock itself. Until Sprint 85 (F329) a PowerShell wrapper, `mutation-lock.ps1`, offered
+`New-MutationLock` and `Remove-MutationLock`; it was removed and the lock files did not change.
 
 ### Why a lock and not a semaphore
 

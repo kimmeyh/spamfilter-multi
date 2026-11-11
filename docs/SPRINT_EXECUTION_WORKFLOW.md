@@ -70,7 +70,7 @@ One-line-per-phase quick reference. Use this at the start of a sprint and at eve
 **Invariants** (apply to all phases):
 
 - Phase 3.7 approval is durable through the START of Manual Validation -- do not re-ask permission at phase boundaries within that window (Phase Auto-Advance Rule, CLAUDE.md §7).
-- **AUTO-ADVANCE ENFORCEMENT WINDOW (Harold, 2026-07-30, Sprint 51 retro IMP-7)**: the don't-stop / don't-ask rule applies **ONLY between Phase 3.7 sprint-plan approval and the beginning of Manual Validation (Phase 5.3)**. Rationale, in Harold's words: *"all questions for the sprint should have been asked by then"* -- so before approval, asking is REQUIRED (Phase 1 refinement, the 3.7 approval request itself), and from Manual Validation onward the work is Harold-driven (validation feedback, retrospective input, improvement dispositions), so asking is CORRECT. Outside the window a question is never an auto-advance violation. `.claude/hooks/sprint-auto-advance.ps1` enforces both bounds: Gate 1b (lower -- pre-approval) and Gate 1c (upper -- Manual Validation onward, detected from `sprint_status.json` `current_sprint.status` or the existence of this sprint's retrospective file). **Keep `current_sprint.status` current at phase transitions** -- it is what tells the hook which side of the window you are on, and it is already a Phase 7.7 checklist item.
+- **AUTO-ADVANCE ENFORCEMENT WINDOW (Harold, 2026-07-30, Sprint 51 retro IMP-7)**: the don't-stop / don't-ask rule applies **ONLY between Phase 3.7 sprint-plan approval and the beginning of Manual Validation (Phase 5.3)**. Rationale, in Harold's words: *"all questions for the sprint should have been asked by then"* -- so before approval, asking is REQUIRED (Phase 1 refinement, the 3.7 approval request itself), and from Manual Validation onward the work is Harold-driven (validation feedback, retrospective input, improvement dispositions), so asking is CORRECT. Outside the window a question is never an auto-advance violation. `.claude/hooks/sprint-auto-advance.py` enforces both bounds: Gate 1b (lower -- pre-approval) and Gate 1c (upper -- Manual Validation onward, detected from `sprint_status.json` `current_sprint.status` or the existence of this sprint's retrospective file). **Keep `current_sprint.status` current at phase transitions** -- it is what tells the hook which side of the window you are on, and it is already a Phase 7.7 checklist item.
 - Standing Approval Inventory (Phase 3.7): commits, pushes, PR-description updates, test/analyze runs do NOT need permission.
 - Stop only for the 9 reasons in `docs/SPRINT_STOPPING_CRITERIA.md` -- not for implementation choices, approach uncertainty, or "confirming the next step".
 - If Phase 1 was skipped for a given sprint, STOP and return to Phase 1 before any Phase 4 work (Sprint 36 gate).
@@ -493,7 +493,7 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
 
 - [ ] **3.7.0 Create GitHub issue cards for the approved plan -- FIRST action after approval, before touching any task's first file** (MANDATORY, Sprint 55 retro IMP-1)
   - **When**: in the SAME turn as acknowledging "plan approved" -- before Phase 3.7.1's PR update, and before any code/doc/test file for Task A is opened or edited.
-  - **Why this exists**: `require-sprint-cards.ps1` blocks the FIRST commit attempt if cards are missing, but a blocking hook is a downstream catch, not a prevention -- Sprint 55 discovered this the hard way when the hook fired only after all 3 approved tasks were ALREADY fully implemented (code, tests, docs all written), forcing a retroactive backfill of cards #305-#307 that describe work already done rather than work about to be done. This is the SECOND recurrence of this exact failure class (Sprint 52 retro IMP-2/IMP-6 built the hook for the first one). A branch that already exists from a Phase 6.6 carry-forward is the classic trigger -- it feels like execution is already underway, so the explicit Phase 3 sequence (3.3.1 draft PR -> 3.4 cards -> ... -> 3.7 approval) gets skipped or walked out of order.
+  - **Why this exists**: `require-sprint-cards.py` blocks the FIRST commit attempt if cards are missing, but a blocking hook is a downstream catch, not a prevention -- Sprint 55 discovered this the hard way when the hook fired only after all 3 approved tasks were ALREADY fully implemented (code, tests, docs all written), forcing a retroactive backfill of cards #305-#307 that describe work already done rather than work about to be done. This is the SECOND recurrence of this exact failure class (Sprint 52 retro IMP-2/IMP-6 built the hook for the first one). A branch that already exists from a Phase 6.6 carry-forward is the classic trigger -- it feels like execution is already underway, so the explicit Phase 3 sequence (3.3.1 draft PR -> 3.4 cards -> ... -> 3.7 approval) gets skipped or walked out of order.
   - **Action**: for every task in the approved plan, `gh issue create` per Phase 3.4's template (sprint_card.yml fields, `sprint` label), then record every issue number in `.claude/sprint_status.json` `github_issues` immediately -- do not wait for a later checklist pass.
   - **If Phase 3.4 already ran normally** (cards created before 3.7 approval, the standard-flow case): this step is a no-op verification -- confirm the cards exist and are open, do not create duplicates.
   - Do NOT proceed to 3.7.1 or any Phase 4 task work until this step's cards exist.
@@ -627,7 +627,7 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
   - Ensure documentation is updated
 
 - [ ] **5.1.1 Automated Code Review -- REMOVED from Phase 5 (Harold, 2026-10-06). DO NOT RUN IT HERE.**
-  - **It now runs at Phase 7.7.1**, after the retrospective improvements, together with the Copilot review, on the final sprint diff. The procedure below (agents, related-patterns grep, test-assertion sibling sweep, two-phase cross-cutting review) is what 7.7.1 applies. No 5.1.1 marker is required before Manual Validation any more (the `sprint-auto-advance.ps1` F193 gate and `verify-closeout-complete.ps1` 3d no longer look for it).
+  - **It now runs at Phase 7.7.1**, after the retrospective improvements, together with the Copilot review, on the final sprint diff. The procedure below (agents, related-patterns grep, test-assertion sibling sweep, two-phase cross-cutting review) is what 7.7.1 applies. No 5.1.1 marker is required before Manual Validation any more (the `sprint-auto-advance.py` F193 gate and `verify-closeout-complete.py` 3d no longer look for it).
   - **Purpose**: Second-pass review by specialized agents catches issues that implementation-mode thinking can miss (convention adherence, subtle bugs, missing tests, silent failures, type design issues)
   - **Required agent**: `pr-review-toolkit:code-reviewer`
     - Runs on current sprint's git diff vs develop
@@ -672,7 +672,7 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
     3. **Doc-comment-vs-code drift**: did a changed default/behavior leave a stale doc comment? ACTION: for every changed constant/default, read the doc comment ABOVE it and any comment that names its value. (Sprint 47: `defaultLiveScanDebugCsv` comment said `false` after the value became `true`.)
     4. **Fragile input parsing**: does new parsing split on a positional delimiter where the input format varies? ACTION: list each new `split`/`indexOf`/`substring` on user- or id-shaped input; prefer domain/content matching. (Sprint 47: accountId dash-split broke on dashed local-parts.)
     5. **API scope matches caller intent**: does an API call operate on a broader scope than the caller assumes (mailbox-wide vs folder; all-accounts vs account)? ACTION: for each new external/API call, state its scope in one sentence and check the caller wants exactly that. (Sprint 37: `history.list` was mailbox-wide; Sprint 46: test-scan scoped all accounts.)
-    6. **Silent failure**: does any new `catch` swallow, empty, or DELETE on error instead of reporting? ACTION: read every catch block in the diff; each must log at `Logger.w()`+ AND must not convert an unreadable input into a destructive classification. (Sprint 46/49 BUG-DECODE: a decode failure classified a rule as deletable.) **Then ask, for every catch and every skip (Sprint 81 retro IMP-1): where does the USER learn of this?** "The diagnostic log" or "the console" is a finding, unless the card states the user need not know. (Sprint 81: six 7.7.1 findings were failures or skips that reached only the log, after 5.1.2 had reported the class.) **For every script, hook and tool in the diff (Sprint 83 retro IMP-3), ask: what does it print, and what exit code does it return, when its input matched nothing, the call it made did nothing, or the thing it runs crashed?** A crash or a no-op is never reported as success; every verdict mapping has a default branch that reports an error (model: `scripts/test-hook.ps1`, which exits 1 when the hook it runs crashes). (Sprint 83: five 7.7.1 findings were tools reporting success when they did nothing.)
+    6. **Silent failure**: does any new `catch` swallow, empty, or DELETE on error instead of reporting? ACTION: read every catch block in the diff; each must log at `Logger.w()`+ AND must not convert an unreadable input into a destructive classification. (Sprint 46/49 BUG-DECODE: a decode failure classified a rule as deletable.) **Then ask, for every catch and every skip (Sprint 81 retro IMP-1): where does the USER learn of this?** "The diagnostic log" or "the console" is a finding, unless the card states the user need not know. (Sprint 81: six 7.7.1 findings were failures or skips that reached only the log, after 5.1.2 had reported the class.) **For every script, hook and tool in the diff (Sprint 83 retro IMP-3), ask: what does it print, and what exit code does it return, when its input matched nothing, the call it made did nothing, or the thing it runs crashed?** A crash or a no-op is never reported as success; every verdict mapping has a default branch that reports an error (model: `scripts/test-hook.py`, which exits 1 when the hook it runs crashes). (Sprint 83: five 7.7.1 findings were tools reporting success when they did nothing.)
        - **Every language in the diff, by a listed search (Sprint 82 retro IMP-1)**: reading the Dart catches is not enough. Run this search over the sprint's changed files of EVERY type (`.dart`, `.ps1`, `.py`, `.cpp`, `.h`, `.kt`, `.swift`, `.yml`, `.sh`) and answer each hit in the card as "the user learns of it from <screen and text>" or "need not know, because <reason>": `git diff --name-only origin/develop...HEAD` then, on those files, the Grep pattern `catch\b|SilentlyContinue|2>\s*\$null|2>/dev/null|\|\|\s*true|continue-on-error|except\b|-ErrorAction\s+Ignore|RegSetKeyValue|RegCreateKey|CoRegister|HRESULT|LSTATUS`. A Win32 or COM call whose return value is not read counts as a hit. (Sprint 82: four of the six class-A findings were in PowerShell and C++ -- a registry write result ignored, a process listing that failed quietly -- which the Dart-only reading did not reach.)
     7. **A test's "does NOT catch" note against a promise (Sprint 82 retro IMP-2)**: ACTION: list every "what this test does NOT catch" note written this sprint (`git diff origin/develop...HEAD -- '*test*'`, search `NOT catch`). Compare each with the card's ACs, its ARCHITECTURE row and its CHANGELOG line. A note that names a behavior those texts PROMISE is a finding: fix the gap, or narrow the promise in the same commit. A named gap is a finding, not a disclaimer. (Sprint 82: the F314 test header named "a failed store still moves the cursor" while the doc comment, ARCHITECTURE row and release notes promised "results stored first"; 7.7.1 H-1.)
        - **The test NAME against its checks (Sprint 83 retro IMP-1)**: ACTION: for every new or renamed test, read its name as a claim and point to the `expect` that proves each word of it. A word with no check is a finding: add the check, or shorten the name. A test anchored on a comment or other text that does not run is a finding too. (Sprint 83: 3 7.7.1 findings were test names that claimed more than the test asserts, e.g. a sender-shape half no check covered, and a layout test anchored on a comment.)
@@ -767,7 +767,7 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
     not fail (CR L4); a layout test had no mutation record (SF L11; 2 of 2 KILLED when run afterwards).)
   - **Record**: each MV step in the plan carries `Rehearsed: <date>, <how>, <observed result>`, and the plan's
     Phase 5 evidence carries `- **5.1.9 MV rehearsal**: <date>, <N> steps rehearsed (<how>), <M> not rehearsable
-    (<why>)`. `sprint-auto-advance.ps1` (F193 evidence gate) refuses to declare Manual Validation from Sprint 78
+    (<why>)`. `sprint-auto-advance.py` (F193 evidence gate) refuses to declare Manual Validation from Sprint 78
     while that marker is missing or PENDING.
   - **Why**: Sprint 77 handed over three steps that failed in Harold's hands (the GreenMail sign-in user, a 1-day
     rescan the backlog cursor ignores, an expected count of 5 that was 6), each costing a validation round, and
@@ -1157,11 +1157,12 @@ PROGRESS AND RESTART (apply to yourself)
    Run times: at the start of each run (the first one and every restart) add
    "RUN STARTED <yyyy-mm-dd HH:MM>"; just before "STATUS: FINISHED", and whenever you
    see a usage-limit stop coming, add "RUN STOPPED <yyyy-mm-dd HH:MM>". Read the clock
-   (Get-Date); never estimate a time. scripts\agent-work-status.ps1 adds the runs up.
+   (Get-Date); never estimate a time. python scripts/agent-work-status.py adds the runs up.
 5. MUTATION LOCK: if you hold one (.claude\mutation-locks\), your first action on a
    restart is to restore the file (git diff, or your saved original), verify it is
-   byte for byte restored, then call Remove-MutationLock. Never commit while a lock
-   is held. Check ages with Get-MutationLockInfo.
+   byte for byte restored, then release it (python .claude/hooks/lib/mutation_lock.py remove).
+   Never commit while a lock is held. Check ages with
+   python .claude/hooks/lib/mutation_lock.py info.
 6. NEVER repeat a release or store action: Phase 8 develop merge, an MSIX build from
    spamfilter-multi-prod, a Google Play or Microsoft Store upload or submission, a
    tag. First check it is not already done (git log, git tag, the console) and
@@ -1179,14 +1180,14 @@ PROGRESS AND RESTART (apply to yourself)
 - UNVERIFIED: that subagents stop with the session and keep context only for a SendMessage resume in the same session. None of the three pages says this. The block above does not depend on it.
 - Scheduled tasks (https://code.claude.com/docs/en/scheduled-tasks): *"Recurring tasks automatically expire 7 days after creation. The task fires one final time, then deletes itself."* *"Tasks only fire while Claude Code is running and idle."* *"A scheduled prompt fires between your turns, not while Claude is mid-response."* A recurring hourly task runs 0 to 30 minutes late (jitter).
 
-**Status script (R-3)**: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\agent-work-status.ps1` (read-only). It lists each agent task folder as not started, started with nothing saved, in progress (with the last step), or finished (`STATUS: FINISHED`), the held mutation locks with their age, and the sprint phase from `.claude/sprint_status.json`.
+**Status script (R-3)**: `python scripts/agent-work-status.py` (read-only). It lists each agent task folder as not started, started with nothing saved, in progress (with the last step), or finished (`STATUS: FINISHED`), the held mutation locks with their age, and the sprint phase from `.claude/sprint_status.json`.
 
 **Hourly wake-up prompt (R-4)**. The coordinating session starts it with CronCreate, recurring, cron `53 * * * *` (an off-minute), when it launches the first agent of a phase. It expires after 7 days; report the expiry date to Harold when you create it and re-create it if the sprint runs longer. Paste this text as the cron prompt:
 
 ```text
 HOURLY WAKE-UP
 1. If a turn is running, do nothing.
-2. Run scripts\agent-work-status.ps1.
+2. Run python scripts/agent-work-status.py.
 3. For each agent that stopped without its final report (state "in progress" or
    "started with nothing saved"), send SendMessage: "Continue where you stopped.
    Read your progress files first; do not redo finished work."
@@ -1199,7 +1200,7 @@ HOURLY WAKE-UP
    store action.
 6. If nothing stalled and nothing is pending, reply with one line.
 7. End the reply with the status-footer script line, and keep the closing convention
-   sprint-auto-advance.ps1 matches (no unfinished commitment as the last sentence).
+   sprint-auto-advance.py matches (no unfinished commitment as the last sentence).
 ```
 
 **[CRITICAL] PHASE 7 ORDER -- the final code reviews come FIRST (Harold, 2026-10-23, Sprint 80 Q3 = 1; from Sprint 81 on)**:
@@ -1449,9 +1450,9 @@ Before conducting sprint review, build and test the Windows desktop app:
     3. **Fix**: the change to this instance -- the fallback when prevention is not possible, never the default.
     4. **Additional control**: only if absolutely necessary, with the reason.
     A finding fixed only at the instance, with no prevention line, is not dispositioned.
-  - **Apply** approved `Fix now` items as commits on the sprint branch, each with a mutation check when it guards a bug (`scripts/mutation-test.ps1`), then analyzer + full suite green and push. File approved `Add to backlog` items in ALL_SPRINTS_MASTER_PLAN.md. Reply to and resolve every Copilot thread.
+  - **Apply** approved `Fix now` items as commits on the sprint branch, each with a mutation check when it guards a bug (`scripts/mutation-test.py`), then analyzer + full suite green and push. File approved `Add to backlog` items in ALL_SPRINTS_MASTER_PLAN.md. Reply to and resolve every Copilot thread.
   - **No automatic re-review.** A fix commit does not trigger Copilot again. If the fixes change behavior substantially, say so to Harold and offer one more 7.7.1 round; do not run it unasked.
-  - **Record the evidence** in `SPRINT_N_PLAN.md` as ONE canonical bullet (the close-out hook `verify-closeout-complete.ps1` check 3d-2 blocks a close-out claim from Sprint 77 on if it is missing, empty, or `PENDING`):
+  - **Record the evidence** in `SPRINT_N_PLAN.md` as ONE canonical bullet (the close-out hook `verify-closeout-complete.py` check 3d-2 blocks a close-out claim from Sprint 77 on if it is missing, empty, or `PENDING`):
     `- **7.7.1 final code reviews**: <date>, Copilot <result>; files given N / confirmed read M (code-reviewer), M (silent-failure-hunter); code-reviewer <counts>; silent-failure-hunter <counts>; <Fix now / backlog / N/A dispositions, each Fix now with its code-file / line count>; commits <hashes>; improvement review <result, or "no improvement commits">; CI run 1 <result>`
   - **Skip condition**: none for the toolkit reviews. If Copilot genuinely cannot be attached (the request returns an error), record that on the marker line and continue with the toolkit reviews.
   - **Model**: top tier (Fable/Opus) for the disposition analysis.
@@ -1967,10 +1968,10 @@ section gains an Android branch rather than being silently assumed to cover both
 
 ### Tooling that knows about this window
 
-- `.claude/hooks/verify-closeout-complete.ps1` -- its `pr_number` check is gated on `plan_approved`,
+- `.claude/hooks/verify-closeout-complete.py` -- its `pr_number` check is gated on `plan_approved`,
   because `pr_number` is legitimately null across this entire cycle (fixed 2026-08-17 after three
   false positives).
-- `.claude/hooks/sprint-auto-advance.ps1` -- asking Harold questions during this cycle is CORRECT,
+- `.claude/hooks/sprint-auto-advance.py` -- asking Harold questions during this cycle is CORRECT,
   not an auto-advance violation; the enforcement window is Phase 3.7 approval to Phase 5.3 only.
 - `.claude/sprint_status.json` `current_sprint.status` -- keep it current; it is how a resumed
   session knows which part of the cycle it is in.

@@ -35,7 +35,7 @@ moved, and the guidance had not.**
 
 ## The finding that rules out the hook
 
-`.claude/hooks/sprint-auto-advance.ps1` already detects question shapes -- Gate 2, with 13
+`.claude/hooks/sprint-auto-advance.py` already detects question shapes -- Gate 2, with 13
 procedural patterns plus 4 commitment patterns. Reusing it looked obvious.
 
 **But that hook only runs INSIDE the enforcement window** (Phase 3.7 approval -> Manual

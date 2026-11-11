@@ -18,7 +18,7 @@ block (stderr to Claude), bypass token `allow_no_cards`, same gate message text.
 `status_path_override` in the payload points the gate at a fixture (tests only; relative paths resolve
 against this folder, as in the PowerShell hook).
 
-Tests: .claude/hooks/test-cases/sprint-cards/ (run-test-cases.ps1) and .claude/hooks/tests/test_pylib.py.
+Tests: .claude/hooks/test-cases/sprint-cards/ (run-test-cases.py) and .claude/hooks/tests/test_pylib.py.
 """
 import json
 import os

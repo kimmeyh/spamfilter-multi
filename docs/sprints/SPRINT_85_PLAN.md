@@ -786,7 +786,24 @@ Harold for the screenshot.
 **Model**: Sonnet -- *why not Haiku*: the runner and `mutation-test` carry subtle rules (baseline, INVALID, byte-exact
 restore, line endings) whose loss would silently weaken every gate.
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Sonnet sub-agent as assigned, 2026-11-10 19:50-20:53; main session review and
+CLAUDE.md, ADR-0051 and memory edits 20:53-21:05. PARTIAL: R-6 waits for Harold at Manual Validation. Port review
+(full text in the scratchpad `s85_f329\port_review.md`), defects fixed: the old runner SKIPPED an unknown case prefix and
+a missing route folder silently and passed with "0 total" (now FAIL, exit 2); fixture git errors were hidden by
+`2>$null`; case files were read in the system code page; no time limit on a hook or a check; `mutation-test` lost its
+whole report on `RESTORE FAILED`, passed an empty spec, and counted a Python syntax-error mutant as KILLED (now INVALID).
+New defect found and fixed while testing: a stale `.pyc` could hide a same-size mutant written in the same second.
+AC-1: PowerShell runner 208/0/208 before deletion, Python runner 208/0/208. AC-2: KILLED, INVALID, BASELINE FAILS,
+SURVIVED and anchor-not-found cases proven on a fixture; same verdicts as the old tool except the intended INVALID.
+R-2: 21 of 22 footer inputs byte-identical; the one difference is non-ASCII text (UTF-8 now, OEM code page before;
+ADR-0051 rule 3). R-3: no `.ps1` registered in `.claude/settings.json`; five twins deleted. R-4: `mutation-lock.ps1`
+and `agent-work-status.ps1` (thin shims) deleted after every caller moved; the commit gate is proven to block a lock made
+by the Python command line. AC-3 (R-5): 8 fault-injection tests; 8 of 8 mutants (a hook made silent on a git failure)
+KILLED. Tests: hook unittests 145, scripts unittests 337, runner 208/208 (main session re-ran all three, all green).
+88 mutants in total, all KILLED, run with the new `scripts/mutation-test.py` after its own 15 mutants. AC-4: old names
+updated or kept as history (CLAUDE.md :165-166 incident text, sprint records, CHANGELOG, `F77-hookify-decision.md`).
+`ci.yml` hook step now discovers all of `.claude/hooks/tests`, so the new tests run on Linux (unproven until CI run 1).
+Open for Harold: `.codex/hooks/sprint-auto-advance.ps1`, an unregistered Codex copy outside the R-3 list, left in place.
 **Step-types**: HOOK, PORT-PY `[no-history]`, TEST-UNIT, DOCS. **Est-Effort**: 240-380m.
 
 _**Risk & rollback**_: risk: a converted runner reports green while skipping cases. Mitigation: AC-1 counts compared

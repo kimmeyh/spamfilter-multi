@@ -82,5 +82,5 @@ reformat the date and time to a local convention. The format is fixed.
   Windows/macOS/Linux), a shared copy of the script placed alongside it applies to
   every repo on that machine at once. Per-repo setup is only needed when the repos
   are on different machines, or when a repo needs a different state-file path.
-- This repo's own implementation is `.claude/hooks/status-footer.ps1`, with the
+- This repo's own implementation is `.claude/hooks/status-footer.py`, with the
   measured performance rationale recorded in its header comment.

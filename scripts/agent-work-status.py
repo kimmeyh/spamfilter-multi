@@ -2,8 +2,9 @@
 
 Read-only: it stores nothing and changes nothing. Prints each agent task's progress, the held
 mutation locks with their age, and the sprint phase. The output format is the one
-scripts/agent-work-status.ps1 always printed; that script is now a thin entry point that calls
-this one (the hourly wake-up still runs scripts\\agent-work-status.ps1).
+the PowerShell script scripts/agent-work-status.ps1 printed; that script was a thin entry point
+that called this one and was removed in F329 (Sprint 85). The hourly wake-up runs
+`python scripts/agent-work-status.py`.
 
 Convention (docs/SPRINT_EXECUTION_WORKFLOW.md, "Progress and restart"): each agent keeps
 <scratch folder>/<task-name>/progress.md with lines "UNIT <name>: DONE|STARTED", "LAST STEP:

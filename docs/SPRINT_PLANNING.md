@@ -447,7 +447,7 @@ Bold = mandatory. _Italic_ = optional (include only when the trigger applies). T
      gap tracked the prompt more than the model.
      DELEGATION CHECKLIST:
        1. Run every new or changed test file and report the pass count.
-       2. Mutation-check each test with scripts/mutation-test.ps1 (specs written with
+       2. Mutation-check each test with scripts/mutation-test.py (specs written with
           the Write tool); every mutant must COMPILE and be KILLED -- INVALID or
           SURVIVED means the work is not done.
        3. Prove the test can fail on the real path: a test that passes with the

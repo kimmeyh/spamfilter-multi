@@ -80,7 +80,7 @@ folders and line-ending helpers are NOT written yet; the batch that first needs 
    `-cmatch` and `[regex]::Match` are case-sensitive. Python 3.11 and later reject an inline `(?i)` that is not at the
    start of a pattern.
 5. **Tests.** Each hook keeps its recorded cases in `.claude/hooks/test-cases/<folder>/` (allow-* exit 0, violation-*
-   exit 2). `run-test-cases.ps1` runs a `.py` route under `python`; `.claude/hooks/tests/test_pylib.py` (stdlib
+   exit 2). `run-test-cases.py` (Sprint 85, F329) runs every route under `python`; `.claude/hooks/tests/test_pylib.py` (stdlib
    `unittest`) replays the same cases through each hook's `decide`, so CI on Linux proves the hooks as well as the
    layer.
 
@@ -96,13 +96,13 @@ Linux that means the `python-is-python3` package or a `python` symlink; on a run
 CI step uses `python3` directly (the hooks are not registered in CI). No `python3 ... || python ...` fallback is
 used: the first run consumes stdin, so a second run would read an empty payload and allow.
 
-### The PowerShell interface of `mutation-lock.ps1` stays
+### The mutation lock interface
 
-`mutation-test.ps1`, `agent-work-status.ps1` and CLAUDE.md call `. .claude\hooks\mutation-lock.ps1` and then
-`New-MutationLock`, `Remove-MutationLock`, `Get-MutationLock` and `Get-MutationLockInfo`. `mutation-lock.ps1` is now a
-thin shim: each function calls `lib/mutation_lock.py`. The lock files are unchanged (same folder, same name rule, same
-four JSON fields), so a lock written by either implementation is read by the other. `scripts/agent-work-status.ps1`
-likewise stays as the entry point the hourly wake-up runs and calls `scripts/agent-work-status.py`. Output is unchanged.
+Until Sprint 85, `mutation-lock.ps1` and `scripts/agent-work-status.ps1` were thin PowerShell shims over
+`lib/mutation_lock.py` and `scripts/agent-work-status.py`. F329 deleted both shims. Callers now run
+`python .claude/hooks/lib/mutation_lock.py new|remove|list|info` and `python scripts/agent-work-status.py`. The lock
+files are unchanged (same folder, same name rule, same four JSON fields), and a hook test proves the commit gate
+blocks a commit while a lock made by the Python command line is held.
 
 ### Pilot set (Sprint 83 Task 10, Q9 = 1)
 
@@ -121,7 +121,8 @@ Hooks (`.claude/hooks/`):
 - Converted by the pilot: `block-blind-staging`, `block-heredoc-python-backslash`, `block-commit-during-mutation`,
   `mutation-lock`.
 - Deterministic, convert later: `block-carry-forward-stash`, `require-sprint-cards`, `warn-commit-without-velocity`
-  (F326); `verify-closeout-complete` (F327); `sprint-auto-advance` (F328); `run-test-cases`, `status-footer` (F329).
+  (F326); `verify-closeout-complete` (F327); `sprint-auto-advance` (F328); `run-test-cases`, `status-footer` (F329,
+  converted in Sprint 85).
 - GenAI: none. Every hook is a regex or file check.
 
 Converted in Sprint 85 (originals deleted in the same change; port review and tests in `SPRINT_85_PLAN.md`):
@@ -144,7 +145,7 @@ Converted in Sprint 85 (originals deleted in the same change; port review and te
 
 `scripts/`:
 - Converted by the pilot: `agent-work-status`.
-- Deterministic, convert later: `test-hook`, `mutation-test` (F329). Converted in Sprint 85: `clean-temp-scripts`,
+- Converted in Sprint 85: `test-hook`, `mutation-test` (F329); `clean-temp-scripts`,
   `run-full-suite`, `validate-yaml-rules`, `test-regex-patterns` (F330); `install-custom-mcp`, `setup-claude-mcp`,
   `start-test-imap-servers` (F331); `phone-log-health` (F332).
 - Windows-bound, decide per file (F337): `enable-crash-dumps` (Windows Error Reporting), `pull-phone-screenshots`
@@ -185,8 +186,13 @@ to be classified; they are listed here so the inventory is complete.
 
 ### Conversion log
 
+- Sprint 85 F329, 2026-11-10: `run-test-cases.py`, `status-footer.py`, `scripts/test-hook.py` and
+  `scripts/mutation-test.py` ported (AC-1: 208 of 208 cases, the same count as the PowerShell runner). The
+  five unregistered `.ps1` hook twins, `mutation-lock.ps1` and `scripts/agent-work-status.ps1` deleted.
+  `test_pylib.py` gained a fault-injection test: with `git` or `gh` failing, every hook ends in a notice or a
+  violation, never a silent pass.
 - Sprint 84 F326 (GitHub #554), 2026-11-06: `block-carry-forward-stash.ps1` converted to `block-carry-forward-stash.py`
-  (stash-guard, 8 recorded cases). Registered in `.claude/settings.json` in Python form; the `.ps1` is kept until F329.
+  (stash-guard, 8 recorded cases). Registered in `.claude/settings.json` in Python form; the `.ps1` was deleted in F329 (Sprint 85).
 - Sprint 84 F326 (GitHub #554), 2026-11-06: `require-sprint-cards.ps1` converted to `require-sprint-cards.py`
   (sprint-cards, 8 recorded cases). It makes no `gh` call, so the layer gained no `gh` wrapper. Registered in Python form.
 - Sprint 84 F326 (GitHub #554), 2026-11-06: `warn-commit-without-velocity.ps1` converted to `warn-commit-without-velocity.py`
@@ -197,7 +203,7 @@ to be classified; they are listed here so the inventory is complete.
   so the layer gained `common.gh()`, the same never-raising `(exit code, stdout)` shape as `git()`, with an 8 second
   timeout so the hook's two possible calls fit its 20 second budget. A missing, offline or slow `gh` skips check 3c (fail
   open), as the PowerShell `catch { }` did. Markdown is read as bytes and decoded `utf-8-sig`, so CRLF survives. Registered
-  in Python form under `Stop`; the `.ps1` is kept until F329.
+  in Python form under `Stop`; the `.ps1` was deleted in F329 (Sprint 85).
 - Sprint 84 F328 (GitHub #556), 2026-11-06: `sprint-auto-advance.ps1` (Stop hook, 756 lines) converted to
   `sprint-auto-advance.py` (top-level route, 55 recorded cases plus 16 footer cases added for R-5). All 13 commitment
   patterns, 13 question patterns and 40 whitelist patterns keep their order and text; every one is compiled
@@ -206,7 +212,7 @@ to be classified; they are listed here so the inventory is complete.
   comparisons are reproduced by `ps_eq_bool`. One deliberate difference (R-6): the PowerShell wrapped the whole F193
   evidence evaluation in `try { } catch { }`, so an unreadable plan or velocity file fell through silently; the Python
   lets that exception reach `hooklib.run` (exit 1, a visible hook error). Only the status-file and plan-head reads keep
-  the swallow. Registered in Python form under `Stop`; the `.ps1` is kept until F329.
+  the swallow. Registered in Python form under `Stop`; the `.ps1` was deleted in F329 (Sprint 85).
 - Sprint 84 5.1.2 F6, 2026-11-06: fail-open stays, but it is no longer silent. A `gh` failure in check 3c of
   `verify-closeout-complete.py` now gives the notice "check 3c did not run: gh unavailable (<reason>)"; an existing but
   unreadable `sprint_status.json` gives "sprint_status.json unreadable (<error>); sprint gates skipped"; `hooklib.run`
@@ -256,7 +262,7 @@ minutes and keeps the converted file's interface or updates every caller in the 
   see the Sprint 83 plan Task 10 Result for the numbers.
 - `python` must be on PATH for hooks to run. If it is missing, every Python hook fails (a missing command is not exit
   2, so tool calls are not blocked, but the guards are off).
-- Until F329 lands, both PowerShell and Python test routes exist in `run-test-cases.ps1`.
+- Since F329 (Sprint 85), `run-test-cases.py` is the only runner; no PowerShell route remains.
 
 ### Neutral
 - The Dart one-off scripts and the GenAI prompts are unchanged.
@@ -265,6 +271,6 @@ minutes and keeps the converted file's interface or updates every caller in the 
 ## References
 - Sprint 83 plan, Task 10; ALL_SPRINTS_MASTER_PLAN.md F321 and the cards F326 to F340
 - `.claude/hooks/lib/` (the layer), `.claude/hooks/tests/test_pylib.py` (its tests)
-- `.claude/hooks/test-cases/` (recorded cases), `.claude/hooks/run-test-cases.ps1`, `scripts/test-hook.ps1`
+- `.claude/hooks/test-cases/` (recorded cases), `.claude/hooks/run-test-cases.py`, `scripts/test-hook.py`
 - CLAUDE.md: the heredoc backslash rule (IMP-3), the blind-staging rule, the mutation-lock rule (Sprint 65 IMP-5)
 - Prior art (read only): `hsbc-qfraud-phase2/.claude/hooks/hooklib.py`, `EvidenceBasedDB/.claude/hooks/*.py`

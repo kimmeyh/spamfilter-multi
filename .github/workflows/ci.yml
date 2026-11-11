@@ -43,8 +43,11 @@ jobs:
         # cases (staging-guard, heredoc-guard, commit-lock) through each hook,
         # which proves the hooks on Linux, not only the library. The ubuntu
         # runner has python3; a bare `python` is not guaranteed.
+        # Sprint 85 F329: discovery, so the runner and status-footer tests in
+        # .claude/hooks/tests/ run here too (it ran test_pylib.py alone). Written
+        # on Windows; the first Linux run is the CI run 1 of Sprint 85.
         working-directory: .
-        run: python3 .claude/hooks/tests/test_pylib.py
+        run: python3 -I -m unittest discover -s .claude/hooks/tests -v
 
       - name: Python script tests (ADR-0051, Sprint 85)
         # Every Python port in scripts/ and mobile-app/scripts/ has a unittest

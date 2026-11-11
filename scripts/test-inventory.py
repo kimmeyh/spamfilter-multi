@@ -324,7 +324,7 @@ def where_it_runs(rel_path: str, family: str, jobs: list[dict]) -> list[str]:
     elif family == "winwright":
         runs.append("local only: run-winwright-tests.ps1 (Windows host, not in CI)")
     elif family == "hook-case":
-        runs.append("local: .claude/hooks/run-test-cases.ps1 (Windows host)")
+        runs.append("local: .claude/hooks/run-test-cases.py")
         for j in jobs:
             if any(".claude/hooks/tests" in p for p in j["python_tests"]):
                 runs.append(ci_label(j))

@@ -23,7 +23,7 @@ Fail-open and failure rules (R-3, R-6):
   - Nothing else is swallowed. An unexpected exception reaches hooklib.run, which prints a one-line
     "internal error" notice and exits 1 (a visible hook error, the action is not silently passed).
 
-Tests: .claude/hooks/test-cases/closeout/ (run-test-cases.ps1) and .claude/hooks/tests/test_pylib.py.
+Tests: .claude/hooks/test-cases/closeout/ (run-test-cases.py) and .claude/hooks/tests/test_pylib.py.
 """
 import json
 import os

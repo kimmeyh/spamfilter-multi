@@ -450,7 +450,7 @@ echo | openssl s_client -connect github.com:443 -servername github.com 2>/dev/nu
 - YAML validation script (`scripts/validate-yaml-rules.py`)
 - Regex pattern tester (`scripts/test-regex-patterns.py`)
 - 10 custom skills, each a directory under `.claude/skills/` containing a `SKILL.md` (there is no `.claude/skills.json`)
-- 3 enforcement hooks as `.ps1` scripts under `.claude/hooks/`, registered in `.claude/settings.json` (there is no `.claude/hooks.json`): `sprint-auto-advance`, `block-carry-forward-stash`, `verify-closeout-complete`. A fourth script, `run-test-cases.ps1`, is the hooks' own test harness, not a hook.
+- 8 enforcement hooks as `.py` scripts under `.claude/hooks/` (Python since ADR-0051), registered in `.claude/settings.json` (there is no `.claude/hooks.json`): `sprint-auto-advance`, `verify-closeout-complete` (Stop) and `block-carry-forward-stash`, `require-sprint-cards`, `block-heredoc-python-backslash`, `block-blind-staging`, `warn-commit-without-velocity`, `block-commit-during-mutation` (PreToolUse). `run-test-cases.py` is the hooks' own test harness, not a hook.
 
 **Build Script Enhancements**:
 - `-StartEmulator`: Auto-start Android emulator if none running

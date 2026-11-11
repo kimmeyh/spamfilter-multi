@@ -76,7 +76,7 @@ By class, with the cheapest check that would have caught the class:
   gate that lists every `catch` in `lib/` with its handling, plus a failure-path test per new catch that asserts what
   the USER sees. Today silent-failure-hunter finds these at 7.7.1, which is the last possible step.
 - **H, tooling gate vacuous (25).** A hook or gate that passes because nothing matched. Cheapest catch: a
-  must-block case for every new gate pattern (`scripts/test-hook.ps1 -ExpectBlock`), already the rule; the escapes are
+  must-block case for every new gate pattern (`scripts/test-hook.py --expect-block`), already the rule; the escapes are
   gates shipped without one.
 - **F, false comment or doc (18; every sprint).** A comment that asserts a mechanism the code does not have. No test
   kind can catch this. The cheapest check is the existing rule (grep the mechanism in the same turn), applied by the
@@ -311,8 +311,8 @@ Conclusion: re-running the same mutants buys little. The 13 cases fail in three 
 - the platform differs: test on the platform that ships (Sprint 76 IMP-3).
 
 Where specs live: no mutation spec is tracked (`git grep -l '"find"' -- '*.json'` is empty). Specs exist only in
-ignored scratch folders, so a proof cannot be re-run from the repository. `scripts/mutation-test.ps1:51` points its
-example at a path outside the repo.
+ignored scratch folders, so a proof cannot be re-run from the repository. `scripts/mutation-test.py` (formerly `.ps1`, whose line 51 pointed its
+example at a path outside the repo) takes the spec path as its first argument.
 
 ## R-6: Which full runs are needed
 
