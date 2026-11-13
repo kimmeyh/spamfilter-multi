@@ -1,13 +1,13 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-11-10T21:03:30",
+    "_last_updated": "2026-11-13T16:20:26-05:00",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 85,
         "branch": "feature/20261108_Sprint_85",
-        "status": "Phase 5 Review and Testing",
-        "status_detail": "Plan approved by Harold 2026-11-10 (Q-A as amended; Q1 = 1 version 0.25.0+23; Q2 = 2 DEV gets its own product name in the Windows exe; Q3 = 1 delete build-with-secrets.ps1 and update docs). Cards #560-#575 created at 3.7.0.",
+        "status": "Phase 5.3 Manual Validation",
+        "status_detail": "Manual Validation handed over 2026-11-13 on Windows DEV 0.25.0+23 (1a1ec264, built 15:42 after the Visual Studio Repair restored the Windows SDK) and Play bundle 0.25.0+23 (322f5c70). 5.1.2, 5.1.5 (sweep-head 1a1ec264) and 5.1.9 markers recorded in SPRINT_85_PLAN.md. Plan approved 2026-11-10; cards #560-#575.",
         "plan_approved": true,
         "pr_number": 559,
         "version": "0.25.0+23"
@@ -69,9 +69,8 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "3.7.0b version bump 0.25.0+23 with provisional notes and 'Last uploaded to Play' -> 0.24.1 (22); 3.7.1 PR body with Closes #560-#575.",
-        "Phase 4 per the plan Order: parallel block A (F352, F330, F331, F332, F350 inventory), block B (F333, F334, F307, F354 audit), F335 alone for builds, F329 last among tooling.",
-        "Carry-ins: the F342 Fold check after 0.24.1 (feeds F357), MV-3c when a YELLOW item appears; Harold reboots before F355."
+        "Harold runs MV-1 to MV-7 (SPRINT_85_PLAN.md 'Manual Validation (Phase 5.3)') and answers the held decisions.",
+        "Then Phase 7.7.1: Copilot review requested by hand plus code-reviewer and silent-failure-hunter on draft PR #559, in the same turn as the retrospective prompt."
     ],
     "next_sprint_targeted": {
         "number": 85,
