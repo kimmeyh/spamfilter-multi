@@ -20,6 +20,7 @@ import 'package:my_email_spam_filter/core/platform/platform_capabilities.dart';
 import 'package:my_email_spam_filter/core/services/diagnostic_logger.dart';
 import 'package:my_email_spam_filter/core/services/windows_system_tray_service.dart';
 import 'package:yaml/yaml.dart';
+import '../../helpers/diagnostic_log_reader.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -95,9 +96,8 @@ void main() {
       DiagnosticLogger.debugSetDir(dir.path);
     });
 
-    tearDown(() {
-      DiagnosticLogger.debugSetEnabled(null);
-      DiagnosticLogger.debugSetDir(null);
+    tearDown(() async {
+      await DiagnosticLogger.debugReset();
       PlatformCapabilities.debugOverride = null;
       for (final name in [
         'window_manager',
@@ -109,11 +109,7 @@ void main() {
       dir.deleteSync(recursive: true);
     });
 
-    String logText() => dir
-        .listSync(recursive: true)
-        .whereType<File>()
-        .map((f) => f.readAsStringSync())
-        .join('\n');
+    String logText() => readDiagnosticLog(dir);
 
     test('initialize returns false and logs why when the plugin adds no icon',
         () async {

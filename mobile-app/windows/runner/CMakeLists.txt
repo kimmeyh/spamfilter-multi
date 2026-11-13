@@ -85,6 +85,13 @@ else()
   message(STATUS "F119-c: SPAMFILTER_APP_ENV='dev' (fallback; no dart-define, no env var)")
 endif()
 target_compile_definitions(${BINARY_NAME} PRIVATE "SPAMFILTER_APP_ENV=\"${SPAMFILTER_APP_ENV}\"")
+# F354 (Sprint 85): Runner.rc cannot compare strings, so it gets a plain flag.
+# A non-prod build carries ProductName "MyEmailSpamFilter_Dev", which moves its
+# app-support folder (and the flutter_secure_storage credential file in it) to
+# the DEV data folder. Same rule as the [DEV] window title in main.cpp.
+if(NOT SPAMFILTER_APP_ENV STREQUAL "prod")
+  target_compile_definitions(${BINARY_NAME} PRIVATE "SPAMFILTER_IS_DEV=1")
+endif()
 
 # Disable Windows macros that collide with C++ standard library functions.
 target_compile_definitions(${BINARY_NAME} PRIVATE "NOMINMAX")

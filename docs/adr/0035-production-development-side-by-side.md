@@ -306,6 +306,11 @@ Background-scan mode now performs a **read-only mutex probe** at startup. If the
 
 ### Integration Test Pattern (Sprint 38, reusable)
 
+Sprint 85 update (F334, ADR-0051): the script is now `mobile-app/scripts/test-background-scan-skip.py`, run by
+`build-windows.ps1 -RunIntegrationTests` or as `python -I test-background-scan-skip.py [--environment prod]`. Since
+Sprint 75 (F243) it asserts the opposite of the Sprint 38 version: with the UI open, the background launch RUNS. The
+`.ps1` named below and in "Files Changed" above is the Sprint 38 original, kept here as history.
+
 `mobile-app/scripts/test-background-scan-skip.ps1` establishes a pattern for testing `main.cpp` startup-logic changes that cannot be expressed in `flutter test` (because they involve launching the real `.exe` and verifying real OS-level state like mutexes, log files, or process lifecycle). The pattern:
 
 1. Resolve the variant `.exe` produced by `build-windows.ps1` (parameterized by `-Environment`).
@@ -317,6 +322,53 @@ Background-scan mode now performs a **read-only mutex probe** at startup. If the
 7. Teardown: kill foreground process so the test is repeatable.
 
 Future `main.cpp` changes (new command-line flags, mutex naming changes, environment detection logic, single-instance behavior tweaks) should add similar parameterized PowerShell tests rather than relying solely on Phase 5.3 manual testing.
+
+## Sprint 85 Update (2026-11-10): DEV credential store separated on Windows (F354)
+
+### Problem
+
+"User and Account Isolation" above says each environment keeps its own credentials. On Windows that was not true for
+the credential FILE. `flutter_secure_storage_windows` 4.1.0 keeps every secret in one file,
+`flutter_secure_storage.dat`, in `getApplicationSupportDirectory()`, with no path option
+(`flutter_secure_storage_windows_ffi.dart:234`, `:252-258`). `path_provider_windows` 2.3.0 builds that folder from the
+executable's CompanyName and ProductName (`path_provider_windows_real.dart:180-215`), and every build had ProductName
+`MyEmailSpamFilter`. The `_Dev` suffix was added only by the app's own path code, which the plugin does not use. So DEV,
+a production build from the prod worktree and the Microsoft Store app all used
+`%APPDATA%\MyEmailSpamFilter\MyEmailSpamFilter\flutter_secure_storage.dat`.
+
+The Store app is not redirected to a package-private copy: the file existed before the package was installed, and
+Microsoft's rule for packaged desktop apps is *"If the file is opened from the real AppData location, then no
+virtualization for that file occurs"* (learn.microsoft.com/windows/msix/desktop/desktop-to-uwp-behind-the-scenes,
+ms.date 2026-09-30). Observed 2026-11-10: the package folder
+`%LOCALAPPDATA%\Packages\KimmeyConsulting-Ohio.MyEmailSpamFilter_3t07cykjy5226` holds no redirected app data, while the
+production database in the unpackaged folder was written that morning. Consequence: deleting an account in DEV deleted
+its production sign-in.
+
+### Decision (Harold, 2026-11-10, Sprint 85 Q2 = 2)
+
+- A non-prod Windows build carries ProductName `MyEmailSpamFilter_Dev` (`windows/runner/Runner.rc`, from
+  `SPAMFILTER_IS_DEV`, which `windows/runner/CMakeLists.txt` sets when `SPAMFILTER_APP_ENV` is not `prod`, the same value
+  as the `[DEV]` window title). Its support folder, and the credential file in it, is therefore the DEV data folder.
+  A production build, including the Store MSIX, keeps `MyEmailSpamFilter` exactly, so no production user's folder moves.
+- The `_Dev` suffix is applied in ONE place, `AppPaths.dataDirectoryPath`, which does not add it when the support folder
+  already ends in it. A DEV executable built before F354 and one built after resolve the same DEV folder. The five
+  callers that appended the suffix by hand now call it (gate: `test/policy/data_dir_suffix_single_source_test.dart`).
+- `DevCredentialSeparation` runs once at startup, before any credential read, in the UI and Task Scheduler paths. It
+  copies the production-named file into the DEV folder so DEV keeps its accounts, renames an earlier DEV file to
+  `flutter_secure_storage.dat.pre_f354_<timestamp>`, and writes `.f354_credentials_separated` only after success. It
+  only reads the production-named file. The file is DPAPI-encrypted for the current Windows user with no extra entropy
+  (`flutter_secure_storage_windows_ffi.dart:404-411`), so the copy decrypts for the same user.
+- The Sprint 19 identity migration (`AppIdentityMigration`) is production-only: the DEV folder has no
+  `.migration_complete` marker, and running it there would copy the old `com.example` data into DEV.
+- Platform exception (ADR-0042, ADR-0049): `PlatformCapabilities.sharesCredentialStoreAcrossEnvironments` -- Windows
+  true; Android false (keystore-backed storage per applicationId, DEV is `com.myemailspamfilter.dev`); iOS false (keychain
+  per bundle ID; no separate iOS DEV build exists).
+
+### Properties preserved
+
+- Production data and credential paths are unchanged (`test/policy/runner_product_name_test.dart`).
+- No credential value is read, logged or written by the separation; it copies bytes.
+- A failed copy leaves no marker and retries at the next launch; the production file is unchanged either way.
 
 ## References
 

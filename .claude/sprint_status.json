@@ -1,23 +1,23 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-11-08T16:41",
+    "_last_updated": "2026-11-13T16:20:26-05:00",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
-        "number": 84,
-        "branch": "feature/20261105_Sprint_84",
-        "status": "Phase 7.7 Final Code Reviews (7.7.1)",
-        "status_detail": "Manual Validation complete 2026-11-07 (Harold q1 = a). 7.7.1 reviews done: Copilot 1 H / 1 L, code-reviewer 3 M / 5 L, silent-failure-hunter 6 M / 13 L, all fixed (0e80c9fb, a71025e0, 9eb90397, d4178c5b, 98477e31) or decided (q1 = c, q2 = a, q3 = a, q4 faster). Retrospective done, Harold all Very Good; improvements applied (3b2550dc, 2a940092, dd2782f0). Improvement review done (21d2171d); CI run 1 42457200807 green. Completion docs written (SPRINT_84_SUMMARY.md, master plan, CHANGELOG, velocity, Executed-by, SPRINT_85_PLAN.md stub). 7.7.5 done 2026-11-08: PR 548 marked ready, CI run 2 42528115315 green on a32aeeaf, PR description final, readiness announced. Waiting on Harold to merge.",
+        "number": 85,
+        "branch": "feature/20261108_Sprint_85",
+        "status": "Phase 5.3 Manual Validation",
+        "status_detail": "Manual Validation handed over 2026-11-13 on Windows DEV 0.25.0+23 (1a1ec264, built 15:42 after the Visual Studio Repair restored the Windows SDK) and Play bundle 0.25.0+23 (322f5c70). 5.1.2, 5.1.5 (sweep-head 1a1ec264) and 5.1.9 markers recorded in SPRINT_85_PLAN.md. Plan approved 2026-11-10; cards #560-#575.",
         "plan_approved": true,
-        "pr_number": 548,
-        "version": "0.24.1+22"
+        "pr_number": 559,
+        "version": "0.25.0+23"
     },
     "previous_sprint": {
-        "number": 83,
-        "branch": "feature/20261031_Sprint_83",
-        "pr_number": 534,
-        "result": "Merged to develop 8bee2ce0 and main (#547) 0a65fd22 on 2026-11-05 (UTC 2026-11-06); tag v0.24.0 (annotated, pushed). Closed by the merge: #535-#546. Open as intended: #509 #510 #523 (Apple).",
-        "docs": "docs/sprints/SPRINT_83_PLAN.md, SPRINT_83_RETROSPECTIVE.md, SPRINT_83_SUMMARY.md"
+        "number": 84,
+        "branch": "feature/20261105_Sprint_84",
+        "pr_number": 548,
+        "result": "Merged to develop cc251012 and main (#558) 962a1b25 on 2026-11-08 (UTC 2026-11-09); tag v0.24.1 (annotated, pushed). Closed by the merge: #549-#557. Open as intended: #509 #510 #523 (Apple).",
+        "docs": "docs/sprints/SPRINT_84_PLAN.md, SPRINT_84_RETROSPECTIVE.md, SPRINT_84_SUMMARY.md"
     },
     "github_issues": {
         "sprint_73": "#428 (open, MV74-1), #422 (open, MV74-3), #430 closed, #434 (open, MV74-2), #431 closed, #432 closed, #433 (open, MV74-3). Also closed in pass 1: #426 (superseded by #428), #427 (leftover captured as F236).",
@@ -35,7 +35,8 @@
         "sprint_82_close": "PR #521 body: Closes #522 #525 #526 #528 #529 #530 #531 #532; Part of #509 #510 #523 #524 #527 (stay open for Sprint 83). Verify after the merge.",
         "sprint_83": "Task 0 #535, Task 1 #524 + #527 (reused), Task 2 #536, Task 3 #537, Task 4 #538, Task 5 #539, Task 6 #540, Task 7 #541, Task 8 #542, Task 9 #543, Task 10 #544, Task 11 #545, Task 12 #546",
         "sprint_84": "Task 0 #549, Task 1 #550, Task 2 #551, Task 3 #552, Task 4 #553, Task 5 #554, Task 6 #555, Task 7 #556, Task 8 #557",
-        "sprint_84_close": "PR #548 body: Closes #549-#557. #550 (MV-3c carried to the Sprint 85 stub) and #553 (remainder on F341) close with the merge; their open work is tracked in the stub and the master plan. Open as intended: #509 #510 #523 (Apple)."
+        "sprint_84_close": "PR #548 body: Closes #549-#557. #550 (MV-3c carried to the Sprint 85 stub) and #553 (remainder on F341) close with the merge; their open work is tracked in the stub and the master plan. Open as intended: #509 #510 #523 (Apple).",
+        "sprint_85": "Task 0 #560, Task 1 #561, Task 2 #562 (F350), Task 3 #563 (F352), Task 4 #564 (F354), Task 5 #565 (F355), Task 6 #566 (F357), Task 7 #567 (F341), Task 8 #568 (F307), Task 9 #569 (F329), Task 10 #570 (F330), Task 11 #571 (F331), Task 12 #572 (F332), Task 13 #573 (F333), Task 14 #574 (F334), Task 15 #575 (F335)"
     },
     "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
     "test_metrics": {
@@ -58,7 +59,8 @@
         "status_0_18_0": "LIVE on BOTH (Harold, 2026-10-10). Fold device-verified (Version 0.18.0 screenshots, log env=prod v0.18.0). Windows: installed Store build shows Version 0.18.0, no [DEV]; Partner Center page not observed. STORE_VERSION_STATUS updated with the 0.19.0+16 bump.",
         "status_0_20_0": "BUILT + VERIFIED 2026-10-18, SUBMITTED to BOTH stores, in process (Harold, 2026-10-18 ~11:39pm ET; consoles not observed by Claude; not seen live). MSIX 0.20.0.0 from the prod worktree at main ff58da3 (tag v0.20.0): D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix (17.7 MB, release self-test 6/6 PASS, manifest Identity 0.20.0.0). AAB 0.20.0 versionCode 17: D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app\\dist\\android-0.20.0+17\\app-prod-release.aab (67.8 MB, versionName 0.20.0, no .dev, OAuth scheme present, no AD_ID). Notes: docs/store-assets/RELEASE_NOTES_0.20.0_windows.md and _play.md (gate passed).",
         "status_0_19_0": "MSIX 0.19.0.0 and AAB 0.19.0 (versionCode 16) SUBMITTED 2026-10-13, certification in process (Harold's report; not observed live). See docs/STORE_VERSION_STATUS.md.",
-        "status_0_21_0": "INSTALLED from both stores 2026-10-24 (Harold: prod Windows shows Version 0.21.0, no [DEV]; \"phone app updated to 0.21.0\"). Built + verified 2026-10-23. MSIX 0.21.0.0 (main 2d81264a, self-test 6/6, 17.8 MB) and AAB versionCode 18 (68.0 MB). See docs/STORE_VERSION_STATUS.md."
+        "status_0_21_0": "INSTALLED from both stores 2026-10-24 (Harold: prod Windows shows Version 0.21.0, no [DEV]; \"phone app updated to 0.21.0\"). Built + verified 2026-10-23. MSIX 0.21.0.0 (main 2d81264a, self-test 6/6, 17.8 MB) and AAB versionCode 18 (68.0 MB). See docs/STORE_VERSION_STATUS.md.",
+        "status_0_24_1": "BUILT + VERIFIED 2026-11-08/09, SUBMITTED to both stores, in process (Harold, 2026-11-10); not observed live. MSIX 0.24.1.0 from the prod worktree at main 962a1b25 (tag v0.24.1): self-test 6/6 PASS, manifest 0.24.1.0, 17.8 MB, D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix. AAB 0.24.1 versionCode 22 (68.4 MB, versionName 0.24.1, no .dev, OAuth scheme present, targetSdk 36, no AD_ID): D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app\\dist\\android-0.24.1+22\\app-prod-release.aab. Notes: docs/store-assets/RELEASE_NOTES_0.24.1_windows.md and _play.md."
     },
     "environment_notes": [
         "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
@@ -67,9 +69,8 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "7.7.5 DONE 2026-11-08 (CI run 2 42528115315 green). Harold reviews and merges PR 548.",
-        "After merge (Harold): open the Sprint 85 branch from feature/20261105_Sprint_84; verify #549-#557 closed; Phase 8 (main merge, refinement pass 1, 0.24.1 store release, pass 2).",
-        "Phase 8 carry-ins: the F342 Fold check after 0.24.1 (feeds F357), MV-3c when a YELLOW item appears; Harold reboots before F355."
+        "Harold runs MV-1 to MV-7 (SPRINT_85_PLAN.md 'Manual Validation (Phase 5.3)') and answers the held decisions.",
+        "Then Phase 7.7.1: Copilot review requested by hand plus code-reviewer and silent-failure-hunter on draft PR #559, in the same turn as the retrospective prompt."
     ],
     "next_sprint_targeted": {
         "number": 85,

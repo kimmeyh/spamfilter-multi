@@ -34,6 +34,7 @@ void main() {
       expect(windows.hasDesktopWindow, isTrue);
       expect(windows.hasSystemTray, isTrue);
       expect(windows.canBeMsixPackaged, isTrue);
+      expect(windows.sharesCredentialStoreAcrossEnvironments, isTrue);
       expect(windows.backgroundScanMechanism,
           BackgroundScanMechanism.taskScheduler);
       expect(windows.hasNewMailNotificationTrigger, isFalse);
@@ -62,6 +63,7 @@ void main() {
       expect(android.hasDesktopWindow, isFalse);
       expect(android.hasSystemTray, isFalse);
       expect(android.canBeMsixPackaged, isFalse);
+      expect(android.sharesCredentialStoreAcrossEnvironments, isFalse);
       expect(android.backgroundScanMechanism,
           BackgroundScanMechanism.workManager);
       expect(android.hasNewMailNotificationTrigger, isTrue);
@@ -91,6 +93,7 @@ void main() {
       expect(ios.hasDesktopWindow, isFalse);
       expect(ios.hasSystemTray, isFalse);
       expect(ios.canBeMsixPackaged, isFalse);
+      expect(ios.sharesCredentialStoreAcrossEnvironments, isFalse);
       expect(ios.backgroundScanMechanism, BackgroundScanMechanism.bgAppRefresh);
       expect(ios.hasNewMailNotificationTrigger, isFalse);
       expect(ios.socketsCloseWhenBackgrounded, isTrue);

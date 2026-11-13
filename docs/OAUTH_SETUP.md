@@ -67,7 +67,7 @@ Copy the SHA-1 value (format: `XX:XX:XX:XX:...`)
 
 ```powershell
 cd mobile-app/scripts
-.\build-with-secrets.ps1 -BuildType debug -InstallToEmulator -StartEmulator
+python build-with-secrets.py --build-type debug --install-to-emulator --start-emulator
 ```
 
 ### Step 5: Enable the Custom URI scheme on the Android OAuth client (F211, REQUIRED)
@@ -124,7 +124,7 @@ cause of F211 than the scheme setting was.
 
 **WHICH CLIENT THE PLAY BUILD ACTUALLY USES** (settled by Harold, 2026-09-14):
 
-`build-with-secrets.ps1` passes `--dart-define-from-file=secrets.dev.json` for EVERY build
+`build-with-secrets.py` passes `--dart-define-from-file=secrets.dev.json` for EVERY build
 including release, and `secrets.prod.json` does not exist in the dev worktree at all -- so a Play
 bundle is always built with the DEV worktree credentials. The two worktrees hold DIFFERENT Android
 client ids (dev `577022808534-0ejd...`, prod `577022808534-v94j...`).

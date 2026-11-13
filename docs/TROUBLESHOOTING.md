@@ -226,9 +226,9 @@ At line:1 char:108
 .\build-windows.ps1 -RunAfterBuild:$false              # Build without running
 .\build-windows.ps1 -Clean:$false                      # Skip clean step
 
-# build-with-secrets.ps1
-.\build-with-secrets.ps1 -BuildType debug -InstallToEmulator
-.\build-with-secrets.ps1 -BuildType release -Run
+# build-with-secrets.py
+python build-with-secrets.py --build-type debug --install-to-emulator
+python build-with-secrets.py --build-type debug --run
 ```
 
 **PowerShell Parameter Types**:
@@ -447,10 +447,10 @@ echo | openssl s_client -connect github.com:443 -servername github.com 2>/dev/nu
 
 **Claude Code MCP Tools**:
 - Custom MCP server for email rule testing (`scripts/email-rule-tester-mcp/`)
-- YAML validation script (`scripts/validate-yaml-rules.ps1`)
-- Regex pattern tester (`scripts/test-regex-patterns.ps1`)
+- YAML validation script (`scripts/validate-yaml-rules.py`)
+- Regex pattern tester (`scripts/test-regex-patterns.py`)
 - 10 custom skills, each a directory under `.claude/skills/` containing a `SKILL.md` (there is no `.claude/skills.json`)
-- 3 enforcement hooks as `.ps1` scripts under `.claude/hooks/`, registered in `.claude/settings.json` (there is no `.claude/hooks.json`): `sprint-auto-advance`, `block-carry-forward-stash`, `verify-closeout-complete`. A fourth script, `run-test-cases.ps1`, is the hooks' own test harness, not a hook.
+- 8 enforcement hooks as `.py` scripts under `.claude/hooks/` (Python since ADR-0051), registered in `.claude/settings.json` (there is no `.claude/hooks.json`): `sprint-auto-advance`, `verify-closeout-complete` (Stop) and `block-carry-forward-stash`, `require-sprint-cards`, `block-heredoc-python-backslash`, `block-blind-staging`, `warn-commit-without-velocity`, `block-commit-during-mutation` (PreToolUse). `run-test-cases.py` is the hooks' own test harness, not a hook.
 
 **Build Script Enhancements**:
 - `-StartEmulator`: Auto-start Android emulator if none running
@@ -607,7 +607,7 @@ echo | openssl s_client -connect github.com:443 -servername github.com 2>/dev/nu
 
 **Solution**: Validate patterns with:
 ```powershell
-.\scripts\validate-yaml-rules.ps1 -TestRegex
+python scripts/validate-yaml-rules.py --test-regex
 ```
 
 ### UI updates too frequently during scan
@@ -700,7 +700,7 @@ flutter test
 
 **BLUF: these lines are NOT a build failure. Read the LAST line of the build
 output, and nothing else, to decide pass or fail.** A good build prints
-`[INFO] Build successful!` from `build-with-secrets.ps1` and `Built
+`[INFO] Build successful!` from `build-with-secrets.py` and `Built
 build\app\outputs\flutter-apk\app-prod-debug.apk` from Flutter, with dozens of
 these stack traces above it.
 
@@ -738,7 +738,7 @@ drives. The daemon's own log, with the full suppressed trace, is at
 "failures" were builds interrupted by the person diagnosing them, after reading
 the lines above as fatal while the build was still running:
 
-- `build-with-secrets.ps1` runs `gradlew --stop` at startup (line 325). **Starting
+- `build-with-secrets.py` runs `gradlew --stop` at startup. **Starting
   a second build while one is running stops the first one's daemon**; the first
   then dies with `Gradle build daemon has been stopped: stop command received`.
 - `Stop-Process` on `java` mid-build ends the build with exit code 1 and NO
@@ -758,7 +758,7 @@ the lines above as fatal while the build was still running:
 
 **Applied in Sprint 83 (F237): `kotlin.incremental=false`** in
 `mobile-app/android/gradle.properties`. Measured on two release AAB builds
-through `build-with-secrets.ps1 -BuildType release -Output aab`, one after the
+through `build-with-secrets.py --build-type release --output aab`, one after the
 other with nothing else building (2026-11-04):
 
 - Current settings: 570 s, exit 0, 30 daemon trace lines.

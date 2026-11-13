@@ -203,7 +203,7 @@ For any sprint item that adds a capability **X** on top of an external tool **Y*
   8. **Build and Launch Application** (MANDATORY - Phase 5.3 in SPRINT_EXECUTION_WORKFLOW.md)
      - Claude Code MUST build and launch the app BEFORE declaring ready for manual validation
      - Windows: `cd mobile-app/scripts && .\build-windows.ps1`
-     - Android: `cd mobile-app/scripts && .\build-with-secrets.ps1 -BuildType debug -InstallToEmulator`
+     - Android: `cd mobile-app/scripts && python build-with-secrets.py --build-type debug --install-to-emulator`
      - Verify build succeeds and app launches without errors
      - User should NOT have to build the app themselves
 
@@ -447,7 +447,7 @@ Bold = mandatory. _Italic_ = optional (include only when the trigger applies). T
      gap tracked the prompt more than the model.
      DELEGATION CHECKLIST:
        1. Run every new or changed test file and report the pass count.
-       2. Mutation-check each test with scripts/mutation-test.ps1 (specs written with
+       2. Mutation-check each test with scripts/mutation-test.py (specs written with
           the Write tool); every mutant must COMPILE and be KILLED -- INVALID or
           SURVIVED means the work is not done.
        3. Prove the test can fail on the real path: a test that passes with the

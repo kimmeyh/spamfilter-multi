@@ -26,6 +26,24 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-11-10 (Sprint 85)
+
+- **fix**: On a phone, the Select Account rows now show the account address in full. The row buttons moved to their own line under the account details, and "Sign In Again" sits under its reason. Before, an account that needed sign-in showed its address one letter per line down the screen (Issue #563)
+- **fix**: If the app cannot read your saved accounts at startup, it keeps your default account instead of removing it (Issue #563)
+- **feat**: You can now choose one of your email accounts as the default on the Select Account screen. The app opens on that account, so Settings and scans no longer ask which account to use. You can remove the default at any time, and deleting the default account clears it (Issue #563)
+- **fix**: Windows development builds keep their own account sign-ins. A development build and the Microsoft Store app shared one credential file, so removing an account in a development build also removed it from the installed app. Development builds now copy the sign-ins once into their own folder and never change the installed app's file (Issue #564)
+- **chore**: Version 0.25.0+23 for Sprint 85, so a tester can tell this build from the 0.24.1 store builds (Issue #560)
+- **chore**: the hook test runner, `test-hook`, `mutation-test` and the repo status footer ported to Python; the five unused PowerShell hook copies and the mutation-lock and agent-work-status shims deleted (ADR-0051). The runner now fails on an unknown case type, an empty route or zero cases instead of passing; `mutation-test` reports a Python syntax-error mutant as INVALID and a check that runs too long as TIMED OUT. A new test makes `git` and `gh` fail and proves every hook still shows a notice (Issue #569)
+- **chore**: `clean-temp-scripts`, `run-full-suite`, `validate-yaml-rules` and `test-regex-patterns` ported to Python (ADR-0051). `validate-yaml-rules` now reports an invalid regex and exits 1 (the PowerShell version lost every error through a variable-scope defect), and finds the rule files under `mobile-app/assets/rules/` when run with no arguments (Issue #570)
+- **chore**: `install-custom-mcp`, `setup-claude-mcp` and `start-test-imap-servers` ported to Python (ADR-0051). The MCP set-up now writes `~/.claude.json`, the file Claude Code reads, with a backup first, and refuses a configuration file it cannot parse; the test-server start fails on a busy port instead of reporting success (Issue #571)
+- **chore**: `phone-log-health` and the R76 battery arm ported to Python (ADR-0051) (Issue #572)
+- **chore**: the log-redaction, version-consistency, content-manifest, AAB Play-requirements and IANA TLD scripts ported to Python (ADR-0051). The IANA updater now refuses a download that is not a valid TLD list, instead of overwriting the tracked file with it (Issue #573)
+- **chore**: the Android build scripts ported to Python: `build-with-secrets.py` (same checks: SEC-9 client id property, release signing, versionCode above the last Play upload, F204 bundle check, `dist\` copy) and `build-apk.py`, which now makes a signed, credentialed APK. `build-with-secrets-clean.ps1` was deleted: it could not build a working release. The build no longer prints the client id prefix or the AOL address, and a bundle that fails the F204 check is no longer copied to `dist\` (ADR-0051) (Issue #575)
+- **chore**: `run-tests`, `check_scans` and `generate-test-emails` ported to Python; `run-integration-tests`, `monitor-tests` and `test-background-scan-skip` ported and proven side by side, originals deleted; `build-windows.ps1 -RunIntegrationTests` now runs the Python check and fails if the check script is missing (ADR-0051) (Issue #574)
+- **chore**: `scripts/test-inventory.py` lists every test artifact with a likelihood x impact risk tier; a policy test keeps it complete; CI now runs the Python script tests on Linux (Issue #562)
+
+## [0.24.1] - 2026-11-08
+
 ### 2026-11-08 (Sprint 84 final code reviews and retrospective)
 
 - **chore**: The close-out Stop hook always answers inside its 20 second limit: its two `gh` calls run at the same time, all `git` and `gh` calls share one 15 second budget, a timed-out call ends its whole process tree on Windows, and a watchdog ends the hook at 17 seconds with "close-out NOT verified"; a check with no time left says it did not run (Sprint 84 retrospective q4 and improvement review)

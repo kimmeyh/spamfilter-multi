@@ -26,7 +26,7 @@ cd scripts
 ### Android
 ```powershell
 cd scripts
-.\build-with-secrets.ps1 -BuildType debug -InstallToEmulator -StartEmulator -SkipUninstall
+python build-with-secrets.py --build-type debug --install-to-emulator --start-emulator --skip-uninstall
 ```
 
 **Flags**:

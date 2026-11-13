@@ -14,7 +14,7 @@
 // depending on a saved account in the account-selection chain.
 //
 // Run: flutter test integration_test/rule_lifecycle_test.dart
-//   (or .\scripts\run-integration-tests.ps1 -TestName lifecycle)
+//   (or python scripts\run-integration-tests.py --test-name lifecycle)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

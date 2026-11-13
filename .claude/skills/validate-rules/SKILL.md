@@ -12,7 +12,7 @@ Validates the YAML rule files used for spam filtering.
 
 ## Instructions
 
-Run the PowerShell validation script to check rules.yaml and rules_safe_senders.yaml for:
+Run the Python validation script to check rules.yaml and rules_safe_senders.yaml for:
 - YAML syntax errors
 - Invalid regex patterns
 - Missing required fields
@@ -20,9 +20,14 @@ Run the PowerShell validation script to check rules.yaml and rules_safe_senders.
 
 ## Command
 
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate-yaml-rules.ps1
+```bash
+python scripts/validate-yaml-rules.py
 ```
+
+With no arguments it checks `rules.yaml` and `rules_safe_senders.yaml` in the current folder when they exist there,
+otherwise the repository copies in `mobile-app/assets/rules/`. Options: `--rules-file PATH`,
+`--safe-senders-file PATH`, `--test-regex`. Exit code 0 means no errors (warnings and "not checked" patterns are
+listed); exit code 1 means at least one error.
 
 ## When to Use
 

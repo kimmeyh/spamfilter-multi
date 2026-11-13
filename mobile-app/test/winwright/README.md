@@ -77,6 +77,11 @@ title and closes it at end-of-run. Consequences for script authors:
    .\enable-screen-reader-flag.ps1 enable
    ```
 
+   **A blank tree or an all-white screenshot is not evidence that the app is blank** (Sprint 85, F354 check). With the
+   flag off, the tree holds only the title bar. With the monitor asleep, `ww_screenshot` returns a white client area
+   and a .NET `CopyFromScreen` fails with "The handle is invalid", while the app is fully built. Turn the flag on and
+   read the tree (`ww_get_snapshot`) before concluding anything from a picture; turn it off afterwards.
+
 3. **WinWright doctor passes**:
    ```powershell
    C:\Tools\WinWright\Civyk.WinWright.Mcp.exe doctor
@@ -404,7 +409,7 @@ robustly. See `docs/ALL_SPRINTS_MASTER_PLAN.md` items F76 (why abandoned) and F9
 **Default sweep (post-F100): empty.** The 6 read-only scripts that formed the default sweep
 (navigation, settings_tabs, scan_history, text_selection, f25_rule_test_tool, f35_rule_edit) were
 RETIRED in Sprint 43 (F100) -- their coverage moved to `integration_test/read_only_flows_test.dart`
-(in-VM `pumpAndSettle`, run via `.\scripts\run-integration-tests.ps1`). The remaining WinWright scripts
+(in-VM `pumpAndSettle`, run via `python scripts\run-integration-tests.py`). The remaining WinWright scripts
 (`test_f56_*`, `test_f37_folder_selector`) cross a Flutter dialog/picker-settle boundary the WinWright
 `run` script-runner cannot bridge (no `ww_wait`/`ww_assert`), so they were already EXCLUDED from the
 sweep and their reliable execution lives in F99; they remain runnable explicitly (`-TestName f56` /

@@ -28,7 +28,7 @@ Run the automated setup script:
 
 ```powershell
 cd scripts
-.\setup-claude-mcp.ps1 -InstallAll
+python setup-claude-mcp.py --install-all
 ```
 
 ### Manual Setup
@@ -80,7 +80,7 @@ Ask Claude Code:
 
 ### YAML Rule Validator
 
-**File**: `scripts/validate-yaml-rules.ps1`
+**File**: `scripts/validate-yaml-rules.py`
 
 **Features**:
 - YAML syntax checking
@@ -92,14 +92,15 @@ Ask Claude Code:
 **Usage**:
 
 ```powershell
-# Validate default files (rules.yaml + rules_safe_senders.yaml)
-.\scripts\validate-yaml-rules.ps1
+# Validate default files (rules.yaml + rules_safe_senders.yaml in the current folder,
+# else mobile-app/assets/rules/)
+python scripts/validate-yaml-rules.py
 
-# Test regex patterns against samples
-.\scripts\validate-yaml-rules.ps1 -TestRegex
+# List the sample headers (sample matching is not implemented)
+python scripts/validate-yaml-rules.py --test-regex
 
 # Custom file paths
-.\scripts\validate-yaml-rules.ps1 -RulesFile "path/to/rules.yaml" -SafeSendersFile "path/to/safe_senders.yaml"
+python scripts/validate-yaml-rules.py --rules-file "path/to/rules.yaml" --safe-senders-file "path/to/safe_senders.yaml"
 ```
 
 **Example Output**:
@@ -111,7 +112,7 @@ Ask Claude Code:
   [OK] Found 12 safe sender patterns, 12 valid
   [DUPLICATE WARNING] Found 1 duplicate patterns
 
-[3/3] Skipping regex testing (use -TestRegex to enable)
+[3/3] Skipping regex testing (use --test-regex to enable)
 
 ✓ All validations passed!
 Warnings: 1
@@ -119,7 +120,7 @@ Warnings: 1
 
 ### Regex Pattern Tester
 
-**File**: `scripts/test-regex-patterns.ps1`
+**File**: `scripts/test-regex-patterns.py`
 
 **Features**:
 - Test regex against sample strings
@@ -132,21 +133,21 @@ Warnings: 1
 
 ```powershell
 # Test single pattern
-.\scripts\test-regex-patterns.ps1 `
-  -Pattern "^[^@\s]+@(?:[a-z0-9-]+\.)*example\.com$" `
-  -TestString "user@example.com"
+python scripts/test-regex-patterns.py `
+  --pattern "^[^@\s]+@(?:[a-z0-9-]+\.)*example\.com$" `
+  --test-string "user@example.com"
 
 # Test with multiple strings from file
-.\scripts\test-regex-patterns.ps1 `
-  -Pattern ".*urgent.*" `
-  -File "test-emails.txt" `
-  -ShowMatches
+python scripts/test-regex-patterns.py `
+  --pattern ".*urgent.*" `
+  --file "test-emails.txt" `
+  --show-matches
 
 # Performance test
-.\scripts\test-regex-patterns.ps1 `
-  -Pattern "^.*@spam.*\.com$" `
-  -TestString "spam@spam.com" `
-  -PerformanceTest
+python scripts/test-regex-patterns.py `
+  --pattern "^.*@spam.*\.com$" `
+  --test-string "spam@spam.com" `
+  --performance-test
 ```
 
 **Example Output**:
@@ -445,7 +446,7 @@ Claude will use `test_regex_pattern` tool and show performance analysis.
    ```
 3. Test hook manually:
    ```powershell
-   .\scripts\validate-yaml-rules.ps1
+   python scripts/validate-yaml-rules.py
    ```
 4. Check Claude Code settings for hook configuration
 
@@ -454,7 +455,7 @@ Claude will use `test_regex_pattern` tool and show performance analysis.
 **Symptom**: Running `/skill deploy-debug` fails
 
 **Solutions**:
-1. Verify `scripts/build-with-secrets.ps1` exists
+1. Verify `scripts/build-with-secrets.py` exists
 2. Check working directory in skill definition
 3. Use absolute paths in `.claude/skills.json`
 4. Test command manually in PowerShell
@@ -465,7 +466,7 @@ Claude will use `test_regex_pattern` tool and show performance analysis.
 
 **Solutions**:
 1. Check pattern against known-bad patterns list
-2. Run performance test: `.\scripts\test-regex-patterns.ps1 -PerformanceTest`
+2. Run performance test: `python scripts/test-regex-patterns.py --pattern <pattern> --performance-test`
 3. If false positive, consider pattern rewrite for clarity
 4. Add note in `rules.yaml` explaining complex pattern
 
@@ -477,7 +478,7 @@ After setup, verify:
 
 - [ ] GitHub MCP server connected (ask: "List my repos")
 - [ ] Email Rule Tester MCP server running (ask: "Validate my rules.yaml")
-- [ ] Validation scripts executable (`.\scripts\validate-yaml-rules.ps1`)
+- [ ] Validation scripts run (`python scripts/validate-yaml-rules.py`)
 - [ ] Skills available in Claude Code (`/skill` shows list)
 - [ ] Hooks enabled (check `.claude/hooks.json`)
 - [ ] Pre-commit hook validates YAML (test with dummy commit)

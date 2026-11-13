@@ -77,7 +77,7 @@ Write-Host "   8. Paste them into the Android app's 'Manual Token Entry' screen"
 Write-Host ""
 
 Write-Host "Option 2: Re-authenticate on Android" -ForegroundColor Cyan
-Write-Host "   1. Build the APK with secrets: .\scripts\build-with-secrets.ps1 -InstallToEmulator" -ForegroundColor Gray
+Write-Host "   1. Build the APK with secrets: python .\scripts\build-with-secrets.py --install-to-emulator" -ForegroundColor Gray
 Write-Host "   2. In the Android app, use 'Sign in with WebView' or 'Manual Token Entry'" -ForegroundColor Gray
 Write-Host "   3. The app will use the same Desktop OAuth client as Windows" -ForegroundColor Gray
 Write-Host ""

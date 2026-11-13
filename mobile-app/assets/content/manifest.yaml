@@ -1,6 +1,6 @@
 # Sprint 38 F85 (ADR-0038): asset manifest mapping content keys to .md files.
 #
-# Maintained by hand. The validator at scripts/validate-content-manifest.ps1
+# Maintained by hand. The validator at scripts/validate-content-manifest.py
 # asserts:
 #   1. Every key resolves to an existing .md file under assets/content/
 #   2. Every .md file under assets/content/ is referenced by exactly one key

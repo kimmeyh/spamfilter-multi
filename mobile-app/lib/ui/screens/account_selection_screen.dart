@@ -105,6 +105,13 @@ class AccountSelectionScreen extends StatefulWidget {
   @visibleForTesting
   static Future<bool> Function(String accountId)? debugReadSignInRequired;
 
+  /// F352 (ADR-0052): the mark on the default account's row, and the tooltips
+  /// of the per-row control. The label's one source is
+  /// [SettingsScreen.defaultAccountLabel], so both screens say the same words.
+  static const String defaultAccountLabel = SettingsScreen.defaultAccountLabel;
+  static const String setDefaultTooltip = 'Set as default';
+  static const String removeDefaultTooltip = 'Remove default';
+
   /// Sprint 83 7.7.1: the line under an account whose sign-in flag could not
   /// be read. Public so tests pin the words.
   static const String signInUnknownText =
@@ -118,6 +125,10 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
   final _credStore = SecureCredentialsStore();
   final _logger = Logger();
   List<String> _savedAccounts = [];
+  /// F352 (ADR-0052): the stored default account, or null for "no default".
+  /// Mirrors `SettingsStore.getDefaultAccountId`; this screen is the only
+  /// place the default is set.
+  String? _defaultAccountId;
   bool _isLoading = true;
   String? _error;
   DateTime _lastReloadTime = DateTime.now().subtract(const Duration(seconds: 5));
@@ -174,10 +185,20 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       if (!mounted) return;
       
       final accounts = await _credStore.getSavedAccounts();
-      
+
+      // F352: an unreadable default shows as "no default" for this refresh
+      // and is logged; the list itself still loads.
+      String? defaultId;
+      try {
+        defaultId = await SettingsStore().getDefaultAccountId();
+      } catch (e) {
+        _logger.w('F352: could not read the default account: $e');
+      }
+
       if (!mounted) return;
-      
+
       setState(() {
+        _defaultAccountId = defaultId;
         _savedAccounts = accounts;
         _isLoading = false;
         _error = null; // Clear any previous errors
@@ -803,6 +824,32 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
     if (mounted) setState(() => _accountDataCache.remove(accountId));
   }
 
+  /// F352 (ADR-0052): make [accountId] the default account, or remove the
+  /// default when it already is. Changes only the stored default; the session
+  /// selection is untouched (it seeds from the default at the next start).
+  Future<void> _toggleDefault(String accountId) async {
+    final remove = _defaultAccountId == accountId;
+    try {
+      final store = SettingsStore();
+      if (remove) {
+        await store.clearDefaultAccountId();
+      } else {
+        await store.setDefaultAccountId(accountId);
+      }
+    } catch (e) {
+      _logger.e('F352: could not save the default account: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not save the default account: $e')),
+        );
+      }
+      return;
+    }
+    if (mounted) {
+      setState(() => _defaultAccountId = remove ? null : accountId);
+    }
+  }
+
   Future<void> _deleteAccount(String accountId) async {
     final email = accountId; // accountId is the email
 
@@ -1086,6 +1133,10 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                                     Theme.of(context).colorScheme.onErrorContainer,
                               ),
                             ),
+                            // F352: no default star here on purpose. This row
+                            // cannot scan, and its one action, delete, also
+                            // clears a default on it (DataDeletionService,
+                            // same transaction). Sprint 85 5.1.2 L7.
                             trailing: IconButton(
                               icon: const Icon(Icons.delete_outline),
                               onPressed: () => _deleteAccount(accountId),
@@ -1116,6 +1167,45 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                       // email/provider/auth text into ONE named, tappable node
                       // while leaving the trailing icon buttons (which carry
                       // their own tooltips) individually addressable.
+                      //
+                      // Sprint 85 MV rehearsal: on a phone the three action
+                      // icons (144 dp) in `trailing` left the title 80 dp at
+                      // 360 dp, and with "Sign In Again" beside them about
+                      // 0 dp. Below 600 dp they move to their own line under
+                      // the subtitle; wider screens keep them on the right
+                      // (account_row_phone_width_test.dart).
+                      final narrow = MediaQuery.sizeOf(context).width < 600;
+                      final actions = Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Icons only: a text button here squeezes the title.
+                          // F352 (ADR-0052): set or remove the default.
+                          IconButton(
+                            key: Key('default_toggle_$accountId'),
+                            icon: Icon(_defaultAccountId == accountId
+                                ? Icons.star
+                                : Icons.star_border),
+                            onPressed: () => _toggleDefault(accountId),
+                            tooltip: _defaultAccountId == accountId
+                                ? AccountSelectionScreen.removeDefaultTooltip
+                                : AccountSelectionScreen.setDefaultTooltip,
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.play_arrow,
+                                color: Colors.green),
+                            onPressed: () => _selectAccount(accountId,
+                                platformId: displayData.platformId,
+                                accountEmail: displayData.email),
+                            tooltip: 'Start Scan',
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline),
+                            onPressed: () => _deleteAccount(accountId),
+                            tooltip: 'Delete account',
+                            color: Colors.red[300],
+                          ),
+                        ],
+                      );
                       return Semantics(
                         container: true,
                         button: true,
@@ -1125,7 +1215,9 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                         // live build, Sprint 51). Excluding descendants makes
                         // this row announce as ONE named, tappable element.
                         excludeSemantics: true,
-                        label: '${displayData.email} - $platformName - $authMethod',
+                        label: '${displayData.email} - $platformName - '
+                            '$authMethod'
+                            '${_defaultAccountId == accountId ? ' - default account' : ''}',
                         hint: 'Select account to scan',
                         // onTap on the SEMANTICS node is mandatory whenever
                         // excludeSemantics drops the child's own gesture node:
@@ -1176,6 +1268,19 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                                         : Colors.grey[600],
                                   ),
                                 ),
+                                // F352 (ADR-0052): the default account's mark.
+                                if (_defaultAccountId == accountId)
+                                  Text(
+                                    AccountSelectionScreen.defaultAccountLabel,
+                                    key: Key('default_mark_$accountId'),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary,
+                                    ),
+                                  ),
                                 if (displayData.signInStateUnknown)
                                   Text(
                                     AccountSelectionScreen.signInUnknownText,
@@ -1184,6 +1289,18 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                                       fontSize: 12,
                                       color: Colors.grey[600],
                                     ),
+                                  ),
+                                // F239 / R-4: the repair action sits under its
+                                // reason, NOT beside the action icons (see
+                                // `actions` above: with them it left the title
+                                // about 0 dp on a 412 dp phone).
+                                if (displayData.signInRequired ||
+                                    displayData.signInStateUnknown)
+                                  TextButton(
+                                    key: Key('sign_in_again_$accountId'),
+                                    onPressed: () => _signInAgain(
+                                        accountId, displayData.platformId),
+                                    child: const Text(SignInAgain.label),
                                   ),
                                 // R-1 (Sprint 83, F324).
                                 if (!displayData.backgroundEnabled)
@@ -1207,35 +1324,15 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                                       ),
                                     ],
                                   ),
+                                if (narrow)
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: actions,
+                                  ),
                               ],
                             ),
                           ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (displayData.signInRequired ||
-                                  displayData.signInStateUnknown)
-                                TextButton(
-                                  key: Key('sign_in_again_$accountId'),
-                                  onPressed: () => _signInAgain(
-                                      accountId, displayData.platformId),
-                                  child: const Text(SignInAgain.label),
-                                ),
-                              IconButton(
-                                icon: const Icon(Icons.play_arrow, color: Colors.green),
-                                onPressed: () => _selectAccount(accountId,
-                                    platformId: displayData.platformId,
-                                    accountEmail: displayData.email),
-                                tooltip: 'Start Scan',
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete_outline),
-                                onPressed: () => _deleteAccount(accountId),
-                                tooltip: 'Delete account',
-                                color: Colors.red[300],
-                              ),
-                            ],
-                          ),
+                          trailing: narrow ? null : actions,
                           onTap: () => _selectAccount(accountId,
                               platformId: displayData.platformId,
                               accountEmail: displayData.email),

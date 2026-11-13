@@ -203,7 +203,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 **Sprint 74 scope -- COMPLETE 2026-09-29 (PR #440)** (Phase 8.4 pass 2, selected by Harold 2026-09-24): MV74-1 (#428), MV74-2 (#434), MV74-3 (#422, #433), F202 (#438), F222 (#437), F232 (#422), F206 (#439), F205 (#433). Plan: `docs/sprints/SPRINT_74_PLAN.md`.
 
-**Last Reviewed**: November 5, 2026 (Sprint 83 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #534 merged to develop (8bee2ce0) and main (#547, 0a65fd22), tagged v0.24.0; Sprint 84 branch opened from the Sprint 83 branch; #535-#546 closed by the merge and #509, #510, #523 stayed open as intended (Apple); Sprint 83 plan, retrospective and summary present; Sprint 84 stub present; shipped cards were pruned at close-out (F237, F270, F303, F305, F308-F310, F315, F321-F325).) Previous: October 31, 2026 (Sprint 82 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #521 merged to develop (f34be0d7) and main (#533, 8f588043), tagged v0.23.0; Sprint 83 branch opened from the Sprint 82 branch; #522, #525, #526, #528-#532 closed by the merge and #509, #510, #523, #524, #527 stayed open as intended (PR body "Part of"); Sprint 82 plan, retrospective and summary present; Sprint 83 stub present; shipped cards were pruned at close-out (F306, F312, F314, F317-F320); F67c and F67d targets corrected to "after Apple approval", because both need the F67b device check, which waits on enrollment `R6QG2A9SHS`.) Previous: October 27, 2026 (Sprint 81 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #507 merged to develop (b79fa361) and main (#520, 763753be); Sprint 82 branch opened from the Sprint 81 branch; #508 and #511-#519 closed by the merge and #509/#510 stayed open as intended (PR body "Part of"); Sprint 81 plan, retrospective and summary present; Sprint 82 stub present; shipped cards pruned: F302, F259, F278, F271, F300, F301; F303, F67a, F67b trimmed to their remainders.) Previous: October 23, 2026 (Sprint 80 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #490 merged to develop (f301cdee) and main (#506, 2d81264a), tagged v0.21.0; Sprint 81 branch opened from the Sprint 80 branch; only #491 closed on merge -- the PR body used 'Closes #491, #492, ...', and GitHub applies the keyword to the first issue only, so the template now uses one keyword per card and the other 18 are closed by hand; Sprint 80 plan, retrospective and summary present; Sprint 81 stub present; F205 pruned (classified in Sprint 80 Task 1 R-7); F300's acceptance criterion moved back from F301; F246 and F259 given effort, Phase and Platform.)
+**Last Reviewed**: November 8, 2026 (Sprint 84 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #548 merged to develop (cc251012) and main (#558, 962a1b25), tagged v0.24.1; Sprint 85 branch opened from the Sprint 84 branch; #549-#557 closed by the merge and #509, #510, #523 stayed open as intended (Apple); Sprint 84 plan, retrospective and summary present; Sprint 85 stub present; shipped cards were pruned at close-out (F280, F326, F327, F328, F342, F345).) Previous: November 5, 2026 (Sprint 83 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #534 merged to develop (8bee2ce0) and main (#547, 0a65fd22), tagged v0.24.0; Sprint 84 branch opened from the Sprint 83 branch; #535-#546 closed by the merge and #509, #510, #523 stayed open as intended (Apple); Sprint 83 plan, retrospective and summary present; Sprint 84 stub present; shipped cards were pruned at close-out (F237, F270, F303, F305, F308-F310, F315, F321-F325).) Previous: October 31, 2026 (Sprint 82 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #521 merged to develop (f34be0d7) and main (#533, 8f588043), tagged v0.23.0; Sprint 83 branch opened from the Sprint 82 branch; #522, #525, #526, #528-#532 closed by the merge and #509, #510, #523, #524, #527 stayed open as intended (PR body "Part of"); Sprint 82 plan, retrospective and summary present; Sprint 83 stub present; shipped cards were pruned at close-out (F306, F312, F314, F317-F320); F67c and F67d targets corrected to "after Apple approval", because both need the F67b device check, which waits on enrollment `R6QG2A9SHS`.) Previous: October 27, 2026 (Sprint 81 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #507 merged to develop (b79fa361) and main (#520, 763753be); Sprint 82 branch opened from the Sprint 81 branch; #508 and #511-#519 closed by the merge and #509/#510 stayed open as intended (PR body "Part of"); Sprint 81 plan, retrospective and summary present; Sprint 82 stub present; shipped cards pruned: F302, F259, F278, F271, F300, F301; F303, F67a, F67b trimmed to their remainders.) Previous: October 23, 2026 (Sprint 80 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #490 merged to develop (f301cdee) and main (#506, 2d81264a), tagged v0.21.0; Sprint 81 branch opened from the Sprint 80 branch; only #491 closed on merge -- the PR body used 'Closes #491, #492, ...', and GitHub applies the keyword to the first issue only, so the template now uses one keyword per card and the other 18 are closed by hand; Sprint 80 plan, retrospective and summary present; Sprint 81 stub present; F205 pruned (classified in Sprint 80 Task 1 R-7); F300's acceptance criterion moved back from F301; F246 and F259 given effort, Phase and Platform.)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
@@ -356,7 +356,7 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
 - Phase: Process / Tooling
 - Platform: Development process.
 - Files (473 lines): `scripts/install-custom-mcp.ps1` (121), `scripts/setup-claude-mcp.ps1` (203),
-  `scripts/start-test-imap-servers.ps1` (149). Deterministic. The MCP scripts edit the Claude MCP configuration
+  `scripts/start-test-imap-servers.ps1` (149). Deterministic. Ported to `scripts/*.py` in Sprint 85 (F331). The MCP scripts edit the Claude MCP configuration
   (JSON): use `common.find_tool` for `claude` and `node`, and write the user-level file with a backup.
 - AC: parameters and exit codes kept; `start-test-imap-servers` still starts the test servers the way
   `TESTING_STRATEGY.md` documents (verify the command on the card's day, do not assume).
@@ -364,7 +364,7 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
 **F332. Python conversion batch S3: phone log health and the battery arm script (~90-150m, estimate unverified) Priority 37 -- NEW 2026-11-01 (Sprint 83 Task 10, F321 R-6)**
 - Phase: Process / Tooling
 - Platform: Development process.
-- Files: `scripts/phone-log-health.ps1` (267), `mobile-app/scripts/r76_battery_arm.sh`. Deterministic log parsing.
+- Files: `scripts/phone-log-health.py` (was `.ps1`, 267 lines), `mobile-app/scripts/r76_battery_arm.py` (was `.sh`). Deterministic log parsing.
   `pull-phone-screenshots.ps1` is NOT here: it is Windows-bound (F337).
 - AC: the same report lines for two Sprint 82 phone log samples kept as fixtures; `unittest` file.
 
@@ -495,9 +495,25 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   3. The Help walkthrough is out of date.
   4. No message appears after the user refuses the notification permission.
   5. Some titles are cut off.
-  6. The "Background" tab label breaks inside the word ("Backgrou / nd").
+  6. The "Background" tab label breaks inside the word ("Backgrou / nd"). Also seen on the iPhone 17 Simulator
+     (Sprint 85 F341 R-5, iOS run 42916648939, `iphone-4-settings.png`).
+  7. (Sprint 85 F341 R-5, DEV builds only) Settings > General "Content history" says "in a file on this computer" on
+     a phone (`content_history_row.dart:107`; seen on the iPhone 17 Simulator).
 - Do: confirm each one on the current build, then fix it or close it with a reason.
 - AC: each observation has a fix with a test, or a written reason it stays; a screenshot of each fixed screen.
+
+**F358. "All reviewed" shows before any scan has run (~30-60m, estimate unverified) Priority 52 -- NEW 2026-11-10 (Sprint 85 F341 R-1 check 6, R-6)**
+- Phase: Core App Quality
+- Platform: All (shared `no_rule_review_screen.dart`); confirmed on the Android emulator, Windows check pending (F341 R-4).
+- Evidence: a fresh 0.25.0 release install, one Custom IMAP account added and never scanned, app restarted. The start
+  screen read "No unaddressed items" / "All "No rule" emails have been reviewed." while Scan History showed no scan.
+  The text is chosen only by `_allItems.isEmpty` (`no_rule_review_screen.dart:1031-1043`); nothing checks whether a
+  scan ran.
+- Do: when no scan has completed for the selected account(s), show a "No scan yet" state with a Scan action; keep
+  "All reviewed" for the case where a scan ran and every No rule item was addressed.
+- Signal fires on: an account with zero completed scans (count on DEV data before shipping, ADR-0047).
+- AC: a widget test for each state (no scan; scan with zero No rule items; filters hiding items); screenshots on
+  Windows and Android.
 
 **F357. Background scan rows marked `interrupted`: the recent-scan check and the completion overwrite (~30-60m, estimate unverified) Priority 34 -- NEW 2026-11-08 (Sprint 84 retro q2 = a, q1 = c; decide with the F342 Fold evidence)**
 - Phase: Core App Quality
@@ -676,7 +692,7 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
 - AC: the inventory with a disposition per prompt; the shared helpers exist under `scripts/` with `.SYNOPSIS`
   headers and are called by the prompts.
 - Also (Sprint 83 MV Question D = 2, Harold 2026-11-04): move the hook registrations in `.claude/settings*.json` from
-  `python` (3.12.10 on PATH) to Python 3.14 (`py -3.14`), then run `.claude\hooks\run-test-cases.ps1`. A `.claude`
+  `python` (3.12.10 on PATH) to Python 3.14 (`py -3.14`), then run `python .claude/hooks/run-test-cases.py`. A `.claude`
   settings change: confirm with Harold at the start of that sprint.
 
 **F273. Privacy policy and Data safety revision for the content history and learning (~60m) Priority 40**
@@ -748,7 +764,7 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   3. Run the Windows token-path tests (`gmail_adapter_sign_in_flag_test.dart`, 5 cases) on CI: an injectable platform check in `GmailApiAdapter` (Class-2: a production seam -- surface at planning).
   4. Android `initialize` EXCEPTION path (review M-2: network -> ConnectionException, other -> AuthenticationException, never flagged) needs a seam in `GoogleAuthService`; no host test reaches it today.
   5. Sign In Again: the button disappears after success; the `_running` double-tap guard; `showLiveRefusal`'s `isViewingHistory` negative case.
-  6. A self-test for `scripts/mutation-test.ps1` BASELINE and INVALID verdicts (a false INVALID would hide a SURVIVED mutant).
+  6. DONE in Sprint 85 (F329): `scripts/tests/test_mutation_test.py` covers the BASELINE and INVALID verdicts of `scripts/mutation-test.py`.
 
 **F241. Remove or wire `ScanResultStore.getActiveBackgroundScan` Priority 60 -- backlog (Sprint 74 retro Category 14b)**
 - No production caller since the manual-scan dialog moved to the per-account `getActiveScanForAccount`; kept with its tests. Delete with its tests, or wire it. F238 shipped without it (Sprint 75).
@@ -1497,7 +1513,7 @@ The Windows dev/prod current implementation requires a rebuild to switch -- only
 - Define `dev`, `prod`, `store` flavors with distinct `applicationIdSuffix`
 - Add Manifest Placeholder for app name
 - Generate distinct icons per flavor (or use icon overlay)
-- Update build scripts (`build-with-secrets.ps1`) to take a flavor parameter
+- Update build scripts (`build-with-secrets.py`, the Sprint 85 F335 port; it already takes `--env dev|prod`) to take a flavor parameter
 - Test: install all 3 variants on emulator side-by-side
 - Note: Cannot fully test "store" flavor until app is in Google Play (use `prod` flavor as proxy with different applicationId)
 
@@ -1675,7 +1691,7 @@ The Windows dev/prod current implementation requires a rebuild to switch -- only
 
 **Required FAQ topics**:
 - **What is a TLD (Top-Level Domain)?** -- explain TLD concept (.com, .uk, .xyz), how the app's TLD block rules work, why blocking a TLD is heavy-handed (blocks everything from that TLD), and when to use entire-domain rules instead.
-- **What is the IANA TLD list and why does the app use it?** -- explain IANA's role as the authority for valid TLDs, why the app rejects fake TLDs (`.com444`, `.whatevericanthinkof`), how the list is updated (`scripts/update_iana_tlds.sh`), and what to do if a real new TLD is rejected (file an issue).
+- **What is the IANA TLD list and why does the app use it?** -- explain IANA's role as the authority for valid TLDs, why the app rejects fake TLDs (`.com444`, `.whatevericanthinkof`), how the list is updated (`mobile-app/scripts/update_iana_tlds.py`), and what to do if a real new TLD is rejected (file an issue).
 - **What is the difference between Entire Domain, Exact Domain, Exact Email, and Top-Level Domain?** -- with concrete examples and matched/unmatched email lists for each.
 - **What is a Safe Sender?** -- explain whitelist precedence over block rules.
 - **Why does the scanner skip some emails?** -- explain Read-Only mode, default folders setting, retention.

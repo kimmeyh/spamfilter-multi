@@ -1,4 +1,4 @@
-"""SYNOPSIS: summarize one r76_battery_arm.sh output folder (Sprint 77 R76-1).
+"""SYNOPSIS: summarize one r76_battery_arm.py output folder (Sprint 77 R76-1; Python since F332).
 Usage: python r76_battery_summarize.py <arm output dir>
 NOTE: the log timestamps are converted with a fixed EDT (UTC-4) offset and the app UID is
 hard-coded to uid 10194 / u0a194 (the dev flavor on the 2026-10-07 AVD); edit both for another device."""

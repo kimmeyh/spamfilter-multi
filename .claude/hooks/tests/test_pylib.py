@@ -14,7 +14,7 @@ Three groups:
      sprint-auto-advance cases) through
      the Python `decide` functions. This is what makes the
      Linux CI run prove the hooks, not only the library. allow-* expects exit 0 and violation-*
-     expects exit 2, the same rule run-test-cases.ps1 applies.
+     expects exit 2, the same rule run-test-cases.py applies.
 
 What these tests do NOT catch: a difference between PowerShell and Python regex behavior on an
 input none of the 100-odd recorded cases contains; a hook registration typo in
@@ -22,9 +22,12 @@ input none of the 100-odd recorded cases contains; a hook registration typo in
 command form, not that Claude Code runs them); and the live harness stdin framing, which only a
 real tool call exercises.
 """
+import contextlib
 import importlib.util
 import json
 import os
+import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -32,6 +35,7 @@ import time
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from unittest import mock
 
 HOOKS = Path(__file__).resolve().parent.parent
 REPO = HOOKS.parent.parent
@@ -403,6 +407,24 @@ class CommitGateTests(unittest.TestCase):
         self.assertIn("same-prefix-two", verdict.stderr)
         self.assertIn("Ignoring 1 stale lock(s)", verdict.stdout)
 
+    def test_commit_is_blocked_while_a_lock_made_by_the_python_command_line_is_held(self):
+        """F329 R-4: the commit gate reads the lock files the Python helper writes, so the PowerShell wrapper
+        could be deleted. The lock is made by the COMMAND LINE (what agents run), not by a hand-written file,
+        and released the same way. Does NOT catch a lock written by another tool with a different format."""
+        script = str(HOOKS / "lib" / "mutation_lock.py")
+        env = clean_env(CLAUDE_PROJECT_DIR=str(self.project))
+
+        def lock_cli(*args):
+            done = subprocess.run([sys.executable, script, *args], capture_output=True, text=True, env=env, timeout=60)
+            self.assertEqual(done.returncode, 0, done.stderr)
+
+        lock_cli("new", "--file", "docs/a b.md", "--reason", "gate check", "--agent", "unit-test")
+        verdict = self.hook.decide(self.payload())
+        self.assertEqual(verdict.code, 2)
+        self.assertIn("docs/a b.md", verdict.stderr)
+        lock_cli("remove", "--file", "docs/a b.md")
+        self.assertEqual(self.hook.decide(self.payload()).code, 0)
+
     def test_block_text_is_on_stderr_not_stdout(self):
         write_lock(self.project, "a.md", datetime.now(timezone.utc))
         verdict = self.hook.decide(self.payload())
@@ -504,7 +526,7 @@ def git_run(repo: Path, *args: str) -> None:
 
 
 def make_velocity_repos(root: Path) -> dict:
-    """Two throwaway git repos for the velocity-warn cases, as run-test-cases.ps1 builds them:
+    """Two throwaway git repos for the velocity-warn cases, as run-test-cases.py builds them:
     one with docs/CODING_VELOCITY.md modified, one with it staged."""
     repos = {}
     for kind in ("MODIFIED", "STAGED"):
@@ -542,7 +564,7 @@ def replay_cases(test_case, hook_file: str, folder: str, stub_gh: bool = False):
     """Run every recorded case in test-cases/<folder> through the hook's decide().
 
     allow-* expects exit 0 and no warning; warn-* expects exit 0 and a warning; violation-* expects
-    exit 2 and a [BLOCKED] message. The same rule run-test-cases.ps1 applies."""
+    exit 2 and a [BLOCKED] message. The same rule run-test-cases.py applies."""
     module = load_hook(hook_file)
     files = sorted((CASES / folder).glob("*.json"))
     test_case.assertGreater(len(files), 5, f"no cases found in {folder}")
@@ -1597,6 +1619,161 @@ class AutoAdvanceTests(unittest.TestCase):
         self.assertEqual([e["command"] for e in entries],
                          ['python "${CLAUDE_PROJECT_DIR}/.claude/hooks/sprint-auto-advance.py"'])
         self.assertEqual(entries[0]["timeout"], 15)
+
+
+# ---- F329 R-5 (Sprint 85): fault injection for the git and gh calls of every Stop and PreToolUse hook ----
+
+# Every hook registered in .claude/settings.json is in exactly one of these two sets, so a new hook cannot
+# slip past the fault-injection test: classifying it here is the price of registering it.
+HOOKS_THAT_CALL_GIT_OR_GH = ("sprint-auto-advance.py", "verify-closeout-complete.py", "warn-commit-without-velocity.py")
+HOOKS_WITHOUT_GIT_OR_GH = ("block-carry-forward-stash.py", "require-sprint-cards.py", "block-heredoc-python-backslash.py",
+                           "block-blind-staging.py", "block-commit-during-mutation.py")
+FAILURE_MODES = {
+    "not found": FileNotFoundError("the program is not installed"),
+    "non-zero exit": (2, ""),
+    "timeout": (common.TIMEOUT, ""),
+}
+
+
+class FaultInjectionTests(unittest.TestCase):
+    """Each hook that calls git or gh runs with those programs forced to fail in each way common._run can
+    report: not installed, a non-zero exit, a timeout. Every check that needed the program must END in a
+    violation (exit 2) or a visible notice (a systemMessage, a "Note:", or the velocity hook's warning), never
+    in a silent pass.
+
+    What this does NOT catch: a failure of ONE git call while the others work (only whole-program failure is
+    injected, except the gh-only test); a hook that calls git through a path that bypasses common._run (the
+    source scan below is what notices a new subprocess call); a notice that the harness drops on the way to
+    the screen (R-6 checks that by hand: Claude Code shows systemMessage only for a hook that exits 0)."""
+
+    CLOSE_MESSAGE = "Sprint 81 is fully closed out. Ready for the next sprint."
+    COMMIT = {"tool_name": "Bash", "tool_input": {"command": 'git commit -m "Closes #5"'}, "cwd": str(REPO)}
+
+    @contextlib.contextmanager
+    def failing(self, programs, how):
+        """common._run fails for `programs` in the way `how` says; every other program runs for real."""
+        real = common._run
+
+        def fake(argv, cwd, timeout):
+            if argv and argv[0] in programs:
+                if isinstance(how, Exception):
+                    raise how
+                return how
+            return real(argv, cwd, timeout)
+
+        drain_notices()
+        with mock.patch.object(common, "_run", fake):
+            yield
+        drain_notices()
+
+    def visible(self, verdict) -> str:
+        """Everything a user or Claude would be shown for this run: the verdict text and the queued notices."""
+        shown = hooklib.apply_notices(verdict, drain_notices())
+        return shown.stdout + "\n" + shown.stderr
+
+    def stop_payload(self, **extra) -> dict:
+        payload = {"cwd": str(REPO), "last_assistant_message": self.CLOSE_MESSAGE}
+        payload.update(extra)
+        return payload
+
+    def test_every_registered_hook_is_classified(self):
+        settings = json.loads((REPO / ".claude" / "settings.json").read_text(encoding="utf-8"))
+        registered = set()
+        for groups in settings["hooks"].values():
+            for group in groups:
+                for entry in group["hooks"]:
+                    registered.add(entry["command"].split("/hooks/")[1].rstrip('"'))
+        self.assertEqual(registered, set(HOOKS_THAT_CALL_GIT_OR_GH) | set(HOOKS_WITHOUT_GIT_OR_GH))
+
+    def test_hooks_classified_as_without_git_or_gh_still_make_no_external_call(self):
+        pattern = re.compile(r"common\.git\(|common\.gh\(|subprocess|os\.system|os\.popen|shutil\.which")
+        for name in HOOKS_WITHOUT_GIT_OR_GH:
+            source = (HOOKS / name).read_text(encoding="utf-8")
+            self.assertIsNone(pattern.search(source), f"{name} now calls an external program: add it to the fault test")
+        for name in HOOKS_THAT_CALL_GIT_OR_GH:
+            source = (HOOKS / name).read_text(encoding="utf-8")
+            self.assertIsNotNone(pattern.search(source), f"{name} no longer calls git or gh: move it to the other set")
+
+    def test_stop_hooks_report_a_failed_branch_lookup_in_every_failure_mode(self):
+        for hook, words in (("sprint-auto-advance.py", "sprint-auto-advance gate skipped"),
+                            ("verify-closeout-complete.py", "verify-closeout-complete gate skipped")):
+            module = load_hook(hook)
+            for mode, how in FAILURE_MODES.items():
+                for programs in (("git",), ("git", "gh")):
+                    with self.subTest(hook=hook, mode=mode, programs=programs):
+                        with self.failing(programs, how):
+                            verdict = module.decide(self.stop_payload())
+                            shown = self.visible(verdict)
+                        self.assertEqual(verdict.code, 0, "the gate fails open")
+                        self.assertIn("git branch --show-current failed", shown)
+                        self.assertIn(words, shown)
+
+    def test_closeout_checks_that_need_git_or_gh_say_they_did_not_run(self):
+        module = load_hook("verify-closeout-complete.py")
+        for mode, how in FAILURE_MODES.items():
+            for programs in (("git",), ("git", "gh")):
+                with self.subTest(mode=mode, programs=programs):
+                    payload = self.stop_payload(cwd=str(CASES / "fixtures" / "improvement-review-present-sprint"),
+                                                branch_override="feature/20261030_Sprint_81")
+                    with self.failing(programs, how):
+                        verdict = module.decide(payload)
+                        shown = self.visible(verdict)
+                    self.assertIn("check 3a-2 did not run: git status", shown)
+                    self.assertIn("check 3c did not run: git", shown)
+                    self.assertIn("check 3e did not run: git log", shown, "the sweep-head branch of check 3e")
+                    self.assertTrue(verdict.code == 2 or "did not run" in shown, "never a silent pass")
+
+    def test_closeout_check_3e_without_a_sweep_head_line_says_its_git_diff_did_not_run(self):
+        """The other branch of check 3e: a plan with no `sweep-head:` line compares the sprint's lib/ui diff
+        with origin/develop, then develop; when both git calls fail the check cannot say 'no UI change'."""
+        module = load_hook("verify-closeout-complete.py")
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp) / "project"
+            shutil.copytree(CASES / "fixtures" / "improvement-review-present-sprint", project)
+            plan = project / "docs" / "sprints" / "SPRINT_81_PLAN.md"
+            text = plan.read_bytes().decode("utf-8")
+            self.assertIn("sweep-head:", text)
+            plan.write_bytes(text.replace("sweep-head:", "sweep head -").encode("utf-8"))
+            for mode, how in FAILURE_MODES.items():
+                with self.subTest(mode=mode):
+                    payload = self.stop_payload(cwd=str(project), branch_override="feature/20261030_Sprint_81",
+                                                dirty_zero_files_override="")
+                    with self.failing(("git",), how):
+                        shown = self.visible(module.decide(payload))
+                    self.assertIn("check 3e did not run: git diff against origin/develop and develop failed", shown)
+
+    def test_closeout_gh_alone_failing_is_reported_as_check_3c_not_run(self):
+        module = load_hook("verify-closeout-complete.py")
+        for mode, how in FAILURE_MODES.items():
+            with self.subTest(mode=mode):
+                payload = self.stop_payload(cwd=str(CASES / "fixtures" / "improvement-review-present-sprint"),
+                                            branch_override="feature/20261030_Sprint_81",
+                                            skip_git_checks=True, dirty_zero_files_override="")
+                with self.failing(("gh",), how):
+                    shown = self.visible(module.decide(payload))
+                self.assertIn("check 3c did not run: gh unavailable", shown)
+
+    def test_velocity_hook_warns_when_git_state_cannot_be_read(self):
+        module = load_hook("warn-commit-without-velocity.py")
+        for mode, how in FAILURE_MODES.items():
+            for programs in (("git",), ("git", "gh")):
+                with self.subTest(mode=mode, programs=programs):
+                    with self.failing(programs, how):
+                        verdict = module.decide(dict(self.COMMIT))
+                    self.assertEqual(verdict.code, 0)
+                    self.assertIn("git state could not be read", warning_of(verdict.stdout) or "")
+
+    def test_a_missing_git_executable_is_reported_through_the_real_process_path(self):
+        """The same three hooks as real processes, with an empty PATH (git and gh are not found by the OS)."""
+        with tempfile.TemporaryDirectory() as empty:
+            cases = (("sprint-auto-advance.py", self.stop_payload(), "git branch --show-current failed"),
+                     ("verify-closeout-complete.py", self.stop_payload(), "git branch --show-current failed"),
+                     ("warn-commit-without-velocity.py", dict(self.COMMIT), "git state could not be read"))
+            for hook, payload, words in cases:
+                with self.subTest(hook=hook):
+                    code, out, err = run_hook(hook, json.dumps(payload).encode("utf-8"), PATH=empty)
+                    self.assertEqual(code, 0, err)
+                    self.assertIn(words, out + err)
 
 
 if __name__ == "__main__":

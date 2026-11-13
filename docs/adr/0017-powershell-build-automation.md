@@ -33,7 +33,7 @@ Use PowerShell as the sole build and automation shell. All build scripts are `.p
 | `build-windows.ps1` | 5-step Windows build (clean, pub get, analyze, build, run) |
 | `build-with-secrets.ps1` | Android build with secrets injection, emulator management |
 | `build-apk.ps1` | Release APK generation |
-| `run-tests.ps1` | Flutter test execution with coverage |
+| `run-tests.ps1` | Flutter test execution with coverage (ported to `run-tests.py` in Sprint 85, F334, ADR-0051) |
 | `analyze.ps1` | Code quality analysis |
 
 ### Key Design Patterns

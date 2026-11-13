@@ -17,7 +17,7 @@
 #   .\start-emulator.ps1 -Avd <name>  # start a different AVD
 #
 # This ONLY starts the emulator. To put current code on it afterwards:
-#   .\build-with-secrets.ps1 -BuildType debug -InstallToEmulator
+#   python .\build-with-secrets.py --build-type debug --install-to-emulator
 
 param(
     [string]$Avd = "pixel34_updated",

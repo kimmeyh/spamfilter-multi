@@ -78,6 +78,11 @@ class SettingsStore {
   static const String keyCertificatePinningEnabled = 'certificate_pinning_enabled';
   static const String keyEncryptDatabase = 'encrypt_database';
 
+  /// F352 (Sprint 85, ADR-0052): the accountId the user made the default, or
+  /// absent for "no default". The only persisted account choice; the session
+  /// selection in `SelectedAccountProvider` stays unpersisted.
+  static const String keyDefaultAccountId = 'default_account_id';
+
   /// F233 (Sprint 72): write a diagnostic log capturing FAILURE paths that
   /// today reach only a debug console. Default OFF.
   static const String keyDiagnosticLogEnabled = 'diagnostic_log_enabled';
@@ -618,6 +623,34 @@ class SettingsStore {
   Future<void> setEncryptDatabase(bool enabled) async {
     await _setAppSetting(keyEncryptDatabase, enabled.toString(), 'bool');
   }
+
+  // ============================================================
+  // Default Account (F352, ADR-0052)
+  // ============================================================
+
+  /// The accountId the user set as the default, or null when there is none.
+  Future<String?> getDefaultAccountId() async {
+    final value = await _getAppSetting(keyDefaultAccountId);
+    if (value == null || value.isEmpty) return null;
+    return value;
+  }
+
+  /// Make [accountId] the default account (replaces any earlier default).
+  Future<void> setDefaultAccountId(String accountId) async {
+    if (accountId.isEmpty) {
+      await clearDefaultAccountId();
+      return;
+    }
+    await _setAppSetting(keyDefaultAccountId, accountId, 'string');
+  }
+
+  /// Remove the default ("no default").
+  Future<void> clearDefaultAccountId() async {
+    await _deleteAppSetting(keyDefaultAccountId);
+  }
+
+  // Account deletion clears the default inside its own transaction
+  // (DataDeletionService.deleteAccountData, R-6), so there is no helper here.
 
   // ============================================================
   // Export Settings

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Configure the Dovecot test IMAP server inside Ubuntu WSL (run as root).
-# Called by scripts/start-test-imap-servers.ps1; safe to re-run.
+# Called by scripts/start-test-imap-servers.py; safe to re-run.
 #
 # Test-only: one local user "tester" / "testpass" with a few seeded messages,
 # STARTTLS on 143 and SSL/TLS on 993 using Ubuntu's self-signed "snakeoil"
