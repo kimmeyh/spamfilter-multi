@@ -1149,8 +1149,9 @@ built AAB checked for the OAuth scheme (`GOOGLE_PLAY_RELEASE_PROCESS.md` Step 4)
 - **5.2.3 architecture documentation**: F354 in ADR-0035 "Sprint 85 Update"; F352 in ADR-0052 and `ARCHITECTURE.md:524`. Found stale and fixed 2026-11-10: `ARCHITECTURE.md` SecureCredentialsStore said "Windows: Credential Manager"; it now names the DPAPI file `flutter_secure_storage.dat` (plugin 4.1.0, `pubspec.lock:421`) and the F354 DEV separation. The DEV data path on `ARCHITECTURE.md:74` is unchanged by F354 and still correct.
 - **Android JVM unit tests**: N/A -- the sprint diff touches no file under `mobile-app/android/app/src`.
 - **5.1.6 runtime launch gate**: N/A -- `build.gradle.kts` changed in comments and message text only (F335); no manifest, plugin or native change.
-- **5.1.5 WinWright sweep**: 2026-11-10, sweep-head: e110499b (newer than the last `lib/` commit 7fea8327), DEV build from `build-windows.ps1`, workstation unlocked, 3 scripts. Sweep 21:10-21:16: test_f320_no_rule_review PASS; test_f124_rule_labels and test_s75_new_controls FAIL (every cursor step, "SetCursorPos failed") while an unsecured screen saver (`Mystify.scr`) had run since 17:19. The lock gate reported "unlocked", which is correct: Microsoft's "Desktops" page states "Unsecured screen savers run on Winsta0\Default", so the saver did not switch the input desktop; the mechanism is unknown. After the saver process was ended: test_s75_new_controls 27/27 PASS (21:21); test_f124_rule_labels failed once at step 29 ("IsEnabled [#30010] is not supported" on the second Back; its retry failed at step 2, "No main window found", the Sprint 84 symptom), then 29/29 PASS run alone (21:22-21:23). Tray icon PASS; DB drift none in every run. Prevention: the runner now ends a running unsecured screen saver in its preflight and says so (`Stop-UnsecuredScreenSaver`, `run-winwright-tests.ps1`); it leaves a secure saver alone and fails loudly if a saver cannot be ended. Tested both ways (saver running: ended, 1 -> 0 processes; none running: empty list).
-  sweep-head: e110499b
+- **5.1.5 WinWright sweep**: 2026-11-13, at 1a1ec264 (newer than the last `lib/ui` commit 8011e99b), DEV build from `build-windows.ps1` 15:42 (exit 0, after the Visual Studio Repair restored the Windows SDK; see Builds below), workstation unlocked, 3 scripts, two full sweeps. Sweep 1 15:45-15:47 and sweep 2 16:02-16:04: test_f320_no_rule_review PASS (13/13) both times; test_s75_new_controls PASS (27/27) both times (sweep 2 on its announced retry); test_f124_rule_labels FAIL in both sweeps and in a run alone (`-TestName f124`, 15:51), 6 of 6 attempts, every one at step 2 "No main window found" within about 300 ms (the step timeout is 60 s, so the lookup is not retried). Tray icon PASS and DB drift none in every run; mouse steps skipped 0. F124's 29 checks PASS 29/29 eight times on the same build when the script is run with the CLI directly (`Civyk.WinWright.Mcp.exe run`, scratchpad `trial_premax.ps1`, 15:58-16:08), so the app side of F124 is proven at this build; the runner failure is not. Cause UNKNOWN. Ruled out with evidence: (a) a background scan: a sampler (`sample_dev_windows.ps1`, every 0.5 s, every DEV process and its titled windows) saw exactly one DEV process at every failing step; a background scan does create a hidden top-level window titled "MyEmailSpamFilter [DEV]" (seen 15:50:04, `--background-scan --account-id=...`), the same title the scripts attach by, so it remains a hazard but did not cause these failures; (b) a second window with that title anywhere on the desktop (EnumWindows over every process: one); (c) the window state (pre-maximized, the runner's fixed size, untouched: all pass in trials); (d) F124 itself: test_s75_new_controls failed the same way once from a plain `Start-Process` launch; (e) the screen-reader flag (on: 1 PASS, 2 FAIL). Not ruled out: WinWright's main-window lookup failing at once instead of within the step timeout. What would settle it: WinWright's own log or source for "No main window found", or a ww_get_session_info capture inside the failing script. Also found: the runner sets `SPI_SETSCREENREADER` on (`run-winwright-tests.ps1:507`) and never sets it back, so every sweep leaves Windows in screen-reader mode (it read True after the 15:45 sweep; set back to False 16:14). Earlier sweep, superseded by 8011e99b: 2026-11-10 at e110499b (newer than the last `lib/` commit 7fea8327), DEV build from `build-windows.ps1`, workstation unlocked, 3 scripts. Sweep 21:10-21:16: test_f320_no_rule_review PASS; test_f124_rule_labels and test_s75_new_controls FAIL (every cursor step, "SetCursorPos failed") while an unsecured screen saver (`Mystify.scr`) had run since 17:19. The lock gate reported "unlocked", which is correct: Microsoft's "Desktops" page states "Unsecured screen savers run on Winsta0\Default", so the saver did not switch the input desktop; the mechanism is unknown. After the saver process was ended: test_s75_new_controls 27/27 PASS (21:21); test_f124_rule_labels failed once at step 29 ("IsEnabled [#30010] is not supported" on the second Back; its retry failed at step 2, "No main window found", the Sprint 84 symptom), then 29/29 PASS run alone (21:22-21:23). Tray icon PASS; DB drift none in every run. Prevention: the runner now ends a running unsecured screen saver in its preflight and says so (`Stop-UnsecuredScreenSaver`, `run-winwright-tests.ps1`); it leaves a secure saver alone and fails loudly if a saver cannot be ended. Tested both ways (saver running: ended, 1 -> 0 processes; none running: empty list).
+  sweep-head: 1a1ec264
+- **5.1.9 MV rehearsal**: 2026-11-13 16:07-16:13 on the DEV build of 1a1ec264 (`dist\dev\MyEmailSpamFilter-Dev.exe`, built 15:42). 2 steps rehearsed on Windows (MV-1 live, with WinWright reads, real mouse clicks on the star and the title-bar X, screenshots, and dev-DB copy reads; MV-2 live: the Select Account screen and SHA-256 of both credential files), 1 rehearsed on the emulator only (MV-3, F355 R-1: 9 tries, 0 ANR), 4 not rehearsable by Claude (MV-4 and MV-5 need the Fold; MV-6 needs Harold's own sign-in and the folded Fold; MV-7 needs Harold's screen). The MV-1 draft was WRONG and is rewritten: it said the app opens "with that account selected and no account picker" and that "the picker asks again" without a default. ADR-0052 decision 3 says the start screen does not change, and the Settings button on Review No Rule Items never shows a picker: it opens the session selection, else the filtered account, else the first account (`no_rule_review_screen.dart:239-258`). Guard tests and their verdicts: F352's 21 tests and `account_row_phone_width_test` KILLED (specs listed in the F352 card); `test/policy/diagnostic_logger_reset_test.dart` 4/4 KILLED (`scratchpad\s85_phase5\mut_reset.json`); `scripts/tests/test_no_runs_of_missing_scripts.py` KILLED (5.1.2 M2); the M3 log-reason and L9 seed-order tests KILLED (5.1.2); F335 20/20 KILLED (F335 card). Findings from the rehearsal: (1) the account row is one accessibility element with `excludeSemantics: true` (`account_selection_screen.dart:1209-1217`), so UI Automation cannot reach the F352 star, Start Scan or Delete; a mouse works; keyboard reach NOT CHECKED; (2) the iCloud DEV account's `background_enabled` is `false` since 2026-11-04 16:33:41 (dev-DB copy), and its scheduled task is gone, while the standing fact below says it is on.
 
 ## Manual Validation (Phase 5.3) -- DRAFT, not handed over
 
@@ -1158,12 +1159,13 @@ built AAB checked for the OAuth scheme (`GOOGLE_PLAY_RELEASE_PROCESS.md` Step 4)
 Play update installed (2026-11-04). Fold notification access for the app is ON and stays on. The iCloud DEV account's
 per-account background scan is on, every 5 minutes.
 
-**Builds**: Windows DEV 0.25.0+23 at the final head: BLOCKED. `build-windows.ps1` fails with MSB8036 (Windows SDK
-10.0.22621.0 not found) since the Visual Studio update of 2026-11-10: Windows Installer removed SDK 10.1.26100.9457
-22:25-22:29 (Application log, MsiInstaller 1034) and put back only Kits Configuration Installer, EULA and WPT at 22:34.
-That removed the shared `Windows Kits\10\SDKManifest.xml` and the `Microsoft SDKs\Windows\v10.0` registry key (both
-views); the 22621 files are present, but its `UAP.props:5` finds `WindowsSdkDir` from `SDKManifest.xml`. The DEV app
-now running (`mobile-app\dist\dev`, restarted 23:29) is the 17:57 build, before 8011e99b. Android: Play bundle
+**Builds**: Windows DEV 0.25.0+23 from 1a1ec264, built 2026-11-13 15:42 by `build-windows.ps1` (exit 0):
+`D:\Data\Harold\github\spamfilter-multi\mobile-app\dist\dev\MyEmailSpamFilter-Dev.exe`. It was blocked from 2026-11-10
+by MSB8036: the Visual Studio update removed Windows SDK 10.1.26100.9457 22:25-22:29 (MsiInstaller 1034), and with it
+the shared `Windows Kits\10\SDKManifest.xml` and the `Microsoft SDKs\Windows\v10.0` registry key, which
+`UAP.props:5` needs to find the 22621 SDK. Harold ran Visual Studio Installer Repair on 2026-11-13 (11:03-12:51,
+`dd_setup_20261113110357.log`: Win11SDK_10.0.26100 "DetectionState: Absent, PlannedAction: Install"); at 15:37 both
+items were back and `Include` lists 10.0.22621.0 and 10.0.26100.0. Android: Play bundle
 0.25.0+23 built 2026-11-10 23:40 from 322f5c70 (`build-with-secrets.py --build-type release --env prod --output aab`,
 exit 0; Play check OK: targetSdkVersion 36, no AD_ID permission):
 `D:\Data\Harold\github\spamfilter-multi\mobile-app\dist\android-0.25.0+23\app-prod-release.aab` (71,749,606 B).
@@ -1171,17 +1173,30 @@ exit 0; Play check OK: targetSdkVersion 36, no AD_ID permission):
 **Live facts read 2026-11-10 23:36 (F354)**: production `%APPDATA%\MyEmailSpamFilter\MyEmailSpamFilter\
 flutter_secure_storage.dat` 1,382 B, written 11/07 19:22, SHA-256 prefix 464DC179B98A1F67 (same as before the F354
 run); the DEV copy is identical; the March DEV file is kept as `.pre_f354_20261110_175703`; marker written 11/10 17:57.
+Read again 2026-11-13 16:13 after the new DEV build and the MV-1 rehearsal: production 1,382 B, written 11/07 19:22,
+SHA-256 prefix 464DC179B98A1F67 (unchanged); DEV copy the same.
 
 **Steps (draft; each is rehearsed before handover, 5.1.9)**:
-- MV-1 (Windows DEV, F352 default account): Select Account, star on one account row; the row shows "Default account".
-  Close the app fully and start it again: it opens on Review No Rule Items with that account selected and no account
-  picker; Settings > Account shows "Default account". Then Select Account, star again to remove it; after a restart the
-  picker asks again. Rehearsed: widget and unit tests (21 F352 tests and `account_row_phone_width_test`, all KILLED
-  mutants listed in the F352 card). NOT REHEARSED: the real restart on Windows (needs the new DEV build) and how
-  "close fully" works (window close versus tray Exit) on this build.
-- MV-2 (Windows DEV and Store app, F354): the DEV app lists its 4 accounts; the Store app still signs in to its
-  accounts. Claude hashes the production credential file before and after. Rehearsed: hash read above; DEV account
-  list NOT REHEARSED on the new build.
+- MV-1 (Windows DEV, F352 default account). Precondition: no default set (dev-DB copy: no `default_account_id` row,
+  read about 16:07, before the first screenshot at 16:07:55). (a) Settings (gear, top right) > Account tab: the header reads "Account Settings - kimmeyh@gmail.com"
+  (the first account) with no "Default account" line. (b) Back, then Select Account (people icon): click the star on
+  the kimmeyharold@aol.com row; the star fills and "Default account" shows under the address. (c) Close the app with
+  the title-bar X (this ends the process; there is no minimize-to-tray) and start it again from the Start menu or
+  `dist\dev\MyEmailSpamFilter-Dev.exe`. It opens on Review No Rule Items as before (the start screen does not change,
+  ADR-0052). (d) Settings > Account: "Account Settings - kimmeyharold@aol.com" and a star with "Default account".
+  (e) Select Account, click the AOL star again to remove the default; close with X, start again; Settings > Account
+  shows kimmeyh@gmail.com again, with no "Default account". Rehearsed: 2026-11-13 16:07-16:13 on this build, every
+  part as written: (a) header text by UI Automation and `mv1_02_account_nodefault.jpg`; (b) `mv1_04_crop.png`, and
+  dev-DB copy `default_account_id = kimmeyharold@aol.com`; (c) X click, pid 24368 gone 4 s later (Get-Process);
+  (d) `mv1_05_after_restart_crop.png`; (e) dev-DB copy: no row; header "Account Settings - kimmeyh@gmail.com" and no
+  "Default account" text (UI Automation, count 0). Screenshots in the session scratchpad `s85_phase5\`. The state was
+  left as found (no default).
+- MV-2 (Windows DEV and Store app, F354): the DEV app's Select Account screen lists 4 accounts (kimmeyharold@aol.com,
+  kimmeyh@gmail.com, kimmeyh@yahoo.com, kimmeyharold@icloud.com). Start the Store app (MyEmailSpamFilter from the
+  Start menu, no [DEV] in the title) and open its Select Account screen: its accounts are listed and a manual scan of
+  one signs in. Claude hashes the production credential file before and after. Rehearsed: DEV list 2026-11-13 16:10
+  (`mv1_03_select_account.jpg`, 4 rows); production file read 16:13 (below). NOT REHEARSED: the Store app sign-in
+  (Claude does not start the production app).
 - MV-3 (Fold, F355 R-2): Settings > Background > Enable Background Scanning; wait 20 s; any "isn't responding"
   dialog? Screenshot either way. Rehearsed on the emulator only (F355 R-1: 9 tries, 0 ANR); the Fold itself cannot be
   rehearsed.
@@ -1197,4 +1212,7 @@ run); the DEV copy is identical; the March DEV file is kept as `.pre_f354_202611
 **Decisions to ask at handover** (each with evidence and options): F307 removal (the R-1 audit); the Windows client
 secret in the Android build (F335); the `.codex` hook copy (F329); F350 R-7 recommendations (R-2 to R-6 of the
 research file); F357 q1 and q2 (after MV-4); `.claude/settings.local.json:50` runs the deleted
-`validate-yaml-rules.ps1` (5.1.2 L5); the Windows SDK repair. Mention: the F331 and F333 follow-ups.
+`validate-yaml-rules.ps1` (5.1.2 L5); found 2026-11-13: the iCloud DEV background setting versus the standing fact;
+the account-row controls hidden from UI Automation (`excludeSemantics`, F352 star included); the WinWright runner
+leaving the screen-reader flag on; test_f124_rule_labels failing through the runner (cause unknown). Mention: the
+F331 and F333 follow-ups. Resolved: the Windows SDK (Harold ran Visual Studio Installer Repair, 2026-11-13).
