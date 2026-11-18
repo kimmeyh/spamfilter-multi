@@ -7,6 +7,115 @@ Manual Validation complete
 Sprint 8n Manual Validation Feedback 
 
 ---------------------------------------------------------------------------------------------------------
+Sprint 85 Manual Validation Feedback 
+  - MV-1 (Windows DEV, default account). No default is set now.
+    - a. Open Settings (gear icon, top right) and the Account tab. The header reads "Account Settings - kimmeyh@gmail.com", with no "Default account" line.
+Did not set it immediately in the app and when I hit the settings button it provided the pop-up to select an account.
+    - b. Go back and open Select Account (people icon). Click the star on the kimmeyharold@aol.com row. The star fills and "Default account" appears under the address.
+    - c. Close the app with the title-bar X; this ends the app. Start it again. It opens on Review No Rule Items as before.
+    - d. Open Settings > Account. It reads "Account Settings - kimmeyharold@aol.com", with a star and "Default account".
+    - e. In Select Account, click the AOL star again to remove the default. Close with X and start again. Settings > Account shows kimmeyh@gmail.com again, with no "Default account".
+Rest worked as expected
+  - MV-2 (DEV app and Store app, credentials).
+    - The DEV Select Account screen lists 4 accounts: aol, gmail, yahoo and icloud. I confirmed this today.
+OK
+    - Start the Store app (MyEmailSpamFilter, no [DEV] in the title). Open Select Account and run a manual scan on one account; it should sign in.
+see image 2, 3, 4
+login and scan worked as expected on all 4 production accounts
+    - Tell me before and after, and I will check the production credential file. Its fingerprint (SHA-256 prefix 464DC179B98A1F67) was the same on 11/10 and today.
+    - I did not run the Store app part, because I do not start the production app.
+  - MV-3 (Fold). Open Settings > Background, turn on Enable Background Scanning, and wait 20 seconds. Take a screenshot whether or not an "isn't responding" dialog appears. On the
+    emulator I saw no dialog in 9 tries.
+working as expected
+  - MV-4 (Fold). Take a screenshot of Settings showing the version. I will then copy the diagnostic log over MTP and check the three F342 items.
+shows 0.24.1
+  - MV-5 (Fold, when a YELLOW No Rule item exists). Open its pop-up and check three things:
+    - one rule shows "Suggested";
+    - Block Subject and the regex note fit the cover screen;
+    - the Skip row fits the cover screen.
+working as expected
+  - MV-6 (together).
+    - Check 2: Gmail sign-in on Windows (browser) compared with Android (native).
+both are working
+
+  pattern" button does nothing (:715-719). The pop-up already covers From and Subject. Nothing in the app blocks a free body phrase, now or after removal.
+  1. Remove the page, and add a backlog card for a "Block body phrase" action in the pop-up (Recommended)
+  2. Remove the page, no new card
+  3. Keep the page and fix its Edit button
+  4. Decide later
+
+  q2. F335: the Windows Gmail client secret goes into the Android release build. Every key in secrets.dev.json is passed in, and shared code reads it
+  (gmail_windows_oauth_handler.dart:29-32). This is old behavior that the port kept. Google's documentation says desktop apps cannot keep a client secret confidential, and the same
+  value already ships inside the Windows exe.
+  1. Backlog card: pass each platform only the keys it uses (Recommended)
+  2. Accept as is
+  3. Fix it this sprint (a build-script change)
+
+  q3. F329: .codex/hooks/sprint-auto-advance.ps1. It is an unregistered Codex copy left over from the retired PowerShell hooks. It will drift from the Python hook.
+  1. Delete it (Recommended)
+  2. Port it to Python
+  3. Keep it
+
+  q4. F350 risk tiers. Today's rule puts 112 of 397 test files in the high tier, which is too many for a fast set. A tighter rule puts 61 files there: it counts impact only from
+  mail, credential, background worker, scan coordinator and migration code, and needs 40 or more commits in 60 days. Each change would run that tier plus the tests that import the
+  changed files. A change to a shared file runs everything, and CI keeps the full suite.
+  1. Adopt the tight rule (Recommended)
+  2. Same rule with a 25-commit threshold (84 files)
+  3. Keep today's rule
+
+  q5. F350 mutation proofs. 13 tests that passed mutation testing later missed their defect. Re-running the same mutants would have caught only 1 of them. Three cheaper checks:
+  - mutate the call site and every caller;
+  - require a non-zero match count in source gates (16 gate files lack one);
+  - keep mutation specs in the repo (none are tracked today).
+  1. Adopt all three as one card (Recommended)
+  2. Only the match-count checks in the 16 gates
+  3. No change
+
+  q6. F350 full test runs. Four changes:
+  - run one local full suite at 5.2, on an idle machine (it takes 3 min 39 s);
+  - refuse to start it while test/scratch/ holds a test file;
+  - start CI run 1 at the first task commit instead of at 7.7.1;
+  - in Phase 4, each task runs its changed files' tests and their importers.
+  1. Adopt all of it (Recommended)
+  2. All except the earlier CI run 1
+  3. No change
+
+  q7. F350: no automated test runs on an Android emulator or device. Four defects in Sprints 78-84 were found only on an emulator or a phone.
+  1. Backlog card for an emulator integration test of those paths (Recommended)
+  2. Note it only
+
+  q8. .claude/settings.local.json:50 runs the deleted validate-yaml-rules.ps1. Changing the settings file needs your approval.
+  1. Point it at python scripts/validate-yaml-rules.py (Recommended)
+  2. Remove the entry
+  3. Leave it
+
+  q9. The iCloud DEV background scan. The plan records your standing fact that it is on. The DEV database shows it has been off since 2026-11-04 16:33:41, and its scheduled task is
+  gone. The Select Account row shows "Background scanning is off for this account" with a "Turn on" link. I did not change it.
+  1. Off is correct; I update the standing fact
+  2. It should be on: click "Turn on" on that row, and I will confirm the task comes back
+
+  q10. Account-row buttons are hidden from screen readers. Each Select Account row is one accessibility element that hides its children (account_selection_screen.dart:1209-1217). A
+  screen reader cannot reach the new F352 star, Start Scan or Delete. A mouse works. I have not checked the keyboard.
+  1. Backlog card to make the row buttons reachable by assistive technology (Recommended)
+  2. Fix it this sprint (changes a Sprint 51 design)
+  3. No action
+
+  q11. The WinWright test runner. Two problems:
+  - The runner turns the Windows screen-reader flag on (run-winwright-tests.ps1:507) and never turns it off. I set it back to off today at 16:14.
+  - F124 fails only through the runner. I ruled out a background scan, a second window with the same title, the window state, the screen-reader flag, and the F124 script itself. The
+    remaining suspect: WinWright gives up looking for the main window at once instead of retrying.
+  1. One card for both: restore the flag when the runner ends, and investigate F124 with WinWright's own log (Recommended)
+  2. Fix the flag only, and record F124's direct-run pass each sprint
+  3. Leave both
+
+  Held until after MV-4: F357 q1 and q2. Both depend on what the Fold's diagnostic log shows.
+
+  For awareness, no answer needed
+  - F333: the version-consistency check does not look at .py files. ADR-0038 says build-windows.ps1 runs the manifest check at the end, but no such call exists.
+  - F331: the old MCP setup scripts wrote to ~/.claude/config.json, which Claude Code does not read, so they never registered anything. The new Python version writes ~/.claude.json
+    and backs it up first. I tested it only in a temporary profile, not against your real profile.
+
+---------------------------------------------------------------------------------------------------------
 Sprint 84 Manual Validation Feedback - round 2:
   - MV-1 (Windows DEV, then the Fold): enter the iCloud app-specific password again.
     a. Create a new app-specific password at account.apple.com > Sign-In and Security > App-Specific Passwords.
