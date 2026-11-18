@@ -1157,7 +1157,8 @@ built AAB checked for the OAuth scheme (`GOOGLE_PLAY_RELEASE_PROCESS.md` Step 4)
 
 **Standing facts (Harold)**, carried forward from Sprint 84: a phone screenshot that shows the app version proves the
 Play update installed (2026-11-04). Fold notification access for the app is ON and stays on. The iCloud DEV account's
-per-account background scan is on, every 5 minutes.
+per-account background scan is OFF (Harold, 2026-11-18, q9 = 1: off is correct; it has been off since 2026-11-04
+16:33:41). The other three DEV accounts scan in the background every 5 minutes.
 
 **Builds**: Windows DEV 0.25.0+23 from 1a1ec264, built 2026-11-13 15:42 by `build-windows.ps1` (exit 0):
 `D:\Data\Harold\github\spamfilter-multi\mobile-app\dist\dev\MyEmailSpamFilter-Dev.exe`. It was blocked from 2026-11-10
@@ -1189,10 +1190,50 @@ written 11/07 19:22, SHA-256 prefix 464DC179B98A1F67 (unchanged).
   Select Account, Manual Scan and Results for kimmeyharold@aol.com, Read-Only, 185 already filed, 3 No rule);
   production credential file unchanged (above).
 - MV-3: PASS (no "isn't responding" dialog on the Fold).
-- MV-4: Fold shows 0.24.1 (expected: 0.25.0+23 is not uploaded). Diagnostic log pull over MTP pending.
+- MV-4: Fold shows 0.24.1 (expected: 0.25.0+23 is not uploaded). Logs pulled 2026-11-18 over MTP
+  (`pull-phone-screenshots.ps1 -Sprint 85 -Days 10 -DeviceName Fold`, exit 0; `diag_v0.24.1_2026-11-11` to `-18`).
+  Four worker stops since the update, all `reason=deviceState raw=4`, all on k***@aol.com: 11-12 02:30:27, 11-13
+  01:27:13, 11-13 01:42:39, 11-14 17:13:38.
+  (a) Each stop logged "closed 1 in-progress scan row(s) as interrupted" 9-15 ms later (e.g. 11-13 01:42:39.219 stop,
+  .257 close). The Scan History text on the Fold is not yet seen (needs a screenshot).
+  (b) The next scan started: in three stops WorkManager started a new worker at once (0-40 ms) and its scan completed
+  (11-13 01:27:21 "outcome -- completed" in 7.7 s; 01:42:47 in 8.4 s). In one (11-12) the Doze-alarm restart at
+  02:31:15 was skipped: "a scan started 49s ago (interval 10m; doze alarm)", counting the stopped scan; the periodic
+  run started at 02:32:21, 1 min 54 s after the stop. Same shape 11-13 01:43:34 ("started 55s ago"), but there the
+  restarted scan had already completed. So the recent-scan check does count an `interrupted` row (F357 q2); the cost
+  seen was under 2 minutes, against a 10-minute interval.
+  (c) No completion replaced `interrupted`: the four stopped scans never logged an outcome (phone-log-health.py:
+  "4 scan(s) that started and never reached an outcome"); each "completed" line belongs to the new scan, which
+  started after the close. The stopped isolate kept logging for about 11 ms (11-13 01:42:39.230 "fetch-path Bulk
+  Mail") and then stopped. F357 q1: no overwrite seen in 4 stops.
+  Health summary for the 10 days: aol 1170 starts, 1152 completed, 7 errors, 7 refused, 4 unfinished (the 4 stops);
+  gmail 1 error; yahoo none.
 - MV-5: PASS.
 - MV-6 check 2: PASS (Gmail sign-in works on Windows and Android). Check 9 not yet reported.
 - MV-7: not yet run.
+
+**Decisions (Harold, 2026-11-18)**: "q1. there is already a backlog item to remove this - find and ensure in next
+sprint q2. 3 q3. 1 q4. 1 q5. 3 q6. 2 q7. 1 q8. 1 q9. 1 q10. 2 q11. 1"
+- q1 F307: the backlog card F307 (master plan, Priority 36) is now Sprint 86 scope; Task 8 (#568) did the R-1 audit
+  only, the removal moved to Sprint 86 (Harold's direction), and #568 stays open (the PR body no longer closes it).
+- q2 = 3 F335: fixed this sprint; `build-with-secrets.py` gives the Android build only the keys the Android app reads.
+- q3 = 1 F329: `.codex/hooks/sprint-auto-advance.ps1` deleted, with its unused `.codex/hooks/test-cases/` copies
+  (`.codex/hooks.json` already runs the Python hook).
+- q4 = 1 F350 R-4: the tight tier rule is in `scripts/test-inventory.py` (high = category impact AND 40 or more
+  commits in 60 days; policy no longer high by kind): 60 high, 103 medium, 244 low on 2026-11-18 (407 artifacts).
+  Tests: `test_test_inventory.py` matrix updated plus a policy-impact test; 2 mutants KILLED.
+- q5 = 3 F350 R-5: no change to the mutation policy.
+- q6 = 2 F350 R-6: adopted except the earlier CI run 1 (CI runs stay at 7.7.1 and `gh pr ready`).
+  `run-full-suite.py` refuses while `test/scratch/` holds a `_test.dart` file (2 tests, mutant KILLED) and defaults
+  to concurrency 6; `SPRINT_EXECUTION_WORKFLOW.md` 4.2 (changed files' tests, importers and the high tier) and 5.2
+  (one run on an idle machine) updated.
+- q7 = 1: backlog card F359 (Android emulator integration test).
+- q8 = 1: `.claude/settings.local.json:50` now runs `python scripts/validate-yaml-rules.py --rules-file` (local,
+  untracked file).
+- q9 = 1: the iCloud DEV background scan is off by intent; standing fact updated above.
+- q10 = 2: fixed this sprint (account-row buttons reachable by assistive technology).
+- q11 = 1: backlog card F360 (runner flag restore and the F124 runner-only failure).
+- F357 q1 and q2: asked with the MV-4 evidence above.
 
 **Steps (draft; each is rehearsed before handover, 5.1.9)**:
 - MV-1 (Windows DEV, F352 default account). Precondition: no default set (dev-DB copy: no `default_account_id` row,

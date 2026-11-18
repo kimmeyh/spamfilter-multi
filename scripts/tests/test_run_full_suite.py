@@ -99,6 +99,29 @@ class Base(unittest.TestCase):
         return (self.out / "results.txt").read_text(encoding="utf-8").splitlines()
 
 
+class ScratchRefusal(Base):
+    """Sprint 85 q6 (F350 R-6). What this would NOT catch: a probe left in a folder other than test/scratch/."""
+
+    def test_refuses_when_scratch_holds_a_test_file(self):
+        scratch = self.app / "test" / "scratch" / "sub"
+        scratch.mkdir(parents=True)
+        (scratch / "probe_test.dart").write_text("void main() {}\n", encoding="utf-8")
+        self.fake(["00:03 +12: All tests passed!"])
+        code, out = self.run_main()
+        self.assertEqual(code, 1, out)
+        self.assertIn("REFUSED: test/scratch/ holds test files", out)
+        self.assertIn("test/scratch/sub/probe_test.dart", out)
+        self.assertFalse((self.out / "results.txt").exists())
+
+    def test_runs_when_scratch_holds_no_test_file(self):
+        scratch = self.app / "test" / "scratch"
+        scratch.mkdir(parents=True)
+        (scratch / "notes.txt").write_text("x\n", encoding="utf-8")
+        self.fake(["00:03 +12: All tests passed!"])
+        code, out = self.run_main()
+        self.assertEqual(code, 0, out)
+
+
 class Outcomes(Base):
     def test_passing_run_exit_0_and_result_line(self):
         self.fake(["00:03 +12: All tests passed!"])

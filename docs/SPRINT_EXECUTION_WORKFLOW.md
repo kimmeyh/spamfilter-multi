@@ -552,8 +552,12 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
 - [ ] **4.2 Testing Cycle (Per Task)**
   - **Compile**: Build the code
     - Command: `flutter build windows` or `flutter build apk` (as needed)
-  - **Run Tests**: Execute test suite
-    - Command: `flutter test`
+  - **Run Tests**: the changed files' tests and the tests that import the changed files, plus the high risk tier
+    (Sprint 85 q4 and q6, F350 R-4 and R-6: `python scripts/test-inventory.py --out <file>` lists each test's
+    `tier`; the high tier is high impact AND 40 or more commits in 60 days). A change to a shared file (a widely
+    imported model, `main.dart`, a provider) runs the full suite. Policy tests are fast and run on every change.
+    Phase 5.2 then confirms rather than discovers; CI keeps the full suite.
+    - Command: `flutter test <the files above>`
     - Expected: All tests pass
     - **Strategic Test Runs** (Efficiency Tip): Only run tests AFTER fixing identified issue, not speculatively during investigation
       - Example: Run analyzer -> identify 5 warnings -> fix all 5 -> THEN run tests (not after each fix)
@@ -775,7 +779,7 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
     already said to trace preconditions; tracing by reading did not prevent it, so the step is now RUN, not read.
 
 - [ ] **5.2 Run Complete Test Suite**
-  - Execute full test suite through the evidence runner (F292, Sprint 79): `python scripts/run-full-suite.py --label <sprint>-5.2`. It runs `flutter test --concurrency=4` and records boot time, page file, DEV app state, commit charge every 30 s, TEST-RUNNER load failures, and STALLED after 10 minutes without output. Record its RESULT line in the plan's 5.2 entry. A run that loses test files or stalls is a finding with its machine state attached, never "flaky".
+  - Execute full test suite through the evidence runner (F292, Sprint 79): `python scripts/run-full-suite.py --label <sprint>-5.2`. Run it ONCE, on an idle machine: no build, agent or other test run beside it (a loaded machine costs time and gives false F349 failures; Sprint 85 q6, F350 R-6). It refuses to start while `mobile-app/test/scratch/` holds a `_test.dart` file. It runs `flutter test --concurrency=6` (3 min 39 s idle) and records boot time, page file, DEV app state, commit charge every 30 s, TEST-RUNNER load failures, and STALLED after 10 minutes without output. Record its RESULT line in the plan's 5.2 entry. A run that loses test files or stalls is a finding with its machine state attached, never "flaky".
   - Verify all tests pass (not just new ones)
   - Check code analysis: `flutter analyze`
   - Ensure zero errors introduced

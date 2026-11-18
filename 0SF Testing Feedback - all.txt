@@ -38,7 +38,13 @@ working as expected
     - Check 2: Gmail sign-in on Windows (browser) compared with Android (native).
 both are working
 
-  pattern" button does nothing (:715-719). The pop-up already covers From and Subject. Nothing in the app blocks a free body phrase, now or after removal.
+Questions and Answers:
+
+q1. there is already a backlog item to remove this - find and ensure in next sprint
+q2. 3 q3. 1 q4. 1 q5. 3 q6. 2 q7. 1 q8. 1 q9. 1 q10. 2 q11. 1
+
+ q1. F307: remove the "Create rule" page? The audit found the page only ever makes From rules. Its Subject and Body fields are never filled (rule_quick_add_screen.dart:49-51,110),
+  and its "Edit pattern" button does nothing (:715-719). The pop-up already covers From and Subject. A free body phrase is covered nowhere, today or after removal.
   1. Remove the page, and add a backlog card for a "Block body phrase" action in the pop-up (Recommended)
   2. Remove the page, no new card
   3. Keep the page and fix its Edit button

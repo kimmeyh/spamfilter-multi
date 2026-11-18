@@ -19,7 +19,7 @@ that is `flutter.bat`; `subprocess.Popen` with an argument list and no shell sta
 itself, which is safe here because every argument is fixed or an integer. No `shell=True` is used.
 
 Usage:
-    python scripts/run-full-suite.py --label postreboot-1 [--out-dir DIR] [--stall-minutes 10] [--concurrency 4]
+    python scripts/run-full-suite.py --label postreboot-1 [--out-dir DIR] [--stall-minutes 10] [--concurrency 6]
     python scripts/run-full-suite.py --label selftest --self-test-stall --stall-minutes 1     # failure-path self-test
 Defaults: --out-dir <system temp>/full-suite-runs. Test seams: --poll-seconds (default 30) and --app-dir.
 
@@ -187,13 +187,22 @@ def record_sample(log: Path, csv_path: Path, peaks: list[float]) -> int:
     return size
 
 
+def scratch_test_files(app_dir: Path) -> list[str]:
+    """Test files left in the gitignored test/scratch/ folder (relative paths, sorted)."""
+    scratch = app_dir / "test" / "scratch"
+    if not scratch.is_dir():
+        return []
+    return sorted(p.relative_to(app_dir).as_posix() for p in scratch.rglob("*_test.dart"))
+
+
 def main(argv: list[str] | None = None) -> int:
     common.configure_stdio()
     parser = argparse.ArgumentParser(description="Run the full Flutter test suite with evidence for a failed or hung run.")
     parser.add_argument("--label", required=True, help='short label for the run (for example "postreboot-1"); used in file names')
     parser.add_argument("--out-dir", default=None, help="where the log, the CSV and results.txt go (default: <temp>/full-suite-runs)")
     parser.add_argument("--stall-minutes", type=float, default=10, help="minutes without log growth before the run is STALLED (default 10)")
-    parser.add_argument("--concurrency", type=int, default=4, help="flutter test --concurrency (default 4)")
+    # Sprint 85 q6 (F350 R-6): 6 measured 3 min 39 s on an idle machine.
+    parser.add_argument("--concurrency", type=int, default=6, help="flutter test --concurrency (default 6)")
     parser.add_argument("--self-test-stall", action="store_true", help="failure-path self-test: write one line and hang; expect STALLED, exit 2")
     parser.add_argument("--poll-seconds", type=float, default=30, help=argparse.SUPPRESS)
     parser.add_argument("--app-dir", default=None, help=argparse.SUPPRESS)
@@ -204,6 +213,14 @@ def main(argv: list[str] | None = None) -> int:
     app_dir = Path(args.app_dir) if args.app_dir else REPO / "mobile-app"
     if not (app_dir / "pubspec.yaml").exists():
         print(f"mobile-app not found at {app_dir}")
+        return 1
+    leftovers = scratch_test_files(app_dir)
+    if leftovers:
+        # Sprint 85 q6 (F350 R-6): a leftover probe in test/scratch/ runs with the suite and fails it for a
+        # reason unrelated to the change. Refuse instead of producing a red run that is not a finding.
+        print("REFUSED: test/scratch/ holds test files; delete or move them, then run again:")
+        for path in leftovers:
+            print(f"  {path}")
         return 1
 
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")

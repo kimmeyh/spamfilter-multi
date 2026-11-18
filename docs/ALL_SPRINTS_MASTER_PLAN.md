@@ -207,6 +207,28 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
+### Backlog from the Sprint 85 Manual Validation decisions (Harold, 2026-11-18)
+
+**F359. Android emulator integration test for the paths only a phone found (~120-180m) Priority 40 -- NEW 2026-11-18 (Harold, Sprint 85 q7 = 1)**
+- Phase: Core App Quality
+- Platform: Android
+- F350 R-2: no automated test runs on an Android emulator or device; four defects in Sprints 78-84 were found only
+  on an emulator or a phone (`docs/research/F350_RISK_BASED_TESTING.md` R-2). Add an `integration_test` run on the
+  emulator (adb is allowed on the emulator only) for those paths: the WorkManager worker start and stop, the
+  per-process file lock in the diagnostic log, and the background-scan enable dialog.
+- Depends on: none.
+
+**F360. WinWright runner: restore the screen-reader flag, and find why F124 fails only through the runner (~60-120m) Priority 42 -- NEW 2026-11-18 (Harold, Sprint 85 q11 = 1)**
+- Phase: Process / Testing
+- Platform: Windows Desktop
+- The runner turns the Windows screen-reader flag on (`run-winwright-tests.ps1:507`) and never turns it off; restore
+  the state it found when it ends (`enable-screen-reader-flag.ps1` has status, enable and disable).
+- `test_f124_rule_labels` failed 6 of 6 through the runner at step 2 ("No main window found") and passed 29 of 29
+  eight times run directly on the same build (Sprint 85 5.1.5). Ruled out: a background scan, a second window with
+  the same title, the window state, the flag, the script. Remaining suspect: WinWright does not retry the main-window
+  lookup. Investigate with WinWright's own log.
+- Depends on: none.
+
 ### Backlog from the Sprint 80 7.7.1 final code reviews (Harold, 2026-10-23: Q1 = 2, Q2 = 1) -- F302 shipped Sprint 81; F303 closed Sprint 83 (MV-4, #524); no items remain
 
 Each item is fixed PREVENTION FIRST (SPRINT_EXECUTION_WORKFLOW.md 7.7.1).
@@ -250,9 +272,14 @@ Each item is fixed PREVENTION FIRST (SPRINT_EXECUTION_WORKFLOW.md 7.7.1): name h
 
 Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue #468), placeholder ids R77-RS-1..10 renumbered F266-F275. Section 4.7 of that document lists the Class-1 questions (content storage, learned data, off-device lookups, bundling rules derived from Gmail data).
 
-**F307. Remove the "Create rule" page (RuleQuickAddScreen) -- target Sprint 86 (~30-60m) Priority 36 -- NEW 2026-10-25 (Harold)**
+**F307. Remove the "Create rule" page (RuleQuickAddScreen) -- IN SPRINT 86 (~45-75m) Priority 36 -- NEW 2026-10-25 (Harold)**
 - Phase: Core App Quality
 - Platform: All
+- Sprint 86 scope (Harold, 2026-11-18, Sprint 85 Manual Validation q1: *"there is already a backlog item to remove
+  this - find and ensure in next sprint"*). Sprint 85 Task 8 (#568) did the R-1 audit only and moved the removal
+  here; #568 stays open for Sprint 86. Audit facts: the page pre-fills only the From pattern
+  (`rule_quick_add_screen.dart:105-112`); its Subject, Body and Body URL patterns have no text field and its "Edit
+  pattern" pencil does nothing (`:715-719`); no screen blocks a free body phrase, before or after removal.
 - Harold (2026-10-25): *"I don't think that the Create rule page will be needed, but keep it for now as reference but
   backlog to remove it in 5 sprints from now."*
 - Scope: remove `rule_quick_add_screen.dart` and its two callers: the F271 "Create rule" button on Review No Rule

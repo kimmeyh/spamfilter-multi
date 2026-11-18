@@ -113,10 +113,21 @@ class KindClassification(unittest.TestCase):
 class TierRule(unittest.TestCase):
     def test_matrix(self):
         t = inv.tier_for
-        expect = {("high", "high"): "high", ("high", "medium"): "high", ("high", "low"): "medium",
+        # The tight rule (Sprint 85 q4): high impact needs HIGH likelihood for the high tier.
+        expect = {("high", "high"): "high", ("high", "medium"): "medium", ("high", "low"): "medium",
                   ("normal", "high"): "medium", ("normal", "medium"): "low", ("normal", "low"): "low"}
         for (impact, like), tier in expect.items():
             self.assertEqual(t(impact, like), tier, (impact, like))
+
+    def test_policy_kind_alone_is_not_high_impact(self):
+        # Sprint 85 q4: impact comes from the HIGH_IMPACT_LIB categories only. The inventory's own policy
+        # test imports no mail, credential, worker, coordinator or migration code, so it is impact normal.
+        # What this test would NOT catch: a category regex that stops matching a real high-impact file.
+        entries = inv.build_inventory(with_git=False)
+        policy = [e for e in entries if e["path"].endswith("test/policy/test_inventory_coverage_test.dart")]
+        self.assertEqual(len(policy), 1)
+        self.assertEqual(policy[0]["impact"], "normal", policy[0]["impact_reasons"])
+        self.assertNotIn("release gate (test/policy)", policy[0]["impact_reasons"])
 
     def test_likelihood_boundaries(self):
         self.assertEqual(inv.likelihood_of(inv.LIKELIHOOD_HIGH), "high")

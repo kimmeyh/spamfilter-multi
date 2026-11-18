@@ -19,8 +19,9 @@ Kinds: unit, widget, integration, policy, hook-case, python-unittest, winwright.
     widget       contains testWidgets( (and is not policy or integration)
     unit         any other Dart test
 
-TIER RULE (proposed risk tier = likelihood x impact, ISTQB CTFL v4.0.1 section 5.2):
-    impact is HIGH when the test is a release gate (kind policy) or when it imports or reads a lib/ file
+TIER RULE (risk tier = likelihood x impact, ISTQB CTFL v4.0.1 section 5.2; the tight rule adopted by Harold,
+Sprint 85 q4, 2026-11-18):
+    impact is HIGH when the test imports or reads a lib/ file
     that matches HIGH_IMPACT_LIB (code that deletes or moves mail, credentials and secure storage, the scan
     coordinator, background workers, database migrations). Only DIRECT imports and File('lib/...') reads
     count; imports are not followed transitively, so a widget test of a screen that reaches the scanner
@@ -31,9 +32,11 @@ TIER RULE (proposed risk tier = likelihood x impact, ISTQB CTFL v4.0.1 section 5
     in the union (a commit that touched two files counts once). HIGH when >= LIKELIHOOD_HIGH, MEDIUM
     when >= LIKELIHOOD_MEDIUM, else LOW. The thresholds were calibrated on 2026-11-10 data (647 commits
     in 60 days; the median test has 15 commits, the 75th percentile 44): 40 is about the top quarter.
-    tier: impact HIGH and likelihood HIGH or MEDIUM -> high; impact HIGH and likelihood LOW -> medium;
+    tier: impact HIGH and likelihood HIGH -> high; impact HIGH and likelihood MEDIUM or LOW -> medium;
           impact NORMAL and likelihood HIGH -> medium; every other combination -> low.
-    The tier is a PROPOSAL for the F350 analysis, not a decision.
+    Use: every change runs the high tier plus the tests that import a changed file; a change to a shared
+    file (a widely imported model, main.dart, a provider) runs everything; CI keeps the full suite.
+    Policy tests are not high impact for being policy tests; they are fast and run on every change.
 
 Usage:
     python scripts/test-inventory.py --out inventory.json --markdown inventory.md
@@ -422,8 +425,9 @@ def likelihood_of(churn_total: int) -> str:
 
 
 def tier_for(impact: str, likelihood: str) -> str:
+    """The tight rule (Sprint 85 q4): only high impact AND high likelihood is the high tier."""
     if impact == "high":
-        return "high" if likelihood in ("high", "medium") else "medium"
+        return "high" if likelihood == "high" else "medium"
     return "medium" if likelihood == "high" else "low"
 
 
@@ -457,8 +461,9 @@ def build_inventory(repo: Path = REPO, timings: dict | None = None, with_git: bo
                 r = impact_of_lib(x)
                 if r and r not in impact_reasons:
                     impact_reasons.append(r)
-            if kind == "policy":
-                impact_reasons.append("release gate (test/policy)")
+            # Sprint 85 q4 (Harold, 2026-11-18): impact comes from the HIGH_IMPACT_LIB categories only. A
+            # policy test is no longer high impact for being a policy test; policy gates are fast text checks
+            # and run on every change whatever their tier.
         elif family == "hook-case":
             folder = p.rsplit("/", 1)[-1]
             hook = HOOK_FOR_FOLDER.get("" if folder == "test-cases" else folder, "unknown")
