@@ -1175,6 +1175,24 @@ flutter_secure_storage.dat` 1,382 B, written 11/07 19:22, SHA-256 prefix 464DC17
 run); the DEV copy is identical; the March DEV file is kept as `.pre_f354_20261110_175703`; marker written 11/10 17:57.
 Read again 2026-11-13 16:13 after the new DEV build and the MV-1 rehearsal: production 1,382 B, written 11/07 19:22,
 SHA-256 prefix 464DC179B98A1F67 (unchanged); DEV copy the same.
+Read again 2026-11-17 23:50, after Harold's Store app sign-in and scan on all 4 production accounts: production
+written 11/07 19:22, SHA-256 prefix 464DC179B98A1F67 (unchanged).
+
+**Results (Harold, 2026-11-17)**:
+- MV-1: (b)-(e) PASS. (a) differs from the step: with no default, Settings showed the "Select Account" pop-up instead
+  of the gmail header. That is the lazy picker in `settings_screen.dart:341-365` (no session selection and more than
+  one account, so it asks once). The rehearsal opened Settings from Review No Rule Items, whose button resolves an
+  account itself (`no_rule_review_screen.dart:239-258`), so it never reached the picker. The step did not name the
+  screen to open Settings from; that is a rehearsal gap, not an F352 defect. With a default set (d) the picker does
+  not appear.
+- MV-2: PASS. DEV lists 4 accounts; the Store app 0.24.1 signed in and scanned all 4 production accounts (screenshots:
+  Select Account, Manual Scan and Results for kimmeyharold@aol.com, Read-Only, 185 already filed, 3 No rule);
+  production credential file unchanged (above).
+- MV-3: PASS (no "isn't responding" dialog on the Fold).
+- MV-4: Fold shows 0.24.1 (expected: 0.25.0+23 is not uploaded). Diagnostic log pull over MTP pending.
+- MV-5: PASS.
+- MV-6 check 2: PASS (Gmail sign-in works on Windows and Android). Check 9 not yet reported.
+- MV-7: not yet run.
 
 **Steps (draft; each is rehearsed before handover, 5.1.9)**:
 - MV-1 (Windows DEV, F352 default account). Precondition: no default set (dev-DB copy: no `default_account_id` row,
