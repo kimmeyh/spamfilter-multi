@@ -1225,9 +1225,14 @@ written 11/07 19:22, SHA-256 prefix 464DC179B98A1F67 (unchanged).
   Mail") and then stopped. F357 q1: no overwrite seen in 4 stops.
   Health summary for the 10 days: aol 1170 starts, 1152 completed, 7 errors, 7 refused, 4 unfinished (the 4 stops);
   gmail 1 error; yahoo none.
+  Harold, 2026-11-18: the Fold's Scan History goes back only to 11/14 1:30 PM, so the 11/13 01:42 row is gone. The
+  phone log times are local (`diagnostic_logger.dart:409`, `DateTime.now().toIso8601String()`, no Z), so the
+  11-14 17:13:38 stop (5:13 PM) is inside that window; its row is the one to screenshot.
 - MV-5: PASS.
-- MV-6 check 2: PASS (Gmail sign-in works on Windows and Android). Check 9 not yet reported.
-- MV-7: not yet run.
+- MV-6 check 2: PASS (Gmail sign-in works on Windows and Android). Check 9: PASS (Harold, 2026-11-18: "mv-6 all
+  good").
+- MV-7: PASS (Harold, 2026-11-18: "all is working as expected"; closed without a screenshot at his direction).
+- Optional MV-1 (b) and (e) re-check on the 42b56afc DEV build: PASS (Harold, 2026-11-18: "working").
 
 **Decisions (Harold, 2026-11-18)**: "q1. there is already a backlog item to remove this - find and ensure in next
 sprint q2. 3 q3. 1 q4. 1 q5. 3 q6. 2 q7. 1 q8. 1 q9. 1 q10. 2 q11. 1"
@@ -1250,7 +1255,19 @@ sprint q2. 3 q3. 1 q4. 1 q5. 3 q6. 2 q7. 1 q8. 1 q9. 1 q10. 2 q11. 1"
 - q9 = 1: the iCloud DEV background scan is off by intent; standing fact updated above.
 - q10 = 2: fixed this sprint (account-row buttons reachable by assistive technology).
 - q11 = 1: backlog card F360 (runner flag restore and the F124 runner-only failure).
-- F357 q1 and q2: asked with the MV-4 evidence above.
+- F357 q1 = 1 and q2 = 1 (Harold, 2026-11-18 18:37): no code change. q1: a late outcome never replaced
+  `interrupted` in 4 real stops (MV-4 (c)), so the question is closed with that evidence. q2: the recent-scan check
+  may count an `interrupted` row; the cost seen was under 2 minutes against a 10-minute interval, and the periodic
+  run covers it.
+- T1 (DEV scan tasks deleted 2026-11-17 23:42:48, 23:42:56, 23:43:02). Harold: "I turned off the icloud task because
+  it looked like the icloud task was failing". Traced: (1) the app did not delete them. The DEV diagnostic log has
+  no schedule, cancel or reconciliation line from 23:40:40 to 02:14; its start-up reconciliation at 23:40:39 reported
+  "3 task(s) wanted"; Settings' cancel always logs (`background_scan_scheduler.dart:294-311`). (2) No Claude command
+  ran then (the first session file of the night is 23:50). (3) Task Scheduler event 141 names user HKOMEN\kimme for
+  all three, 6 to 8 seconds apart, the pace of a delete and a confirm in the Task Scheduler window. All four DEV task
+  names start with the same account prefix, and the iCloud task was already absent (seen at the 5.1.9 rehearsal, 11/13).
+  Inference, unverified: the three deletes were by hand in Task Scheduler while looking for the iCloud task. Asked
+  Harold to confirm.
 
 **Steps (draft; each is rehearsed before handover, 5.1.9)**:
 - MV-1 (Windows DEV, F352 default account). Precondition: no default set (dev-DB copy: no `default_account_id` row,
