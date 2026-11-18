@@ -9,8 +9,10 @@ What it does, in order (every refusal happens BEFORE anything is deleted):
   3. Release only: reads the signing JSON that lives OUTSIDE the repository (GP-2, ADR-0027) and the versionCode check
      (IMP-2: the build number must be above "Last uploaded to Play" in docs/STORE_VERSION_STATUS.md).
   4. Stops gradle, runs flutter clean, removes the build folders.
-  5. flutter build with --flavor, APP_ENV, the secrets file and the gradle property androidGmailClientId (SEC-9;
-     the gradle release gate in android/app/build.gradle.kts throws when it is missing).
+  5. flutter build with --flavor, APP_ENV, a FILTERED copy of the secrets file and the gradle property
+     androidGmailClientId (SEC-9; the gradle release gate in android/app/build.gradle.kts throws when it is
+     missing). The filtered copy holds only ANDROID_DART_DEFINE_KEYS (issue #575: the Windows client secret never
+     reaches an Android artifact); it is written to the system temp folder and deleted when the script ends.
   6. Aab only: the F204 check (verify-aab-play-requirements.py), then a copy to dist/android-<version>/ (IMP-1).
   7. Optional: install on an emulator and start the app (--install-to-emulator), or flutter run (--run).
 
@@ -60,6 +62,12 @@ SIGNING_ENV = {
     "keyPassword": "ANDROID_KEY_PASSWORD",
 }
 CLIENT_ID_PROPERTY = "androidGmailClientId"
+# Issue #575: the ONLY secrets-file keys the Android build receives as dart-defines. The Android app reads
+# ANDROID_GMAIL_CLIENT_ID (gmail_windows_oauth_handler.dart, _androidClientId) and nothing else from the secrets
+# file. WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET in particular must never be compiled into an APK or bundle: Google
+# documents that an installed app cannot keep a client secret confidential. Add a key here only when Android code
+# reads it with String.fromEnvironment. APP_ENV is passed separately by flavor_args.
+ANDROID_DART_DEFINE_KEYS = ("ANDROID_GMAIL_CLIENT_ID",)
 SAFE_PROPERTY_VALUE = re.compile(r"^[A-Za-z0-9._-]+$")
 PUBSPEC_VERSION = re.compile(r"^version:\s*(\S+)", re.M)
 PUBSPEC_CODE = re.compile(r"^version:\s*\S+\+(\d+)", re.M)
@@ -103,40 +111,66 @@ def load_json_file(path: Path, what: str) -> dict:
     return data
 
 
-def first_set(secrets: dict, *names: str) -> str | None:
-    """The value of the first key that is set (truthy), like the PowerShell if/elseif chain."""
-    for name in names:
-        value = secrets.get(name)
-        if value:
-            return str(value)
-    return None
+def android_dart_defines(secrets: dict) -> tuple[dict, list[str]]:
+    """(the defines the Android build gets, the key names left out). Issue #575 (F335 follow-up).
+
+    Only the keys in ANDROID_DART_DEFINE_KEYS pass, so the Windows desktop client secret and every other key the
+    Android app never reads stay out of the APK and the bundle. A key in the allow-list that is not in the file is
+    simply absent.
+    """
+    kept = {name: secrets[name] for name in ANDROID_DART_DEFINE_KEYS if name in secrets}
+    dropped = sorted(name for name in secrets if name not in kept)
+    return kept, dropped
+
+
+def write_android_defines_file(defines: dict) -> Path:
+    """Write the filtered defines to a new .json file in the system temp folder (OUTSIDE the repository).
+
+    mkstemp creates the file readable by this user only; the handle is closed before flutter starts, because an
+    open handle can stop the child from reading the file on Windows. The caller deletes it (remove_quietly) in a
+    finally block.
+    """
+    handle, name = tempfile.mkstemp(prefix="spamfilter-android-defines-", suffix=".json")
+    try:
+        with os.fdopen(handle, "w", encoding="utf-8") as stream:
+            json.dump(defines, stream)
+    except BaseException:
+        remove_quietly(Path(name))
+        raise
+    return Path(name)
+
+
+def remove_quietly(path: Path | None) -> None:
+    """Delete the temporary defines file. A failure is reported by NAME (the file holds key values)."""
+    if path is None:
+        return
+    try:
+        path.unlink(missing_ok=True)
+    except OSError as exc:
+        say(f"[WARNING] Could not delete the temporary defines file {path}: {exc.strerror or exc}. Delete it by hand.")
 
 
 def validate_providers(secrets: dict) -> tuple[bool, bool]:
     """(gmail_configured, aol_configured). Prints key NAMES and status only, never a value.
 
-    A provider counts as configured when every field is set. A provider with SOME fields set is reported
-    incomplete and skipped. Same rules as the PowerShell Validate-OAuthProvider / Validate-IMAPProvider.
+    Gmail on Android needs only ANDROID_GMAIL_CLIENT_ID: the Android sign-in uses the Android OAuth client with a
+    custom-scheme redirect and PKCE, and no client secret (gmail_windows_oauth_handler.dart, the mobile path).
+    The WINDOWS_* keys and GMAIL_REDIRECT_URI belong to the Windows loopback flow, so they neither count toward
+    Gmail here nor reach the Android build (ANDROID_DART_DEFINE_KEYS). AOL: both fields set means configured;
+    some fields set is reported incomplete and skipped (the PowerShell Validate-IMAPProvider rule).
     """
-    gmail_id = first_set(secrets, "ANDROID_GMAIL_CLIENT_ID", "WINDOWS_GMAIL_DESKTOP_CLIENT_ID", "GMAIL_DESKTOP_CLIENT_ID")
-    gmail_secret = first_set(secrets, "WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET", "GMAIL_OAUTH_CLIENT_SECRET")
-    gmail_uri = first_set(secrets, "ANDROID_REDIRECT_URI", "GMAIL_REDIRECT_URI")
-    has_id = not is_placeholder(gmail_id)
-    has_secret = not is_placeholder(gmail_secret)
-    has_uri = bool(gmail_uri and gmail_uri.strip())
-    gmail_ok = has_id and has_secret and has_uri
+    gmail_id = secrets.get("ANDROID_GMAIL_CLIENT_ID")
+    gmail_ok = not is_placeholder(gmail_id)
     if gmail_ok:
-        say("   [OK] Gmail - configured (OAuth)")
-    elif has_id or has_secret or has_uri:
+        say("   [OK] Gmail - configured (ANDROID_GMAIL_CLIENT_ID)")
+    elif gmail_id is not None:
         say("   [WARNING] Gmail - INCOMPLETE (skipping)")
-        if not has_id:
-            say("      [ERROR] Missing/placeholder CLIENT_ID")
-        if not has_secret:
-            say("      [ERROR] Missing/placeholder CLIENT_SECRET")
-        if not has_uri:
-            say("      [ERROR] Missing REDIRECT_URI")
+        say("      [ERROR] Missing/placeholder ANDROID_GMAIL_CLIENT_ID")
     else:
-        say("   [WARNING] Gmail - not configured (optional)")
+        say("   [WARNING] Gmail - not configured (optional): ANDROID_GMAIL_CLIENT_ID is not set")
+        windows_only = sorted(name for name in secrets if name.startswith("WINDOWS_GMAIL_"))
+        if windows_only:
+            say("      [INFO] " + ", ".join(windows_only) + " are for the Windows app; the Android app does not use them")
 
     email = secrets.get("AOL_EMAIL")
     password = secrets.get("AOL_APP_PASSWORD")
@@ -210,11 +244,19 @@ def obfuscate_args(symbols_dir: Path) -> list[str]:
     return ["--obfuscate", f"--split-debug-info={symbols_dir}"]
 
 
-def flutter_build_args(*, build_type: str, env: str, output: str, secrets_arg: str, gradle_args: list[str],
+def defines_file_args(defines_arg: str | None) -> list[str]:
+    """--dart-define-from-file for the FILTERED defines file; nothing when no allowed key is set."""
+    return [f"--dart-define-from-file={defines_arg}"] if defines_arg else []
+
+
+def flutter_build_args(*, build_type: str, env: str, output: str, defines_arg: str | None, gradle_args: list[str],
                        symbols_dir: Path | None) -> list[str]:
-    """The full argument list after `flutter`. Order matches the PowerShell script."""
+    """The full argument list after `flutter`. Order matches the PowerShell script.
+
+    defines_arg is the path of the filtered defines file (write_android_defines_file), never the secrets file.
+    """
     args = ["build", build_target(output), f"--{build_type}", *flavor_args(env),
-            f"--dart-define-from-file={secrets_arg}", *gradle_args]
+            *defines_file_args(defines_arg), *gradle_args]
     if build_type == "release":
         if symbols_dir is None:
             raise BuildRefused("GP-9: a release build needs a symbols folder")
@@ -222,9 +264,9 @@ def flutter_build_args(*, build_type: str, env: str, output: str, secrets_arg: s
     return args
 
 
-def flutter_run_args(*, build_type: str, env: str, secrets_arg: str, gradle_args: list[str], device: str) -> list[str]:
-    return ["run", f"--{build_type}", *flavor_args(env), f"--dart-define-from-file={secrets_arg}",
-            *gradle_args, "-d", device]
+def flutter_run_args(*, build_type: str, env: str, defines_arg: str | None, gradle_args: list[str],
+                     device: str) -> list[str]:
+    return ["run", f"--{build_type}", *flavor_args(env), *defines_file_args(defines_arg), *gradle_args, "-d", device]
 
 
 # ---- signing and version checks --------------------------------------------------------------------------------
@@ -659,7 +701,8 @@ def install_and_launch(artifact: Path, args: argparse.Namespace) -> None:
         say(f"  Launch manually with: adb shell am start -n {package}/{MAIN_ACTIVITY}")
 
 
-def run_app(mobile_app: Path, flutter: str, args: argparse.Namespace, secrets_arg: str, gradle_args: list[str]) -> int:
+def run_app(mobile_app: Path, flutter: str, args: argparse.Namespace, defines_arg: str | None,
+            gradle_args: list[str]) -> int:
     say("[INFO] Running app with debugger attached (hot reload enabled)...")
     say("   Press 'r' for hot reload, 'R' for hot restart, 'q' to quit")
     adb_exe, emulator_exe = find_adb_and_emulator()
@@ -675,7 +718,7 @@ def run_app(mobile_app: Path, flutter: str, args: argparse.Namespace, secrets_ar
     if not serial:
         raise BuildRefused("No emulator available. Start one manually or use --install-to-emulator instead.")
     say(f"[INFO] Running on device: {serial}")
-    code = run_inherit([flutter, *flutter_run_args(build_type=args.build_type, env=args.env, secrets_arg=secrets_arg,
+    code = run_inherit([flutter, *flutter_run_args(build_type=args.build_type, env=args.env, defines_arg=defines_arg,
                                                    gradle_args=gradle_args, device=serial)], cwd=mobile_app)
     say()
     say("[INFO] Done!" if code == 0 else f"[ERROR] flutter run exited with {code}")
@@ -722,15 +765,25 @@ def execute(args: argparse.Namespace, mobile_app: Path) -> int:
     if not flutter:
         raise BuildRefused("flutter not found on PATH.")
     install_dev_stub(mobile_app)
-    try:
-        secrets_arg = str(secrets_file.relative_to(mobile_app))
-    except ValueError:
-        secrets_arg = str(secrets_file)
     gradle_args = gradle_project_args(secrets, args.build_type)
 
-    if args.run:
-        return run_app(mobile_app, flutter, args, secrets_arg, gradle_args)
+    # Issue #575: flutter gets a FILTERED copy of the secrets file, never the file itself.
+    defines, dropped = android_dart_defines(secrets)
+    say("[INFO] Dart-defines passed to the Android build: " + (", ".join(sorted(defines)) or "(none)"))
+    say("[INFO] Not passed (the Android app does not read them): " + (", ".join(dropped) or "(none)"))
+    defines_file = write_android_defines_file(defines) if defines else None
+    try:
+        defines_arg = str(defines_file) if defines_file else None
+        if args.run:
+            return run_app(mobile_app, flutter, args, defines_arg, gradle_args)
+        return build_and_install(args, mobile_app, flutter, defines_arg, gradle_args)
+    finally:
+        remove_quietly(defines_file)
 
+
+def build_and_install(args: argparse.Namespace, mobile_app: Path, flutter: str, defines_arg: str | None,
+                      gradle_args: list[str]) -> int:
+    """Signing, checks, clean, flutter build, F204 and keep, then the optional install. Steps 3 to 7."""
     child_env = dict(os.environ)
     symbols_dir: Path | None = None
     if args.build_type == "release":
@@ -752,7 +805,7 @@ def execute(args: argparse.Namespace, mobile_app: Path) -> int:
         symbols_dir.mkdir(parents=True, exist_ok=True)
     say(f"[INFO] Building {args.output} ({args.build_type}), flavor '{args.env}' with APP_ENV={args.env}")
     argv = [flutter, *flutter_build_args(build_type=args.build_type, env=args.env, output=args.output,
-                                         secrets_arg=secrets_arg, gradle_args=gradle_args, symbols_dir=symbols_dir)]
+                                         defines_arg=defines_arg, gradle_args=gradle_args, symbols_dir=symbols_dir)]
     say("[INFO] Command: flutter " + " ".join(display_arg(a) for a in argv[1:]))
     code = run_inherit(argv, cwd=mobile_app, env=child_env)
     if code != 0:

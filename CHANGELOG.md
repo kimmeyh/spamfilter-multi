@@ -26,6 +26,11 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-11-18 (Sprint 85)
+
+- **fix**: Screen readers can now reach the buttons inside each account row on the Select Account screen. The default-account star, Start Scan and Delete were hidden from assistive technology; a mouse could press them, but a screen reader could not. Each button now has its own name that includes the account (for example "Start scan for you@example.com"), and the row itself still reads as one item that selects the account. The Delete button on a "Missing credentials" row is reachable too (Issue #563)
+- **fix**: The Android app and Play bundle no longer contain the Windows Gmail client secret. `build-with-secrets.py` used to give flutter the whole secrets file, so every key, including `WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET`, was compiled into the APK and the bundle. It now passes a filtered copy, written to the system temp folder and deleted when the script ends, that holds only `ANDROID_GMAIL_CLIENT_ID`, the one key the Android app reads; the script prints the key names passed and left out. The Gmail check now asks for `ANDROID_GMAIL_CLIENT_ID` only, because the Android sign-in uses no client secret. Windows builds are unchanged (Issue #575)
+
 ### 2026-11-10 (Sprint 85)
 
 - **fix**: On a phone, the Select Account rows now show the account address in full. The row buttons moved to their own line under the account details, and "Sign In Again" sits under its reason. Before, an account that needed sign-in showed its address one letter per line down the screen (Issue #563)

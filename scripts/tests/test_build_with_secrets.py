@@ -43,6 +43,11 @@ Test list and what each does NOT catch:
       NOT caught: the real flutter analyze.
   test_display_arg_masks_property_values: a -P argument is logged as name=<set>. NOT caught: a value logged by
       another line.
+  test_gmail_needs_the_android_client_id_only (issue #575): Gmail counts as configured from ANDROID_GMAIL_CLIENT_ID
+      alone, and WINDOWS_* keys never make it count. NOT caught: whether the id is a real Google client.
+  AndroidDefinesTests (issue #575): the Android build gets a filtered temporary defines file holding only
+      ANDROID_DART_DEFINE_KEYS, outside the repository, deleted after success, a flutter failure and a refusal.
+      NOT caught: see the class docstring.
 """
 from __future__ import annotations
 
@@ -89,6 +94,12 @@ argv = sys.argv[1:]
 names = ["ANDROID_KEYSTORE_PATH", "ANDROID_KEYSTORE_PASSWORD", "ANDROID_KEY_ALIAS", "ANDROID_KEY_PASSWORD"]
 record = {"argv": argv, "cwd": os.getcwd(), "env": {n: os.environ[n] for n in names if n in os.environ},
           "build_dir_present": os.path.isdir("build")}
+for arg in argv:
+    if arg.startswith("--dart-define-from-file="):
+        path = arg.split("=", 1)[1]
+        record["defines_path"] = path
+        with open(path, encoding="utf-8") as defines:
+            record["defines_keys"] = sorted(json.load(defines))
 with open(os.environ["FAKE_CALLS"], "a", encoding="utf-8") as handle:
     handle.write(json.dumps(record) + "\n")
 if argv and argv[0] == "build":
@@ -191,28 +202,31 @@ class ArgumentTests(unittest.TestCase):
     def test_build_arguments_and_flavor_mapping(self) -> None:
         sym = Path("/sym")
         gradle = ["-PandroidGmailClientId=ID"]
-        debug = tool.flutter_build_args(build_type="debug", env="dev", output="apk", secrets_arg="secrets.dev.json",
+        debug = tool.flutter_build_args(build_type="debug", env="dev", output="apk", defines_arg="defines.json",
                                         gradle_args=gradle, symbols_dir=None)
         self.assertEqual(debug, ["build", "apk", "--debug", "--flavor", "dev", "--dart-define=APP_ENV=dev",
-                                 "--dart-define-from-file=secrets.dev.json", "-PandroidGmailClientId=ID"])
+                                 "--dart-define-from-file=defines.json", "-PandroidGmailClientId=ID"])
+        no_defines = tool.flutter_build_args(build_type="debug", env="dev", output="apk", defines_arg=None,
+                                             gradle_args=[], symbols_dir=None)
+        self.assertFalse(any(a.startswith("--dart-define-from-file") for a in no_defines))
         rel_apk = tool.flutter_build_args(build_type="release", env="prod", output="apk",
-                                          secrets_arg="secrets.dev.json", gradle_args=gradle, symbols_dir=sym)
+                                          defines_arg="defines.json", gradle_args=gradle, symbols_dir=sym)
         self.assertEqual(rel_apk[:3], ["build", "apk", "--release"])
         self.assertEqual(rel_apk[-2:], ["--obfuscate", f"--split-debug-info={sym}"])
         rel_aab = tool.flutter_build_args(build_type="release", env="prod", output="aab",
-                                          secrets_arg="secrets.dev.json", gradle_args=gradle, symbols_dir=sym)
+                                          defines_arg="defines.json", gradle_args=gradle, symbols_dir=sym)
         self.assertEqual(rel_aab[:3], ["build", "appbundle", "--release"])
         self.assertIn("--flavor", rel_aab)
         self.assertEqual(rel_aab[rel_aab.index("--flavor") + 1], "prod")
         self.assertIn("--dart-define=APP_ENV=prod", rel_aab)
         self.assertNotIn("--obfuscate", debug)
         with self.assertRaises(tool.BuildRefused):
-            tool.flutter_build_args(build_type="release", env="prod", output="aab", secrets_arg="s", gradle_args=[],
+            tool.flutter_build_args(build_type="release", env="prod", output="aab", defines_arg="s", gradle_args=[],
                                     symbols_dir=None)
         self.assertEqual(tool.artifact_path("prod", "debug", "apk"), "build/app/outputs/flutter-apk/app-prod-debug.apk")
         self.assertEqual(tool.artifact_path("dev", "release", "apk"), "build/app/outputs/flutter-apk/app-dev-release.apk")
         self.assertEqual(tool.artifact_path("prod", "release", "aab"), "build/app/outputs/bundle/prodRelease/app-prod-release.aab")
-        run = tool.flutter_run_args(build_type="debug", env="prod", secrets_arg="s.json", gradle_args=gradle,
+        run = tool.flutter_run_args(build_type="debug", env="prod", defines_arg="s.json", gradle_args=gradle,
                                     device="emulator-5554")
         self.assertEqual(run[0], "run")
         self.assertIn("-PandroidGmailClientId=ID", run)
@@ -294,6 +308,114 @@ class ProviderTests(unittest.TestCase):
         (gmail, aol), _ = quiet(tool.validate_providers, {})
         self.assertFalse(gmail or aol)
 
+    def test_gmail_needs_the_android_client_id_only(self) -> None:
+        # Issue #575: the Android app signs in with ANDROID_GMAIL_CLIENT_ID alone (no secret, no redirect key).
+        (gmail, _), out = quiet(tool.validate_providers, {"ANDROID_GMAIL_CLIENT_ID": CLIENT_ID})
+        self.assertTrue(gmail)
+        windows_only = {"WINDOWS_GMAIL_DESKTOP_CLIENT_ID": "x-win-id", "WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET": CLIENT_SECRET,
+                        "GMAIL_REDIRECT_URI": "http://localhost:8080/oauth/callback", "ANDROID_REDIRECT_URI": "x:/cb"}
+        (gmail, _), out = quiet(tool.validate_providers, windows_only)
+        self.assertFalse(gmail, "Windows keys must not make Gmail count as configured for Android")
+        self.assertIn("WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET", out)  # a NAME, printed as information
+        self.assertNotIn(CLIENT_SECRET, out)
+        (gmail, _), out = quiet(tool.validate_providers, {"ANDROID_GMAIL_CLIENT_ID": "YOUR-CLIENT-ID"})
+        self.assertFalse(gmail)
+        self.assertIn("INCOMPLETE", out)
+
+
+class AndroidDefinesTests(unittest.TestCase):
+    """Issue #575: the Android build receives only ANDROID_DART_DEFINE_KEYS.
+
+    What these tests would NOT catch: a key added to ANDROID_DART_DEFINE_KEYS by a person who believes Android
+    reads it (the allow-list is the policy, and the tests only pin that the Windows secret is not in it); a Dart
+    change that starts reading a Windows key on Android (the build would silently get an empty value); and flutter
+    itself reading some other file (the fake flutter only proves which path was passed).
+    """
+
+    ALL_KEYS = {"GMAIL_REDIRECT_URI": "http://localhost:8080/oauth/callback", "WINDOWS_GMAIL_DESKTOP_CLIENT_ID": "x-win-id",
+                "WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET": CLIENT_SECRET, "ANDROID_GMAIL_CLIENT_ID": CLIENT_ID,
+                "ANDROID_REDIRECT_URI": "com.example:/cb", "AOL_EMAIL": AOL_EMAIL, "AOL_APP_PASSWORD": AOL_PASSWORD}
+
+    def test_filtered_defines_hold_exactly_the_allowed_keys(self) -> None:
+        self.assertNotIn("WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET", tool.ANDROID_DART_DEFINE_KEYS)
+        kept, dropped = tool.android_dart_defines(self.ALL_KEYS)
+        self.assertEqual(kept, {"ANDROID_GMAIL_CLIENT_ID": CLIENT_ID})
+        self.assertEqual(set(kept) | set(dropped), set(self.ALL_KEYS))
+        self.assertIn("WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET", dropped)
+        kept, dropped = tool.android_dart_defines({"AOL_EMAIL": AOL_EMAIL})
+        self.assertEqual(kept, {})
+        self.assertEqual(dropped, ["AOL_EMAIL"])
+
+    def test_defines_file_is_outside_the_repo_and_removable(self) -> None:
+        path = tool.write_android_defines_file({"ANDROID_GMAIL_CLIENT_ID": CLIENT_ID})
+        try:
+            self.assertEqual(path.suffix, ".json")
+            self.assertFalse(str(path.resolve()).lower().startswith(str(REPO.resolve()).lower()))
+            self.assertEqual(json.loads(path.read_text(encoding="utf-8")), {"ANDROID_GMAIL_CLIENT_ID": CLIENT_ID})
+        finally:
+            tool.remove_quietly(path)
+        self.assertFalse(path.exists())
+        tool.remove_quietly(path)  # a second delete is quiet
+
+    def run_build(self, project: Project, *argv: str) -> tuple[int, str, dict]:
+        project.secrets.write_text(json.dumps(self.ALL_KEYS))
+        code, out = quiet(tool.main, list(argv) + ["--secrets-file", str(project.secrets)], mobile_app=project.mobile)
+        builds = [c for c in project.calls_list() if c["argv"][0] == "build"]
+        return code, out, builds[-1] if builds else {}
+
+    def test_build_receives_only_the_filtered_file_and_it_is_removed(self) -> None:
+        project = Project(self)
+        project.set_artifact("build/app/outputs/flutter-apk/app-prod-debug.apk", project.good_aab)
+        code, out, build = self.run_build(project, "--build-type", "debug")
+        self.assertEqual(code, 0, out)
+        self.assertEqual(build["defines_keys"], ["ANDROID_GMAIL_CLIENT_ID"])
+        self.assertIn(f"--dart-define-from-file={build['defines_path']}", build["argv"])
+        self.assertNotIn(str(project.secrets), " ".join(build["argv"]))
+        self.assertNotIn("secrets.dev.json", " ".join(build["argv"]))
+        self.assertFalse(Path(build["defines_path"]).exists(), "the temporary defines file must be deleted")
+        self.assertIn("Not passed (the Android app does not read them): ", out)
+        self.assertIn("WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET", out)
+        for value in (CLIENT_SECRET, CLIENT_ID, AOL_PASSWORD, AOL_EMAIL):
+            self.assertNotIn(value, out)
+
+    def test_defines_file_is_removed_when_flutter_fails(self) -> None:
+        project = Project(self)
+        with mock.patch.dict(os.environ, {"FAKE_BUILD_RC": "3"}):
+            code, out, build = self.run_build(project, "--build-type", "debug")
+        self.assertEqual(code, 3, out)
+        self.assertFalse(Path(build["defines_path"]).exists())
+
+    def test_run_option_gets_the_filtered_file_and_it_is_removed(self) -> None:
+        project = Project(self)
+        seen: dict = {}
+
+        def fake_run_app(mobile_app, flutter, args, defines_arg, gradle_args) -> int:
+            seen["path"] = defines_arg
+            seen["keys"] = sorted(json.loads(Path(defines_arg).read_text(encoding="utf-8")))
+            return 0
+
+        with mock.patch.object(tool, "run_app", side_effect=fake_run_app):
+            code, out, _ = self.run_build(project, "--build-type", "debug", "--run")
+        self.assertEqual(code, 0, out)
+        self.assertEqual(seen["keys"], ["ANDROID_GMAIL_CLIENT_ID"])
+        self.assertFalse(Path(seen["path"]).exists())
+
+    def test_defines_file_is_removed_on_a_refusal(self) -> None:
+        project = Project(self)
+        created: list[Path] = []
+        real = tool.write_android_defines_file
+
+        def spy(defines: dict) -> Path:
+            created.append(real(defines))
+            return created[-1]
+
+        with mock.patch.object(tool, "write_android_defines_file", side_effect=spy):
+            code, out, _ = self.run_build(project, "--signing-config-path", str(project.root / "absent.json"))
+        self.assertEqual(code, 1)
+        self.assertIn("GP-2", out)
+        self.assertEqual(len(created), 1)
+        self.assertFalse(created[0].exists())
+
 
 class EndToEndTests(unittest.TestCase):
     def run_main(self, project: Project, *argv: str) -> tuple[int, str]:
@@ -311,7 +433,10 @@ class EndToEndTests(unittest.TestCase):
         build = calls[1]
         self.assertEqual(build["argv"][:3], ["build", "appbundle", "--release"])
         self.assertIn(f"-PandroidGmailClientId={CLIENT_ID}", build["argv"])
-        self.assertIn("--dart-define-from-file=secrets.dev.json", build["argv"])
+        # Issue #575: the release bundle gets the filtered defines file, never the secrets file.
+        self.assertEqual(build["defines_keys"], ["ANDROID_GMAIL_CLIENT_ID"])
+        self.assertIn(f"--dart-define-from-file={build['defines_path']}", build["argv"])
+        self.assertFalse(Path(build["defines_path"]).exists())
         self.assertEqual(build["env"], {"ANDROID_KEYSTORE_PATH": str(project.root / "fake.jks"),
                                         "ANDROID_KEYSTORE_PASSWORD": STORE_PASSWORD, "ANDROID_KEY_ALIAS": "upload",
                                         "ANDROID_KEY_PASSWORD": KEY_PASSWORD})
