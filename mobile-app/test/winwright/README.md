@@ -436,7 +436,10 @@ is delivered in F99 via Flutter `integration_test` golden-image + `RenderBox` as
 Working selector format: `type=ControlType[name='Element Name']`
 
 Common patterns:
-- `type=Button[name='Start Scan']` -- exact match
+- `type=Button[name='Start Scan']` -- exact match (generic example only; no script uses it. Since Sprint 85 the
+  Select Account row buttons carry an account-specific Flutter label, for example `Start scan for <email>`, beside
+  the tooltip `Start Scan`. How the UIA Name combines the two is UNVERIFIED -- check with `ww_dump_tree` and prefer
+  a contains match, for example `name*='Start scan for <email>'`)
 - `type=Button[name*='Settings']` -- contains match
 - `type=Text[name*='Manage Rules']` -- partial text match
 - `type=CheckBox[name*='Read-Only Mode']` -- checkbox by partial label

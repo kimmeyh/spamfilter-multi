@@ -67,6 +67,36 @@ the "fix".
 `explicitChildNodes: true` on a parent **suppresses** a child checkbox's own node -- do not use it on
 a row that contains its own interactive controls.
 
+### A row that contains its own buttons (Sprint 85, Select Account)
+
+`excludeSemantics: true` hides **every** descendant, including the row's own buttons: a mouse can
+press them, a screen reader cannot reach them. For a `Card` + `ListTile` row with buttons inside it,
+use this shape instead:
+
+```dart
+Card(                                  // semantics container by default: the row's ONE node
+  child: Semantics(                    // NOT a container: label and hint merge into the Card node
+    label: '<what it IS>',
+    hint: '<what it DOES>',
+    child: ListTile(
+      title: ExcludeSemantics(child: Text(...)),   // keep the label exactly as written
+      trailing: IconButton(                        // stays its own named, activatable node
+        icon: Icon(Icons.play_arrow, semanticLabel: 'Start scan for <account>'),
+        tooltip: 'Start Scan',
+        onPressed: ...,
+      ),
+      onTap: ...,                      // the ListTile's tap merges into the Card node
+    ),
+  ),
+)
+```
+
+Do not put the `Semantics` above the `Card`: the Card node then sits between the label and the tap,
+and the tap lands on an unnamed child node. Reference test:
+`mobile-app/test/ui/screens/account_selection_semantics_test.dart` (mounts the real screen). How the
+Windows UIA bridge names these buttons (label, tooltip or both) is unverified; check it with
+`ww_dump_tree`.
+
 ---
 
 ## 3. What must carry an accessible name

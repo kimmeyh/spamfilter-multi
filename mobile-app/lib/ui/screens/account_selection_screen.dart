@@ -112,6 +112,17 @@ class AccountSelectionScreen extends StatefulWidget {
   static const String setDefaultTooltip = 'Set as default';
   static const String removeDefaultTooltip = 'Remove default';
 
+  /// Accessible names of the per-row action buttons (Sprint 85). Each names
+  /// the account, so a screen reader that reaches the button out of its row
+  /// still says which account it acts on. The tooltip stays the short hover
+  /// text above.
+  static String setDefaultSemanticLabel(String email) =>
+      'Set $email as default account';
+  static String removeDefaultSemanticLabel(String email) =>
+      'Remove $email as default account';
+  static String startScanSemanticLabel(String email) => 'Start scan for $email';
+  static String deleteSemanticLabel(String email) => 'Delete account $email';
+
   /// Sprint 83 7.7.1: the line under an account whose sign-in flag could not
   /// be read. Public so tests pin the words.
   static const String signInUnknownText =
@@ -1098,39 +1109,45 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                         // F129 (Sprint 51): same semantics treatment as the
                         // healthy row below -- an error row must announce WHICH
                         // account failed and why, not surface as an unnamed
-                        // Group.
-                        return Semantics(
-                          container: true,
-                          excludeSemantics: true,
-                          label: '$accountId - error: missing credentials',
-                          hint: 'Use the delete button to remove this account',
-                          child: Card(
+                        // Group. Sprint 85: same shape as the healthy row (see
+                        // the comment there) so the delete button this hint
+                        // names is reachable; excludeSemantics used to hide it.
+                        return Card(
                           margin: const EdgeInsets.only(bottom: 12),
                           elevation: 2,
                           // F210: errorContainer/onErrorContainer is the theme
                           // error pairing and is legible in both modes.
                           // Colors.red[50] was a fixed near-white surface under a
-                          // title and subtitle that both omit a colour.
+                          // title and subtitle that both omit a color.
                           color: Theme.of(context).colorScheme.errorContainer,
+                          child: Semantics(
+                          label: '$accountId - error: missing credentials',
+                          hint: 'Use the delete button to remove this account',
                           child: ListTile(
                             leading: CircleAvatar(
                               backgroundColor: Colors.red.withValues(alpha: 0.2),
                               child: const Icon(Icons.error_outline, color: Colors.red),
                             ),
-                            title: Text(
-                              accountId,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color:
-                                    Theme.of(context).colorScheme.onErrorContainer,
+                            title: ExcludeSemantics(
+                              child: Text(
+                                accountId,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onErrorContainer,
+                                ),
                               ),
                             ),
-                            subtitle: Text(
-                              'Error: Missing credentials\nTap delete to remove',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color:
-                                    Theme.of(context).colorScheme.onErrorContainer,
+                            subtitle: ExcludeSemantics(
+                              child: Text(
+                                'Error: Missing credentials\nTap delete to remove',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onErrorContainer,
+                                ),
                               ),
                             ),
                             // F352: no default star here on purpose. This row
@@ -1138,7 +1155,9 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                             // clears a default on it (DataDeletionService,
                             // same transaction). Sprint 85 5.1.2 L7.
                             trailing: IconButton(
-                              icon: const Icon(Icons.delete_outline),
+                              icon: Icon(Icons.delete_outline,
+                                  semanticLabel: AccountSelectionScreen
+                                      .deleteSemanticLabel(accountId)),
                               onPressed: () => _deleteAccount(accountId),
                               tooltip: 'Delete account',
                               color: Colors.red[700],
@@ -1159,14 +1178,13 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                       );
 
                       // F129 (Sprint 51): the account row is an unnamed Group in
-                      // the accessibility tree without this wrapper -- the child
-                      // Text widgets are not merged into the tappable ancestor,
-                      // so screen readers announce nothing actionable and
+                      // the accessibility tree without the Semantics wrapper
+                      // below, so screen readers announce nothing actionable and
                       // WinWright name-based selectors resolve 0 elements.
-                      // `container` + `explicitChildNodes: false` merges the
-                      // email/provider/auth text into ONE named, tappable node
-                      // while leaving the trailing icon buttons (which carry
-                      // their own tooltips) individually addressable.
+                      // Sprint 85 (F352 follow-up): the wrapper used
+                      // excludeSemantics, which also hid the star, Start Scan
+                      // and Delete buttons from assistive technology. See the
+                      // comment on the Semantics widget for the current shape.
                       //
                       // Sprint 85 MV rehearsal: on a phone the three action
                       // icons (144 dp) in `trailing` left the title 80 dp at
@@ -1175,6 +1193,12 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                       // the subtitle; wider screens keep them on the right
                       // (account_row_phone_width_test.dart).
                       final narrow = MediaQuery.sizeOf(context).width < 600;
+                      final email = displayData.email;
+                      final isDefault = _defaultAccountId == accountId;
+                      // Each IconButton is its own semantics node. The
+                      // Icon's semanticLabel names the button with the
+                      // account, so a screen reader says WHICH account it
+                      // acts on; the tooltip (hover text) stays short.
                       final actions = Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -1182,58 +1206,71 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                           // F352 (ADR-0052): set or remove the default.
                           IconButton(
                             key: Key('default_toggle_$accountId'),
-                            icon: Icon(_defaultAccountId == accountId
-                                ? Icons.star
-                                : Icons.star_border),
+                            icon: Icon(
+                              isDefault ? Icons.star : Icons.star_border,
+                              semanticLabel: isDefault
+                                  ? AccountSelectionScreen
+                                      .removeDefaultSemanticLabel(email)
+                                  : AccountSelectionScreen
+                                      .setDefaultSemanticLabel(email),
+                            ),
                             onPressed: () => _toggleDefault(accountId),
-                            tooltip: _defaultAccountId == accountId
+                            tooltip: isDefault
                                 ? AccountSelectionScreen.removeDefaultTooltip
                                 : AccountSelectionScreen.setDefaultTooltip,
                           ),
                           IconButton(
-                            icon: const Icon(Icons.play_arrow,
-                                color: Colors.green),
+                            icon: Icon(Icons.play_arrow,
+                                color: Colors.green,
+                                semanticLabel: AccountSelectionScreen
+                                    .startScanSemanticLabel(email)),
                             onPressed: () => _selectAccount(accountId,
                                 platformId: displayData.platformId,
-                                accountEmail: displayData.email),
+                                accountEmail: email),
                             tooltip: 'Start Scan',
                           ),
                           IconButton(
-                            icon: const Icon(Icons.delete_outline),
+                            icon: Icon(Icons.delete_outline,
+                                semanticLabel: AccountSelectionScreen
+                                    .deleteSemanticLabel(email)),
                             onPressed: () => _deleteAccount(accountId),
                             tooltip: 'Delete account',
                             color: Colors.red[300],
                           ),
                         ],
                       );
-                      return Semantics(
-                        container: true,
-                        button: true,
-                        // excludeSemantics: ListTile builds its own semantics
-                        // node; without this the descendant node wins and the
-                        // container label never reaches UIA (verified against a
-                        // live build, Sprint 51). Excluding descendants makes
-                        // this row announce as ONE named, tappable element.
-                        excludeSemantics: true,
-                        label: '${displayData.email} - $platformName - '
-                            '$authMethod'
-                            '${_defaultAccountId == accountId ? ' - default account' : ''}',
-                        hint: 'Select account to scan',
-                        // onTap on the SEMANTICS node is mandatory whenever
-                        // excludeSemantics drops the child's own gesture node:
-                        // without it the row announces as a Button that
-                        // assistive technology cannot ACTIVATE. Found by Copilot
-                        // on PR #285 (it flagged the test helper; the same gap
-                        // was live HERE). Same defect that shipped in the
-                        // account-picker dialog mid-Sprint-51 -- named but
-                        // unclickable. The ListTile keeps its own onTap so
-                        // ordinary mouse/touch input is unchanged.
-                        onTap: () => _selectAccount(accountId,
-                            platformId: displayData.platformId,
-                            accountEmail: displayData.email),
-                        child: Card(
+                      // Accessibility shape (Sprint 85, replaces the Sprint 51
+                      // excludeSemantics wrapper):
+                      // - The Card is a semantics container (its default),
+                      //   and it is the row's ONE named node. The Semantics
+                      //   inside it is NOT a container, so its label and hint
+                      //   merge into the Card node, and so do the ListTile's
+                      //   InkWell tap and button flag. The row is named AND
+                      //   activatable, with no second, stacked button of the
+                      //   same name and no onTap of its own to keep in sync.
+                      // - Do not move this Semantics above the Card. The Card
+                      //   node then sits between the label and the ListTile,
+                      //   and the tap lands on an unnamed child node: the
+                      //   "descendant node wins" symptom Sprint 51 saw. With
+                      //   the label above the Card, Card(semanticContainer:
+                      //   false) does not help: it sets explicitChildNodes,
+                      //   and the label and the tap still land on two nodes
+                      //   (measured with a semantics dump, Sprint 85).
+                      // - The title and information Text widgets are wrapped
+                      //   in ExcludeSemantics so the label stays exactly the
+                      //   string below (tests and WinWright match on it).
+                      // - Buttons are semantics containers of their own, so
+                      //   the star, Start Scan, Delete, Sign In Again and Turn
+                      //   on stay separate, named, activatable child nodes.
+                      // Pinned by account_selection_semantics_test.dart.
+                      return Card(
                         margin: const EdgeInsets.only(bottom: 12),
                         elevation: 2,
+                        child: Semantics(
+                        label: '$email - $platformName - '
+                            '$authMethod'
+                            '${isDefault ? ' - default account' : ''}',
+                        hint: 'Select account to scan',
                         child: ListTile(
                           contentPadding: const EdgeInsets.all(16),
                           leading: CircleAvatar(
@@ -1241,20 +1278,22 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                             child: Icon(platformIcon, color: platformColor),
                           ),
                           // Display: email - provider - auth method
-                          title: Text(
-                            '${displayData.email} - $platformName - $authMethod',
-                            style: const TextStyle(
-                              fontSize: 14,
+                          title: ExcludeSemantics(
+                            child: Text(
+                              '$email - $platformName - $authMethod',
+                              style: const TextStyle(
+                                fontSize: 14,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
                           subtitle: Padding(
                             padding: const EdgeInsets.only(top: 4),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
+                                ExcludeSemantics(child: Text(
                                   // F239: say why the row offers Sign In
                                   // Again. R-4: an IMAP provider that refused
                                   // the login says so, in its own words.
@@ -1267,10 +1306,12 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                                         ? Theme.of(context).colorScheme.error
                                         : Colors.grey[600],
                                   ),
-                                ),
+                                )),
                                 // F352 (ADR-0052): the default account's mark.
-                                if (_defaultAccountId == accountId)
-                                  Text(
+                                // The row label already says "default
+                                // account", so this text is excluded too.
+                                if (isDefault)
+                                  ExcludeSemantics(child: Text(
                                     AccountSelectionScreen.defaultAccountLabel,
                                     key: Key('default_mark_$accountId'),
                                     style: TextStyle(
@@ -1280,16 +1321,16 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                                           .colorScheme
                                           .primary,
                                     ),
-                                  ),
+                                  )),
                                 if (displayData.signInStateUnknown)
-                                  Text(
+                                  ExcludeSemantics(child: Text(
                                     AccountSelectionScreen.signInUnknownText,
                                     key: Key('sign_in_unknown_$accountId'),
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: Colors.grey[600],
                                     ),
-                                  ),
+                                  )),
                                 // F239 / R-4: the repair action sits under its
                                 // reason, NOT beside the action icons (see
                                 // `actions` above: with them it left the title
@@ -1308,14 +1349,14 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                                     crossAxisAlignment:
                                         WrapCrossAlignment.center,
                                     children: [
-                                      Text(
+                                      ExcludeSemantics(child: Text(
                                         backgroundOffText,
                                         key: Key('background_off_$accountId'),
                                         style: TextStyle(
                                           fontSize: 12,
                                           color: Colors.grey[600],
                                         ),
-                                      ),
+                                      )),
                                       TextButton(
                                         key: Key('turn_on_background_$accountId'),
                                         onPressed: () =>
@@ -1335,7 +1376,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                           trailing: narrow ? null : actions,
                           onTap: () => _selectAccount(accountId,
                               platformId: displayData.platformId,
-                              accountEmail: displayData.email),
+                              accountEmail: email),
                         ),
                         ),
                       );
