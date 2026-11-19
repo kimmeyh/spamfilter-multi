@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 
+import '../services/diagnostic_logger.dart';
+
 /// Session-scoped "currently selected account" (F135, Sprint 51 retro IMP-3).
 ///
 /// Harold, 2026-07-30: *"If an account is selected while the app is running, the
@@ -39,9 +41,11 @@ class SelectedAccountProvider extends ChangeNotifier {
 
   /// ADR-0052: build the provider with the stored default selected, when that
   /// account still exists. A stored id with no matching account is stale and
-  /// is cleared through [clearDefault]. Any failure is logged and the provider
-  /// starts empty, which is today's behavior (the picker asks when needed), so
-  /// startup is never blocked. Runs once, before the first screen is built, so
+  /// is cleared through [clearDefault]. On any failure the provider starts
+  /// empty, which is today's behavior (the picker asks when needed), so startup
+  /// is never blocked. The failure goes to the diagnostic log (written only
+  /// while Settings > diagnostic log is on; `Logger` writes nothing in a
+  /// release build, Sprint 85 7.7.1 M-1). Runs once, before the first screen is built, so
   /// no screen can race the seed.
   static Future<SelectedAccountProvider> createSeeded({
     required Future<String?> Function() readDefault,
@@ -69,6 +73,12 @@ class SelectedAccountProvider extends ChangeNotifier {
       }
     } catch (e) {
       Logger().w('Default account seed failed (starting with none): $e');
+      await DiagnosticLogger.failure(
+        context: 'F352/default-seed',
+        kind: DiagnosticLogger.kindException,
+        reason: 'default account not applied at start-up (starting with '
+            'none): ${DiagnosticLogger.describeError(e)}',
+      );
     }
     return provider;
   }

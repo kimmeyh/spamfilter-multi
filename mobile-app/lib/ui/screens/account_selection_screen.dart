@@ -5,6 +5,7 @@ import '../../core/providers/selected_account_provider.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/services/data_deletion_service.dart';
+import '../../core/services/diagnostic_logger.dart';
 import '../../core/services/background_scan_enabler.dart';
 import 'account_setup_screen.dart';
 import '../../core/utils/platform_inference.dart';
@@ -204,6 +205,13 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
         defaultId = await SettingsStore().getDefaultAccountId();
       } catch (e) {
         _logger.w('F352: could not read the default account: $e');
+        // Sprint 85 7.7.1 M-1: Logger is a no-op in release builds.
+        await DiagnosticLogger.failure(
+          context: 'F352/select-account',
+          kind: DiagnosticLogger.kindException,
+          reason: 'default account could not be read (shown as none): '
+              '${DiagnosticLogger.describeError(e)}',
+        );
       }
 
       if (!mounted) return;

@@ -111,6 +111,91 @@ void main() {
         reason: 'a later success clears the old reason');
   });
 
+  File lock() => File(p.join(devDir.path, DevCredentialSeparation.lockFileName));
+
+  // Sprint 85 7.7.1 M4. What this does NOT catch: a marker write that fails on
+  // the real disk for a reason other than the path being a folder.
+  test('a marker that cannot be written after a good copy is its own result, '
+      'not "failed"; the copy stays in place and the lock is released',
+      () async {
+    prodFile().writeAsBytesSync([5, 6]);
+    Directory(marker().path).createSync(); // writing the marker file fails
+
+    expect(await run(), DevCredentialResult.copiedMarkerNotWritten);
+    expect(devFile().readAsBytesSync(), [5, 6]);
+    expect(DevCredentialSeparation.lastError, contains('marker'));
+    expect(lock().existsSync(), isFalse);
+  });
+
+  // Sprint 85 7.7.1 L1. What these do NOT catch: two real processes racing on
+  // the real Windows file system (the exclusive create is the OS's guarantee).
+  group('copy lock (UI and background process)', () {
+    final savedWait = DevCredentialSeparation.lockWait;
+    setUp(() => DevCredentialSeparation.lockWait =
+        const Duration(milliseconds: 400));
+    tearDown(() => DevCredentialSeparation.lockWait = savedWait);
+
+    test('a lock held by another process: busy, nothing changed', () async {
+      prodFile().writeAsBytesSync([1]);
+      devFile().writeAsBytesSync([7]);
+      lock().writeAsStringSync('held');
+
+      expect(await run(), DevCredentialResult.busy);
+      expect(devFile().readAsBytesSync(), [7]);
+      expect(marker().existsSync(), isFalse);
+      expect(DevCredentialSeparation.lastError, contains('lock'));
+      expect(lock().existsSync(), isTrue,
+          reason: 'another process owns it; this one must not remove it');
+    });
+
+    test('the other process finishes while this one waits: alreadyDone',
+        () async {
+      prodFile().writeAsBytesSync([1]);
+      lock().writeAsStringSync('held');
+      Future<void>.delayed(const Duration(milliseconds: 100),
+          () => marker().writeAsStringSync('done'));
+
+      expect(await run(), DevCredentialResult.alreadyDone);
+      expect(devFile().existsSync(), isFalse);
+    });
+
+    test('a stale lock (process died mid-copy) is taken over', () async {
+      prodFile().writeAsBytesSync([3]);
+      lock().writeAsStringSync('old');
+      lock().setLastModifiedSync(
+          DateTime.now().subtract(const Duration(minutes: 5)));
+
+      expect(await run(), DevCredentialResult.copied);
+      expect(devFile().readAsBytesSync(), [3]);
+      expect(lock().existsSync(), isFalse);
+    });
+
+    test('the lock is released after nothingToCopy and after a failure',
+        () async {
+      expect(await run(), DevCredentialResult.nothingToCopy);
+      expect(lock().existsSync(), isFalse);
+
+      marker().deleteSync();
+      prodFile().writeAsBytesSync([4]);
+      Directory(devFile().path).createSync();
+      expect(await run(), DevCredentialResult.failed);
+      expect(lock().existsSync(), isFalse);
+    });
+  });
+
+  // Sprint 85 7.7.1 L1. What this does NOT catch: a name collision with a
+  // file created between the existence check and the rename.
+  test('an existing backup with the same stamp is never replaced', () async {
+    prodFile().writeAsBytesSync([9]);
+    devFile().writeAsBytesSync([7]);
+    final first = File('${devFile().path}.pre_f354_20261110_093005')
+      ..writeAsBytesSync([1]);
+
+    expect(await run(), DevCredentialResult.copied);
+    expect(first.readAsBytesSync(), [1]);
+    expect(File('${first.path}_2').readAsBytesSync(), [7]);
+  });
+
   test('main.dart writes a separation failure to the background log AND the '
       'diagnostic log (M3)', () {
     final src = File('lib/main.dart').readAsStringSync();

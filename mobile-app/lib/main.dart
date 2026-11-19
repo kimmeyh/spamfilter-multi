@@ -160,9 +160,11 @@ void main(List<String> args) async {
   // paths alike. Never writes the production-named file.
   //
   // Sprint 85 5.1.2 M3: `Logger` writes NOTHING in a release build (logger
-  // 2.7.0 DevelopmentFilter), and the DEV app is a release build. A failure is
-  // kept here and written to a FILE once one can be opened: the diagnostic log
-  // (foreground, below) and the background scan log (background path).
+  // 2.7.0 DevelopmentFilter), and the DEV app is a release build. A problem is
+  // kept here and goes to: the background scan log (background path, always
+  // written), the diagnostic log (foreground, below; ONLY while Settings >
+  // diagnostic log is on), and, for the user, a line in Settings > General
+  // that shows DevCredentialSeparation.lastError (Sprint 85 7.7.1 M4).
   String? f354Problem;
   try {
     final result = await DevCredentialSeparation.run(
@@ -171,14 +173,26 @@ void main(List<String> args) async {
           PlatformCapabilities.current.sharesCredentialStoreAcrossEnvironments,
       isDev: AppEnvironment.isDev,
     );
-    if (result == DevCredentialResult.copied) {
-      Logger().i('F354: DEV credentials separated from production');
-    } else if (result == DevCredentialResult.failed) {
-      f354Problem = 'DEV credential separation failed, will retry next '
-          'launch: ${DevCredentialSeparation.lastError ?? 'no detail'}';
+    switch (result) {
+      case DevCredentialResult.copied:
+        Logger().i('F354: DEV credentials separated from production');
+      case DevCredentialResult.failed:
+      case DevCredentialResult.copiedMarkerNotWritten:
+      case DevCredentialResult.busy:
+        f354Problem = 'DEV credential separation ${result.name}: '
+            '${DevCredentialSeparation.lastError ?? 'no detail'}';
+      case DevCredentialResult.notApplicable:
+      case DevCredentialResult.alreadyDone:
+      case DevCredentialResult.nothingToCopy:
+        break;
     }
   } catch (e) {
     f354Problem = 'DEV credential separation skipped: $e';
+    // Shown in Settings only where the copy applies (Windows DEV).
+    if (PlatformCapabilities.current.sharesCredentialStoreAcrossEnvironments &&
+        AppEnvironment.isDev) {
+      DevCredentialSeparation.lastError = 'skipped: $e';
+    }
   }
   if (f354Problem != null) Logger().w('F354: $f354Problem');
 

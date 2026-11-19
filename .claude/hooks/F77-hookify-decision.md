@@ -3,6 +3,10 @@
 **Status:** Implemented via the existing `sprint-auto-advance.ps1` Stop hook;
 a separate hookify rule was deliberately NOT created. See rationale below.
 
+**Sprint 85 note:** the hook is now `sprint-auto-advance.py` (Sprint 84 port;
+the `.ps1` was deleted in Sprint 85, F329). Every `.ps1` name below is the
+Sprint 39 original, kept as history.
+
 **Date:** 2026-05-25 (Sprint 39)
 
 ## Requirement (F77)

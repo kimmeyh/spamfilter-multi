@@ -62,6 +62,17 @@ enum DevCredentialResult {
 
   /// The copy failed; no marker written, so it is retried next launch.
   failed,
+
+  /// The copy succeeded but the marker could not be written, even after one
+  /// retry (Sprint 85 7.7.1 M4). The next launch copies again and keeps this
+  /// DEV file as `.pre_f354_*` (renamed, never deleted), so a DEV sign-in made
+  /// before then is in that backup, not lost.
+  copiedMarkerNotWritten,
+
+  /// Another process (the UI or a Task Scheduler background scan) held the
+  /// copy lock and did not finish within [DevCredentialSeparation.lockWait]
+  /// (Sprint 85 7.7.1 L1). Nothing was changed by this process.
+  busy,
 }
 
 class DevCredentialSeparation {
@@ -76,9 +87,22 @@ class DevCredentialSeparation {
   /// The production product folder name (Runner.rc ProductName for prod).
   static const String productionFolderName = 'MyEmailSpamFilter';
 
-  /// Why the last [run] returned [DevCredentialResult.failed] (null after any
-  /// other result). main.dart writes it to a log FILE: `Logger` writes nothing
-  /// in a release build, which the DEV app is (Sprint 85 5.1.2 M3).
+  /// Lock file that keeps two processes from copying at the same time.
+  static const String lockFileName = '.f354_lock';
+
+  /// How long a process waits for another process's copy to finish.
+  static Duration lockWait = const Duration(seconds: 10);
+
+  /// A lock older than this is left over from a process that died mid-copy
+  /// and is taken over.
+  static const Duration staleLockAge = Duration(minutes: 2);
+
+  /// Why the last [run] returned [DevCredentialResult.failed],
+  /// [DevCredentialResult.copiedMarkerNotWritten] or
+  /// [DevCredentialResult.busy] (null after any other result). main.dart
+  /// writes it to a log FILE (`Logger` writes nothing in a release build, which
+  /// the DEV app is; Sprint 85 5.1.2 M3), and Settings > General shows it
+  /// (Sprint 85 7.7.1 M4: the log is opt-in, so it is not visibility).
   static String? lastError;
 
   /// Runs the one-time copy when [sharedStore] (PlatformCapabilities.sharesCredentialStoreAcrossEnvironments) and [isDev] are true and
@@ -107,9 +131,32 @@ class DevCredentialSeparation {
     final prodFile = File(
         p.join(p.dirname(devPath), productionFolderName, credentialFileName));
     final devFile = File(p.join(devPath, credentialFileName));
+    final lock = File(p.join(devPath, lockFileName));
 
+    // Sprint 85 7.7.1 L1: the UI process and a Task Scheduler background scan
+    // can both start before the marker exists. Only the process that creates
+    // the lock file copies; the other waits for the marker.
+    var haveLock = false;
+    // True once the copy is in place: the marker step below releases the lock.
+    var copiedInPlace = false;
     try {
       await Directory(devPath).create(recursive: true);
+      haveLock = await _takeLock(lock);
+      if (!haveLock) {
+        final deadline = DateTime.now().add(lockWait);
+        while (DateTime.now().isBefore(deadline)) {
+          if (await marker.exists()) return DevCredentialResult.alreadyDone;
+          await Future<void>.delayed(const Duration(milliseconds: 200));
+        }
+        if (await marker.exists()) return DevCredentialResult.alreadyDone;
+        lastError = 'another process held the copy lock for more than '
+            '${lockWait.inSeconds} s; retried at the next launch';
+        return DevCredentialResult.busy;
+      }
+      // The other process may have finished between our marker check and
+      // taking the lock.
+      if (await marker.exists()) return DevCredentialResult.alreadyDone;
+
       if (!await prodFile.exists()) {
         await _writeMarker(marker, 'nothing to copy', now);
         _log.i('F354: no production-named credential file; DEV starts empty');
@@ -117,8 +164,7 @@ class DevCredentialSeparation {
       }
 
       if (await devFile.exists()) {
-        final stamp = _stamp((now ?? DateTime.now)());
-        final kept = '${devFile.path}.pre_f354_$stamp';
+        final kept = await _freeBackupPath(devFile.path, now);
         await devFile.rename(kept);
         _log.i('F354: kept the earlier DEV credential file as '
             '${p.basename(kept)}');
@@ -128,10 +174,7 @@ class DevCredentialSeparation {
       if (await tmp.exists()) await tmp.delete();
       await prodFile.copy(tmp.path);
       await tmp.rename(devFile.path);
-
-      await _writeMarker(marker, 'copied', now);
-      _log.i('F354: DEV credential file separated from the production file');
-      return DevCredentialResult.copied;
+      copiedInPlace = true;
     } catch (e) {
       // No marker: the next launch retries. The production-named file was
       // only read, so it is unchanged whatever failed here.
@@ -139,7 +182,76 @@ class DevCredentialSeparation {
       _log.w('F354: DEV credential separation failed, will retry next '
           'launch: $e');
       return DevCredentialResult.failed;
+    } finally {
+      // Every early return above (alreadyDone, nothingToCopy, failed) lets go
+      // of the lock; after a good copy the marker step below does it.
+      if (haveLock && !copiedInPlace) await _releaseLock(lock);
     }
+
+    // Sprint 85 7.7.1 M4: the copy is in place. A marker failure is NOT a
+    // copy failure: retry the marker only, and report it as its own result.
+    try {
+      try {
+        await _writeMarker(marker, 'copied', now);
+      } catch (_) {
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+        await _writeMarker(marker, 'copied', now);
+      }
+      _log.i('F354: DEV credential file separated from the production file');
+      return DevCredentialResult.copied;
+    } catch (e) {
+      lastError = 'copied, but the marker could not be written ($e); the '
+          'next launch copies again and keeps this DEV file as .pre_f354_*';
+      _log.w('F354: $lastError');
+      return DevCredentialResult.copiedMarkerNotWritten;
+    } finally {
+      await _releaseLock(lock);
+    }
+  }
+
+  /// Creates [lock] exclusively. A lock older than [staleLockAge] is left over
+  /// from a process that died mid-copy and is replaced.
+  static Future<bool> _takeLock(File lock) async {
+    try {
+      await lock.create(exclusive: true);
+      return true;
+    } on FileSystemException {
+      try {
+        final age = DateTime.now().difference(await lock.lastModified());
+        if (age > staleLockAge) {
+          await lock.delete();
+          await lock.create(exclusive: true);
+          return true;
+        }
+      } on FileSystemException {
+        // Another process took or removed it first; treat as held.
+      }
+      return false;
+    }
+  }
+
+  static Future<void> _releaseLock(File lock) async {
+    try {
+      if (await lock.exists()) await lock.delete();
+    } on FileSystemException catch (e) {
+      // A lock left behind is taken over after [staleLockAge]; say so.
+      _log.w('F354: could not remove the copy lock: $e');
+    }
+  }
+
+  /// `<file>.pre_f354_<stamp>`, with `_2`, `_3`, ... added when that name is
+  /// already taken (Sprint 85 7.7.1 L1: two renames in one second must never
+  /// replace an earlier backup).
+  static Future<String> _freeBackupPath(
+      String devPath, DateTime Function()? now) async {
+    final base = '$devPath.pre_f354_${_stamp((now ?? DateTime.now)())}';
+    var candidate = base;
+    var n = 2;
+    while (await File(candidate).exists()) {
+      candidate = '${base}_$n';
+      n++;
+    }
+    return candidate;
   }
 
   static Future<void> _writeMarker(

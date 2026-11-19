@@ -21,6 +21,7 @@ import '../../core/storage/database_helper.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/services/export_directories.dart';
 import '../../core/services/diagnostic_logger.dart';
+import '../../core/services/dev_credential_separation.dart';
 import '../../core/storage/unmatched_email_store.dart'
     show kBodyPreviewMaxLength;
 import '../../core/providers/email_scan_provider.dart';
@@ -506,6 +507,13 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       } catch (e) {
         _defaultAccountId = null;
         _logger.w('F352: could not read the default account: $e');
+        // Sprint 85 7.7.1 M-1: Logger is a no-op in release builds.
+        await DiagnosticLogger.failure(
+          context: 'F352/settings',
+          kind: DiagnosticLogger.kindException,
+          reason: 'default account could not be read (shown as none): '
+              '${DiagnosticLogger.describeError(e)}',
+        );
       }
 
       // [UPDATED] ISSUE #123: Load per-account settings (with app-wide fallback)
@@ -870,6 +878,24 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         const SizedBox(height: 12),
         _buildUnmatchedRetentionSelector(),
         const SizedBox(height: 12),
+        // Sprint 85 7.7.1 M4: a failed F354 DEV credential copy leaves Select
+        // Account empty; the diagnostic log is opt-in, so say it here. Set only
+        // on a Windows DEV build (DevCredentialSeparation.run returns
+        // notApplicable everywhere else and leaves lastError null).
+        if (DevCredentialSeparation.lastError != null)
+          Padding(
+            key: const Key('f354_problem'),
+            padding: const EdgeInsets.only(bottom: 12),
+            child: SelectableText(
+              'DEV credential copy at start-up did not finish: '
+              '${DevCredentialSeparation.lastError}. Accounts may be missing '
+              'until it succeeds; it is tried again at the next start.',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
         // F233 (Sprint 72): the diagnostic log controls.
         SwitchListTile(
           key: const Key('diagnostic_log_toggle'),
