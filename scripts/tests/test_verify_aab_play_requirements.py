@@ -42,7 +42,17 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent.parent
 TOOL_PATH = REPO / "mobile-app" / "scripts" / "verify-aab-play-requirements.py"
-REAL_AAB = REPO / "mobile-app" / "dist" / "android-0.24.1+22" / "app-prod-release.aab"
+
+def _pubspec_version() -> str:
+    """The `version:` of mobile-app/pubspec.yaml, so the real-bundle test checks the bundle being released
+    (Sprint 85 7.7.1 second pass: a pinned 0.24.1+22 kept checking the previous release)."""
+    for line in (REPO / "mobile-app" / "pubspec.yaml").read_text(encoding="utf-8").splitlines():
+        if line.startswith("version:"):
+            return line.split(":", 1)[1].strip()
+    raise AssertionError("pubspec.yaml has no version: line")
+
+
+REAL_AAB = REPO / "mobile-app" / "dist" / f"android-{_pubspec_version()}" / "app-prod-release.aab"
 
 _spec = importlib.util.spec_from_file_location("verify_aab_mod", TOOL_PATH)
 tool = importlib.util.module_from_spec(_spec)

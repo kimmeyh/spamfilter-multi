@@ -7,7 +7,7 @@ Put the folder first on PATH (patch.dict on os.environ) and shutil.which("flutte
 
 The fake behaves from environment variables, so a test controls it without editing files:
     FAKE_FLUTTER_CALLS    file; each call appends one JSON line {"argv": [...], "cwd": "..."}
-    FAKE_FLUTTER_OUT      text printed on stdout and stderr for every call (default: an all-passed summary)
+    FAKE_FLUTTER_OUT      text printed on stdout for every call (default: an all-passed summary)
     FAKE_FLUTTER_RC       exit code for every call (default: 0)
     FAKE_FLUTTER_RC_BY    JSON object: first non-option argument -> exit code, e.g. {"pub": 1}
 """
@@ -17,8 +17,6 @@ import os
 import stat
 import sys
 from pathlib import Path
-
-IMPL = Path(__file__).resolve().parent / "fake_flutter_impl.py"
 
 IMPL_SOURCE = '''
 import json, os, sys
