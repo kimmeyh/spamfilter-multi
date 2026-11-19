@@ -46,11 +46,16 @@ START_MARKER = "Email Rule Tester MCP server running"
 SMOKE_TIMEOUT_SECONDS = 10.0
 
 
-def smoke_test(node: str, server: Path, timeout: float = SMOKE_TIMEOUT_SECONDS) -> bool:
+STDERR_TAIL_LINES = 20
+
+
+def smoke_test(node: str, server: Path, timeout: float = SMOKE_TIMEOUT_SECONDS,
+               stderr_out: list[str] | None = None) -> bool:
     """Start the server, wait up to `timeout` seconds for the start-up line on stderr, then stop it.
 
     The server speaks MCP over stdin and stdout and waits for input, so it is always stopped here.
-    Returns True when the start-up line was seen.
+    Returns True when the start-up line was seen. When `stderr_out` is given, the server's stderr lines are
+    copied into it before this returns, so the caller can show them on a failure (Sprint 85 7.7.1 L4).
     """
     proc = subprocess.Popen(
         [node, str(server)], stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
@@ -80,6 +85,8 @@ def smoke_test(node: str, server: Path, timeout: float = SMOKE_TIMEOUT_SECONDS) 
         except subprocess.TimeoutExpired:
             pass
         thread.join(timeout=2)
+        if stderr_out is not None:
+            stderr_out.extend(collected)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -126,10 +133,18 @@ def main(argv: list[str] | None = None) -> int:
         print("  [OK] Dependencies installed")
 
     print("[3/4] Testing MCP server...")
-    if smoke_test(node, server):
+    server_stderr: list[str] = []
+    if smoke_test(node, server, stderr_out=server_stderr):
         print("  [OK] Server starts successfully")
     else:
         print(f"  [WARNING] Start-up line not seen within {SMOKE_TIMEOUT_SECONDS:.0f} seconds; the server may have issues")
+        tail = [line.rstrip() for line in server_stderr][-STDERR_TAIL_LINES:]
+        if tail:
+            print(f"  Last {len(tail)} line(s) the server wrote to stderr:")
+            for line in tail:
+                print(f"    {line}")
+        else:
+            print("  The server wrote nothing to stderr.")
 
     print("[4/4] Configuring Claude Code...")
     path = Path(args.config_file) if args.config_file else mcp_config.default_config_path()

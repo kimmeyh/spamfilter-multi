@@ -169,6 +169,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Deleted: {deleted}")
     if failed:
         print(f"Failed : {failed} (likely locked; re-run later)")
+        return 1  # Sprint 85 7.7.1 L6: a file that could not be deleted is a failed run
     return 0
 
 

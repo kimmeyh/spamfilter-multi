@@ -148,7 +148,9 @@ class FailurePaths(Base):
         self.make("p/s/scratchpad/b.py")
         with mock.patch.object(Path, "unlink", side_effect=PermissionError("locked")):
             code, out = self.run_main("--root", str(self.root))
-        self.assertEqual(code, 0)  # same as the PowerShell original
+        # Sprint 85 7.7.1 L6 (the PowerShell original returned 0). What this test would NOT catch: a partial
+        # failure where some files were deleted.
+        self.assertEqual(code, 1)
         self.assertEqual(out.count("FAILED:"), 2)
         self.assertIn("Deleted: 0", out)
         self.assertIn("Failed : 2", out)

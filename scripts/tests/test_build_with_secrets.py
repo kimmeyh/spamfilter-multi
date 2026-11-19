@@ -378,6 +378,40 @@ class AndroidDefinesTests(unittest.TestCase):
         for value in (CLIENT_SECRET, CLIENT_ID, AOL_PASSWORD, AOL_EMAIL):
             self.assertNotIn(value, out)
 
+    def test_aol_only_release_is_refused_and_aol_is_not_claimed(self) -> None:
+        # Sprint 85 7.7.1 L3. What this test would NOT catch: a Gmail key that is set but rejected by Google.
+        project = Project(self)
+        project.secrets.write_text(json.dumps({"AOL_EMAIL": AOL_EMAIL, "AOL_APP_PASSWORD": AOL_PASSWORD}))
+        code, out = quiet(tool.main, ["--build-type", "release", "--secrets-file", str(project.secrets)],
+                          mobile_app=project.mobile)
+        self.assertEqual(code, 1, out)
+        self.assertIn("A release build needs a real ANDROID_GMAIL_CLIENT_ID", out)
+        self.assertNotIn("Build will include", out)
+        self.assertEqual([c for c in project.calls_list() if c["argv"][0] == "build"], [])
+
+    def test_aol_only_debug_builds_with_a_warning_and_aol_is_not_claimed(self) -> None:
+        # The .ps1 rule ("Gmail or AOL") is kept for debug: AOL testing needs no Gmail id. What this test would
+        # NOT catch: whether Gmail sign-in in that build fails in the way the warning says.
+        project = Project(self)
+        project.secrets.write_text(json.dumps({"AOL_EMAIL": AOL_EMAIL, "AOL_APP_PASSWORD": AOL_PASSWORD}))
+        project.set_artifact("build/app/outputs/flutter-apk/app-prod-debug.apk", project.good_aab)
+        code, out = quiet(tool.main, ["--build-type", "debug", "--secrets-file", str(project.secrets)],
+                          mobile_app=project.mobile)
+        self.assertIn("Gmail sign-in will not work in this debug build", out)
+        self.assertNotIn("Build will include", out)
+        self.assertNotIn("AOL provider", out)
+        self.assertEqual(len([c for c in project.calls_list() if c["argv"][0] == "build"]), 1, out)
+        self.assertEqual(code, 0, out)
+
+    def test_gmail_and_aol_secrets_file_builds_and_says_aol_is_ignored(self) -> None:
+        project = Project(self)
+        project.set_artifact("build/app/outputs/flutter-apk/app-prod-debug.apk", project.good_aab)
+        code, out, _build = self.run_build(project, "--build-type", "debug")
+        self.assertEqual(code, 0, out)
+        self.assertIn("Build will include the Gmail provider", out)
+        self.assertNotIn("Gmail AOL", out)
+        self.assertIn("AOL keys in the secrets file are ignored", out)
+
     def test_defines_file_is_removed_when_flutter_fails(self) -> None:
         project = Project(self)
         with mock.patch.dict(os.environ, {"FAKE_BUILD_RC": "3"}):

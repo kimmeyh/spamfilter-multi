@@ -261,6 +261,44 @@ class ArmRunTests(FakeAdbCase):
         self.assertEqual(self.calls()[-1], ["shell", "input", "keyevent", "KEYCODE_WAKEUP"])
 
 
+class InterruptTests(FakeAdbCase):
+    def interrupted_run(self, interrupt_on_sleep: int) -> list[list[str]]:
+        # Sprint 85 7.7.1 L8. What this test would NOT catch: a hard kill of the Python process, which no
+        # finally block can handle (the emulator then stays unplugged until `dumpsys battery reset`).
+        count = {"n": 0}
+
+        def sleeper(seconds: float) -> None:
+            count["n"] += 1
+            if count["n"] == interrupt_on_sleep:
+                raise KeyboardInterrupt
+            self.fake_sleep(seconds)
+
+        with contextlib.redirect_stdout(io.StringIO()):
+            with self.assertRaises(KeyboardInterrupt):
+                arm_mod.run_arm("armI", 5, 0, "in-process-fake", self.out_root, PKG, "/sdcard/x",
+                                sleep=sleeper, runner=self.device)
+        return self.calls()
+
+    def test_ctrl_c_inside_the_window_restores_the_device(self) -> None:
+        calls = self.interrupted_run(interrupt_on_sleep=2)
+        self.assertIn(["shell", "dumpsys", "battery", "unplug"], calls)
+        self.assertIn(["shell", "dumpsys", "deviceidle", "unforce"], calls)
+        self.assertIn(["shell", "dumpsys", "battery", "reset"], calls)
+        self.assertLess(calls.index(["shell", "dumpsys", "deviceidle", "force-idle"]),
+                        calls.index(["shell", "dumpsys", "deviceidle", "unforce"]))
+
+    def test_ctrl_c_before_force_idle_still_plugs_the_battery_back_in(self) -> None:
+        calls = self.interrupted_run(interrupt_on_sleep=1)
+        self.assertIn(["shell", "dumpsys", "battery", "reset"], calls)
+        self.assertEqual(calls.count(["shell", "dumpsys", "battery", "reset"]), 1)
+
+    def test_normal_run_restores_exactly_once(self) -> None:
+        self.run_arm("armN", 2, 0)
+        calls = self.calls()
+        self.assertEqual(calls.count(["shell", "dumpsys", "deviceidle", "unforce"]), 1)
+        self.assertEqual(calls.count(["shell", "dumpsys", "battery", "reset"]), 1)
+
+
 class ArmEndToEndTests(FakeAdbCase):
     def test_end_to_end_through_adb_on_path(self) -> None:
         """The real subprocess path: find_adb() finds the fake executable on PATH and every call runs it.

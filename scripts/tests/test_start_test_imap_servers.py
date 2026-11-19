@@ -180,5 +180,35 @@ class MainTests(unittest.TestCase):
         self.assertIn("Stopped GreenMail", out)
 
 
+class ProcessListFailureTests(unittest.TestCase):
+    """Sprint 85 7.7.1 L5. What these tests would NOT catch: a process list that exits 0 with truncated output."""
+
+    def failing_run(self, *_a, **_k):
+        return subprocess.CompletedProcess([], 1, stdout="", stderr="boom")
+
+    def test_powershell_failure_raises_instead_of_reporting_no_processes(self):
+        with mock.patch.object(common, "find_tool", return_value="C:/fake/powershell"), \
+                mock.patch.object(subprocess, "run", side_effect=self.failing_run):
+            with self.assertRaises(MOD.ProcessListError) as caught:
+                MOD._powershell_lines("x")
+        self.assertIn("could not list processes", str(caught.exception))
+
+    def test_stop_with_an_unreadable_process_list_exits_non_zero_and_says_so(self):
+        out, err = io.StringIO(), io.StringIO()
+        with mock.patch.object(MOD, "stop_greenmail", side_effect=MOD.ProcessListError("could not list processes: x")):
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                with tempfile.TemporaryDirectory() as tmp:
+                    code = MOD.main(["--stop", "--work-dir", tmp])
+        self.assertEqual(code, 1)
+        self.assertIn("could not list processes", err.getvalue())
+
+    def test_ps_failure_on_a_posix_host_raises(self):
+        with mock.patch.object(sys, "platform", "linux"), \
+                mock.patch.object(common, "find_tool", return_value="/bin/ps"), \
+                mock.patch.object(subprocess, "run", side_effect=self.failing_run):
+            with self.assertRaises(MOD.ProcessListError):
+                MOD.find_greenmail_pids()
+
+
 if __name__ == "__main__":
     unittest.main()

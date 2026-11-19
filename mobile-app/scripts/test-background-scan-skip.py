@@ -83,6 +83,10 @@ def check_new_log_text(new_text: str, finished: bool) -> list[str]:
     return failures
 
 
+class ProcessListError(Exception):
+    """The process list could not be read, which is different from no process running."""
+
+
 class WindowsOps:
     """The process and window operations. Every one is replaceable in tests."""
 
@@ -105,11 +109,17 @@ class WindowsOps:
             return False
 
     def running_from(self, exe: Path) -> list[int]:
-        """Process ids whose executable path is exe. Matches the path, not the image name."""
+        """Process ids whose executable path is exe. Matches the path, not the image name.
+        Raises ProcessListError when the list cannot be read (Sprint 85 7.7.1 L5): that is not "none running"."""
         env = dict(os.environ, BG_TEST_EXE=str(exe))
         command = "Get-Process | Where-Object { $_.Path -eq $env:BG_TEST_EXE } | ForEach-Object { $_.Id }"
-        done = subprocess.run(["powershell", "-NoProfile", "-Command", command], env=env,
-                              capture_output=True, text=True)
+        try:
+            done = subprocess.run(["powershell", "-NoProfile", "-Command", command], env=env,
+                                  capture_output=True, text=True, timeout=60)
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            raise ProcessListError(str(exc)) from exc
+        if done.returncode != 0:
+            raise ProcessListError(f"PowerShell exited with code {done.returncode}")
         return [int(line) for line in done.stdout.split() if line.strip().isdigit()]
 
     def stop_pid(self, pid: int) -> None:
@@ -147,7 +157,11 @@ def run(environment: str, mobile_app: Path, appdata: str | None, ops, *, sleep=t
 
     paths["log_dir"].mkdir(parents=True, exist_ok=True)
     out("[Setup] Killing any leftover processes from this executable...")
-    leftover = ops.running_from(exe)
+    try:
+        leftover = ops.running_from(exe)
+    except ProcessListError as exc:
+        out(f"[FAIL] could not list processes ({exc}); leftover processes from an earlier run cannot be ruled out")
+        return 1
     if leftover:
         for pid in leftover:
             ops.stop_pid(pid)
@@ -180,8 +194,11 @@ def run(environment: str, mobile_app: Path, appdata: str | None, ops, *, sleep=t
             ops.stop_pid(foreground.pid)
             sleep(2)
     finally:
-        for pid in ops.running_from(exe):
-            ops.stop_pid(pid)
+        try:
+            for pid in ops.running_from(exe):
+                ops.stop_pid(pid)
+        except ProcessListError as exc:
+            failures.append(f"could not list processes for the final sweep ({exc}); the test exe may still be running")
 
     out("")
     out("[Summary]")

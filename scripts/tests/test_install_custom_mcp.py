@@ -161,5 +161,23 @@ class InstallCustomMcpTests(unittest.TestCase):
         self.assertLess(time.monotonic() - started, 20.0)
 
 
+    def test_smoke_test_failure_prints_the_server_stderr_tail(self):
+        # Sprint 85 7.7.1 L4. What this test would NOT catch: a server that writes its error to stdout.
+        server = self.dir / "crash.py"
+        lines = "".join(f"sys.stderr.write('crash line {i}\\n')\n" for i in range(30))
+        server.write_text("import sys\n" + lines + "sys.exit(3)\n", encoding="utf-8")
+        captured: list[str] = []
+        self.assertFalse(REAL_SMOKE_TEST(sys.executable, server, timeout=20.0, stderr_out=captured))
+        self.assertIn("crash line 29", "".join(captured))
+        with mock.patch.object(MOD, "smoke_test", side_effect=lambda n, s, stderr_out=None: (
+                stderr_out.extend(captured), False)[1]):
+            code, out, _err = self.run_main()
+        self.assertEqual(code, 0)
+        self.assertIn("[WARNING] Start-up line not seen", out)
+        self.assertIn("Last 20 line(s)", out)
+        self.assertIn("crash line 29", out)
+        self.assertNotIn("crash line 5\n", out)
+
+
 if __name__ == "__main__":
     unittest.main()

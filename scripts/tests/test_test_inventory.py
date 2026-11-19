@@ -323,5 +323,37 @@ class Helpers(unittest.TestCase):
         self.assertEqual(inv.job_durations(view("success", "2026-11-01T10:00:00Z", "2026-11-01T10:05:00Z"))[0]["seconds"], 300)
 
 
+class GitFailureIsLoud(unittest.TestCase):
+    """Sprint 85 7.7.1 M3. What these tests would NOT catch: a git call that succeeds with wrong output."""
+
+    def test_git_failure_is_recorded_warned_and_exits_non_zero(self):
+        import contextlib
+        import io
+        from unittest import mock
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "inv.json"
+            err = io.StringIO()
+            with mock.patch.object(inv.common, "git", return_value=(124, "")):
+                with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
+                    code = inv.main(["--out", str(out), "--timings", str(Path(tmp) / "t.json")])
+            doc = json.loads(out.read_text(encoding="utf-8"))
+        self.assertEqual(code, 1)
+        self.assertIn("timed out", doc["evidence_error"])
+        self.assertIn("warning: git log failed", err.getvalue())
+
+    def test_gh_run_view_failure_is_recorded_on_the_run(self):
+        import io
+        from unittest import mock
+
+        def fake_gh(*args, **kw):
+            if args[:2] == ("run", "list"):
+                return 0, json.dumps([{"databaseId": 7, "conclusion": "success", "createdAt": "x"}])
+            return 1, ""
+        with mock.patch.object(inv.common, "gh", side_effect=fake_gh):
+            with mock.patch.object(inv.sys, "stderr", new=io.StringIO()):
+                ci = inv.read_ci()
+        self.assertIn("gh run view failed", ci["runs"][0]["error"])
+
+
 if __name__ == "__main__":
     unittest.main()

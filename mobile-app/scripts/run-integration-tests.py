@@ -66,8 +66,9 @@ def main(argv: list[str] | None = None) -> int:
 
     files = select_files(it_dir, args.test_name)
     if not files:
-        print("[WARNING] No integration_test *_test.dart files matched. Nothing to run.")
-        return 0
+        # Sprint 85 7.7.1 L6: a run that checked nothing is not a pass (a misspelled --name used to exit 0).
+        print("[ERROR] No integration_test *_test.dart files matched. Nothing was run.")
+        return 1
 
     flutter = fs.find_flutter()
     if flutter is None:

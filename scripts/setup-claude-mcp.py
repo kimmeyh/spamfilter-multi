@@ -63,6 +63,14 @@ def github_entry(token: str | None) -> dict:
     }
 
 
+def has_real_token(entry: object) -> bool:
+    """True when an existing server entry holds a non-empty token that is not the placeholder."""
+    if not isinstance(entry, dict) or not isinstance(entry.get("env"), dict):
+        return False
+    value = entry["env"].get("GITHUB_TOKEN")
+    return isinstance(value, str) and bool(value.strip()) and value != GITHUB_TOKEN_PLACEHOLDER
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     install_github = args.install_github or args.install_all
@@ -110,12 +118,17 @@ def main(argv: list[str] | None = None) -> int:
     servers = updated.setdefault("mcpServers", {})
     if install_github:
         token = os.environ.get("GITHUB_TOKEN")
-        if not token:
-            print("[WARNING] GITHUB_TOKEN not set in environment. The placeholder is written into the server entry.")
-            print("  Create a classic token at https://github.com/settings/tokens (repo, issues, pull_requests),")
-            print("  set GITHUB_TOKEN, then run this script again with --install-github.")
-        servers[GITHUB_SERVER] = github_entry(token)
-        print("[OK] GitHub MCP server configured")
+        if not token and has_real_token(servers.get(GITHUB_SERVER)):
+            # Sprint 85 7.7.1 M2: never replace a working token with the placeholder. The value is not printed.
+            print("[WARNING] GITHUB_TOKEN not set in environment. The existing GitHub server entry holds a token")
+            print("  and was kept unchanged. Set GITHUB_TOKEN and run again to replace it.")
+        else:
+            if not token:
+                print("[WARNING] GITHUB_TOKEN not set in environment. The placeholder is written into the server entry.")
+                print("  Create a classic token at https://github.com/settings/tokens (repo, issues, pull_requests),")
+                print("  set GITHUB_TOKEN, then run this script again with --install-github.")
+            servers[GITHUB_SERVER] = github_entry(token)
+            print("[OK] GitHub MCP server configured")
 
     for label, selected in placeholders.items():
         if selected:
@@ -152,7 +165,7 @@ def main(argv: list[str] | None = None) -> int:
 
     print("")
     print("Restart Claude Code to load new MCP servers.")
-    if install_github and not os.environ.get("GITHUB_TOKEN"):
+    if install_github and not os.environ.get("GITHUB_TOKEN") and not has_real_token(current.get("mcpServers", {}).get(GITHUB_SERVER)):
         print("GitHub MCP still needs a real token: set GITHUB_TOKEN, then run this script again.")
     return 0
 

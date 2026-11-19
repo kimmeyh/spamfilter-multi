@@ -126,6 +126,12 @@ class ValidateTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("[Check 3] Could not parse HelpSection enum from help_screen.dart", out)
 
+    def test_check3_enum_with_zero_cases_fails(self) -> None:
+        # Sprint 85 7.7.1 L6. What this test would NOT catch: an enum whose cases are parsed wrongly but not zero.
+        code, out, _ = self.check(enum="enum HelpSection {\n  // nothing parseable\n}\n")
+        self.assertEqual(code, 1)
+        self.assertIn("[Check 3] HelpSection enum was found but holds no cases", out)
+
     def test_unrecognized_manifest_line(self) -> None:
         code, out, _ = self.check(manifest=MANIFEST + "  quoted: 'faq/one.md'\n")
         self.assertEqual(code, 1)

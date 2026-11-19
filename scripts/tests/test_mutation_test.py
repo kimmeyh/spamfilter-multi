@@ -116,6 +116,17 @@ class VerdictTests(MutationTestBase):
         self.assertTrue(lines[0].startswith("M1: NOT RUN"), lines[0])
         self.assertFalse(ok)
 
+    def test_misspelled_real_command_is_not_run_never_killed(self):
+        # Sprint 85 7.7.1 M1: no faked exit code. A real misspelled program and a real missing script go through
+        # the real invoke path (cmd /c on Windows exits 1 and 2, not 127 or 9009).
+        # What this test would NOT catch: a not-started message in a language other than English.
+        for command in ("no_such_program_xyz_123", f'"{sys.executable}" missing_script_xyz.py'):
+            lines, ok = self.run_one(baseline=False, command=command)
+            self.assertEqual(len(lines), 1)
+            self.assertTrue(lines[0].startswith("M1: NOT RUN"), f"{command}: {lines[0]}")
+            self.assertFalse(ok)
+            self.assertEqual((self.repo / "mod.py").read_text(), MOD)
+
     def test_baseline_runs_once_per_distinct_check(self):
         specs = [self.spec(name="A"), self.spec(name="B")]
         mt.run_mutations(specs, self.repo)

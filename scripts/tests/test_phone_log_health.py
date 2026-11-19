@@ -145,5 +145,24 @@ class ReportTests(unittest.TestCase):
         self.assertIn("(2 log(s), interval 15 min)", out)
 
 
+    def test_same_name_in_two_folders_keeps_both_and_warns(self) -> None:
+        # Sprint 85 7.7.1 L7. What this test would NOT catch: two links to one file on a filesystem that
+        # does not resolve them.
+        sample = (FIXTURES / "diag_sample_s84.log").read_bytes()
+        with tempfile.TemporaryDirectory() as tmp:
+            a, b = Path(tmp) / "a", Path(tmp) / "b"
+            a.mkdir()
+            b.mkdir()
+            (a / "diag_same.log").write_bytes(sample)
+            (b / "diag_same.log").write_bytes(sample)
+            files, warnings = tool.expand_paths([f"{a / 'diag_same.log'},{b / 'diag_same.log'}"])
+            self.assertEqual(len(files), 2)
+            self.assertTrue(any("2 different files are named 'diag_same.log'" in w for w in warnings), warnings)
+            # the same file reached twice (a glob and a direct path) is still read once
+            files, warnings = tool.expand_paths([f"{a / 'diag_same.log'},{a / 'diag_*.log'}"])
+            self.assertEqual(len(files), 1)
+            self.assertEqual(warnings, [])
+
+
 if __name__ == "__main__":
     unittest.main()

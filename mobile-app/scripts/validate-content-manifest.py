@@ -106,6 +106,9 @@ def validate(content_dir: Path, entries: dict[str, str], help_dart: str,
         failures.append("[Check 3] Could not parse HelpSection enum from help_screen.dart")
     else:
         cases = CASE_RE.findall(enum_match.group(1))
+        if not cases:
+            # Sprint 85 7.7.1 L6: an enum that parses to zero cases checked nothing (a format change would pass).
+            failures.append("[Check 3] HelpSection enum was found but holds no cases; the case pattern may be stale")
         for case in cases:
             if ("help.%s" % case) not in entries:
                 failures.append("[Check 3] HelpSection.%s has no manifest entry under help: namespace"

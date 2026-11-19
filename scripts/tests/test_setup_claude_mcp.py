@@ -148,6 +148,28 @@ class SetupClaudeMcpTests(unittest.TestCase):
         data = json.loads(self.config.read_text(encoding="utf-8"))
         self.assertEqual(data["mcpServers"]["github"]["env"]["GITHUB_TOKEN"], "YOUR_GITHUB_TOKEN_HERE")
 
+    def test_existing_real_token_is_kept_when_the_env_var_is_unset(self):
+        # Sprint 85 7.7.1 M2. What this test would NOT catch: a token stored under a different key or file.
+        entry = {"command": "npx", "args": ["x"], "env": {"GITHUB_TOKEN": "REALSECRET999"}}
+        self.config.write_text(json.dumps({"mcpServers": {"github": entry}}), encoding="utf-8")
+        before = digest(self.config)
+        with mock.patch.dict(os.environ, {}, clear=True):
+            code, out, err = self.run_main("--install-github")
+        self.assertEqual(code, 0)
+        self.assertEqual(digest(self.config), before)
+        self.assertIn("kept", out)
+        self.assertNotIn("REALSECRET999", out + err)
+        self.assertEqual(self.backups(), [])
+
+    def test_existing_placeholder_entry_is_still_rewritten_with_a_real_token(self):
+        # What this test would NOT catch: a whitespace-only token value.
+        entry = {"command": "npx", "args": ["x"], "env": {"GITHUB_TOKEN": "YOUR_GITHUB_TOKEN_HERE"}}
+        self.config.write_text(json.dumps({"mcpServers": {"github": entry}}), encoding="utf-8")
+        code, _out, _err = self.run_main("--install-github")
+        self.assertEqual(code, 0)
+        data = json.loads(self.config.read_text(encoding="utf-8"))
+        self.assertEqual(data["mcpServers"]["github"]["env"]["GITHUB_TOKEN"], "TESTTOKEN123")
+
     def test_placeholder_options_change_nothing_and_say_so(self):
         code, out, _err = self.run_main("--install-flutter", "--install-yaml", "--install-regex")
         self.assertEqual(code, 0)

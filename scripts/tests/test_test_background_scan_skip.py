@@ -71,6 +71,7 @@ class FakeOps:
         self.scan_child = scan_child
         self.scan_finishes = scan_finishes
         self.live = set(leftover)
+        self.list_fails = False
         self.started: list[str] = []
         self.stopped: list[int] = []
 
@@ -91,6 +92,8 @@ class FakeOps:
         return self.scan_finishes
 
     def running_from(self, exe):
+        if self.list_fails:
+            raise tool.ProcessListError("PowerShell exited with code 1")
         return sorted(self.live)
 
     def stop_pid(self, pid):
@@ -137,7 +140,46 @@ class PureTests(unittest.TestCase):
         self.assertEqual(len(tool.check_new_log_text(good, False)), 1)                 # 1a
 
 
+class WindowsOpsListTests(unittest.TestCase):
+    def test_non_zero_powershell_exit_raises_and_zero_exit_parses_ids(self) -> None:
+        # Sprint 85 7.7.1 L5. What this test would NOT catch: the real Get-Process output format.
+        import subprocess
+        from unittest import mock
+        ops = tool.WindowsOps()
+        bad = subprocess.CompletedProcess([], 1, stdout="", stderr="x")
+        good = subprocess.CompletedProcess([], 0, stdout="12\n34\n", stderr="")
+        with mock.patch.object(tool.subprocess, "run", return_value=bad):
+            with self.assertRaises(tool.ProcessListError):
+                ops.running_from(Path("x.exe"))
+        with mock.patch.object(tool.subprocess, "run", return_value=good):
+            self.assertEqual(ops.running_from(Path("x.exe")), [12, 34])
+
+
 class RunTests(Fixture):
+    def test_unreadable_process_list_is_a_failure_not_none_running(self) -> None:
+        # Sprint 85 7.7.1 L5. What this test would NOT catch: a real powershell that prints garbage.
+        ops = FakeOps(self.log)
+        ops.list_fails = True
+        code, out = self.run_check(ops)
+        self.assertEqual(code, 1)
+        self.assertIn("could not list processes", out)
+        self.assertEqual(ops.started, [], "nothing may start when leftovers cannot be ruled out")
+
+    def test_unreadable_list_at_the_final_sweep_is_reported_as_a_failure(self) -> None:
+        ops = FakeOps(self.log, f"{PROCEEDS}\n{STARTED}\n")
+        calls = {"n": 0}
+        real = ops.running_from
+
+        def flaky(exe):
+            calls["n"] += 1
+            if calls["n"] == 2:
+                raise tool.ProcessListError("PowerShell exited with code 1")
+            return real(exe)
+        ops.running_from = flaky
+        code, out = self.run_check(ops)
+        self.assertEqual(code, 2)
+        self.assertIn("could not list processes for the final sweep", out)
+
     def test_not_windows_exits_one_before_any_setup(self) -> None:
         ops = FakeOps(self.log, windows=False)
         code, out = self.run_check(ops)

@@ -126,12 +126,21 @@ def ensure_jar(work_dir: Path, jar_url: str = JAR_URL, sha_url: str = JAR_SHA_UR
     return jar
 
 
+class ProcessListError(StartError):
+    """The process list could not be read. Sprint 85 7.7.1 L5: this is NOT the same as "no process is running"."""
+
+
 def _powershell_lines(script: str) -> list[str]:
     shell = common.find_tool("powershell", "pwsh")
     if shell is None:
-        return []
-    result = subprocess.run([shell, "-NoProfile", "-Command", script], capture_output=True, text=True,
-                            encoding="utf-8", errors="replace", timeout=60, check=False)
+        raise ProcessListError("could not list processes: PowerShell was not found")
+    try:
+        result = subprocess.run([shell, "-NoProfile", "-Command", script], capture_output=True, text=True,
+                                encoding="utf-8", errors="replace", timeout=60, check=False)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise ProcessListError(f"could not list processes: {exc}") from exc
+    if result.returncode != 0:
+        raise ProcessListError(f"could not list processes: PowerShell exited with code {result.returncode}")
     return result.stdout.splitlines()
 
 
@@ -145,9 +154,14 @@ def find_greenmail_pids() -> list[int]:
     else:
         ps = common.find_tool("ps")
         if ps is None:
-            return []
-        result = subprocess.run([ps, "-axo", "pid=,command="], capture_output=True, text=True,
-                                encoding="utf-8", errors="replace", timeout=60, check=False)
+            raise ProcessListError("could not list processes: ps was not found")
+        try:
+            result = subprocess.run([ps, "-axo", "pid=,command="], capture_output=True, text=True,
+                                    encoding="utf-8", errors="replace", timeout=60, check=False)
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            raise ProcessListError(f"could not list processes: {exc}") from exc
+        if result.returncode != 0:
+            raise ProcessListError(f"could not list processes: ps exited with code {result.returncode}")
         lines = result.stdout.splitlines()
     for line in lines:
         head, _, rest = line.strip().partition(" ")
@@ -274,8 +288,12 @@ def main(argv: list[str] | None = None) -> int:
     work_dir.mkdir(parents=True, exist_ok=True)
 
     if args.stop:
-        for message in stop_greenmail():
-            print(message)
+        try:
+            for message in stop_greenmail():
+                print(message)
+        except ProcessListError as exc:
+            print(f"[ERROR] {exc}. GreenMail may still be running; nothing was stopped.", file=sys.stderr)
+            return exc.code
         if sys.platform == "win32":
             print(stop_dovecot())
         return 0

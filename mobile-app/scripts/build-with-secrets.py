@@ -756,10 +756,24 @@ def execute(args: argparse.Namespace, mobile_app: Path) -> int:
     say("[INFO] Validating credentials for all providers...")
     gmail_ok, aol_ok = validate_providers(secrets)
     say()
+    # Sprint 85 7.7.1 L3: only what reaches the build is claimed. No AOL key is in ANDROID_DART_DEFINE_KEYS and the
+    # Android app reads no AOL define (AOL accounts are entered in the app), so AOL keys never label a build.
+    # The gate itself is unchanged for a debug build ("Gmail or AOL", the .ps1 rule): a debug build without a Gmail
+    # client id still works for AOL testing, so it is warned, not refused. A release build needs the Gmail id
+    # (gradle SEC-9 refuses it too; refusing here says so before a long build starts).
     if not (gmail_ok or aol_ok):
         raise BuildRefused("At least one provider must be configured. Edit the secrets file and configure at least "
                            "Gmail or AOL with real credentials.")
-    say("[INFO] Build will include " + " ".join(n for n, ok in (("Gmail", gmail_ok), ("AOL", aol_ok)) if ok) + " provider(s)")
+    if not gmail_ok and args.build_type == "release":
+        raise BuildRefused("A release build needs a real ANDROID_GMAIL_CLIENT_ID in the secrets file. AOL keys are "
+                           "not used by the Android build (AOL accounts are added inside the app).")
+    if gmail_ok:
+        say("[INFO] Build will include the Gmail provider (ANDROID_GMAIL_CLIENT_ID)")
+    else:
+        say("[WARNING] No Gmail client id: Gmail sign-in will not work in this debug build. AOL accounts are added "
+            "inside the app and still work.")
+    if aol_ok:
+        say("[INFO] AOL keys in the secrets file are ignored: the Android build does not read them")
 
     flutter = common.find_tool("flutter")
     if not flutter:

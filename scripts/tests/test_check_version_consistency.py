@@ -101,13 +101,31 @@ class ScanTests(unittest.TestCase):
             "scripts/check-version-consistency.py": "x = 'Version 0.0.1'\n",
             "scripts/check-version-consistency.ps1": "x = 'Version 0.0.2'\n",
             "test/policy/version_consistency_test.dart": "x = 'Version 0.0.3'\n",
-            "scripts/other.py": "x = 'Version 0.0.4'\n",
+            "scripts/other.txt": "x = 'Version 0.0.4'\n",
             "lib/data.yaml": "x: Version 0.0.5\n",
+            "lib/real.dart": "x = 'Version 1.2.3'\n",  # one swept, matching file so the sweep is not empty
         }
         with tempfile.TemporaryDirectory() as tmp:
             app = make_app(Path(tmp), files=files)
             code, out = run_main(["--app-root", str(app)])
         self.assertEqual(code, 0, out)
+
+    def test_python_files_are_swept(self) -> None:
+        # Sprint 85 7.7.1 M-2. What this test would NOT catch: a literal built from two string pieces.
+        files = {"scripts/port.py": "LOG = 'background_scan_v0.1.0.log'\n"}
+        with tempfile.TemporaryDirectory() as tmp:
+            app = make_app(Path(tmp), files=files)
+            code, out = run_main(["--app-root", str(app)])
+        self.assertEqual(code, 1)
+        self.assertRegex(out, r"port\.py:1 found '0\.1\.0'")
+
+    def test_a_sweep_that_reads_no_file_fails(self) -> None:
+        # Sprint 85 7.7.1 L6. What this test would NOT catch: a tree where only some folders are missing.
+        with tempfile.TemporaryDirectory() as tmp:
+            app = make_app(Path(tmp))
+            code, out = run_main(["--app-root", str(app)])
+        self.assertEqual(code, 1)
+        self.assertIn("[FAIL] No file was swept", out)
 
     def test_all_match_passes(self) -> None:
         files = {"lib/a.dart": "'Version 1.2.3' and f_v1.2.3.log\n"}

@@ -79,6 +79,11 @@ COMPILE_ERROR = re.compile(
 # Exit codes a shell gives when it cannot find or start the command: 127 (POSIX sh, and this script's own
 # could-not-start code), 9009 (cmd.exe). Sprint 85 5.1.2 L1: with "baseline": false these were KILLED.
 NOT_STARTED_CODES = (127, 9009)
+# Sprint 85 7.7.1 M1: on Windows a `command` check runs through cmd /c, which exits 1 (not 127 or 9009) with
+# "'x' is not recognized as an internal or external command", and `python missing.py` exits 2 with
+# "can't open file". Those messages in the output mean the check never ran. POSIX sh says "command not found".
+NOT_STARTED_OUTPUT = re.compile(
+    r"is not recognized as an internal or external command|command not found|can't open file", re.IGNORECASE)
 
 
 class CheckResult:
@@ -88,7 +93,8 @@ class CheckResult:
         self.timed_out = timed_out
         # True when the check never ran (no flutter, the command could not start, or the shell could not
         # find it). Such a run proves nothing about the mutant, so it is NOT RUN, never KILLED.
-        self.not_started = not_started or code in NOT_STARTED_CODES
+        self.not_started = (not_started or code in NOT_STARTED_CODES
+                            or (code != 0 and bool(NOT_STARTED_OUTPUT.search(output))))
 
 
 def kill_tree(proc) -> None:

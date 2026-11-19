@@ -92,9 +92,10 @@ class MainTests(unittest.TestCase):
     def argvs(self) -> list[list[str]]:
         return [call["argv"] for call in fake_flutter.read_calls(self.calls)]
 
-    def test_no_match_exits_zero_with_warning(self) -> None:
+    def test_no_match_exits_one_with_a_message(self) -> None:
+        # Sprint 85 7.7.1 L6. What this test would NOT catch: an empty integration_test folder with no --name.
         code, out = self.run_main("--name", "no_such_integration_file_zz")
-        self.assertEqual(code, 0)
+        self.assertEqual(code, 1)
         self.assertIn("No integration_test *_test.dart files matched", out)
         self.assertEqual(self.argvs(), [])
 

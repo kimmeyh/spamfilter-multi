@@ -82,6 +82,7 @@ class Arm:
         self.diag_dir = diag_dir
         self.failures: list[str] = []
         self.posted = 0
+        self.restored = False
         self.meta = out / "meta.txt"
         # runner(args) -> (exit code, stdout). The tests inject an in-memory device for speed; the
         # default runs the adb executable.
@@ -117,6 +118,12 @@ class Arm:
             return None
         return int(digits)
 
+    def restore(self) -> None:
+        """Undo what the window did to the device: leave force-idle, plug the battery back in."""
+        self.restored = True
+        self.step(["shell", "dumpsys", "deviceidle", "unforce"])
+        self.step(["shell", "dumpsys", "battery", "reset"])
+
     def snap(self, phase: str) -> None:
         """Dumps before or after the window (the shell's snap function)."""
         for name, args in (
@@ -150,43 +157,48 @@ def run_arm(arm_name: str, minutes: int, cadence: int, adb: str, out_root: Path,
     arm.meta.write_text("", encoding="utf-8")
     arm.emit(f"{arm_name} start epoch={start} minutes={minutes} cadence={cadence}")
 
-    arm.step(["shell", "am", "set-standby-bucket", pkg, "working_set"])
-    arm.step(["shell", "dumpsys", "battery", "unplug"])
-    arm.step(["shell", "dumpsys", "batterystats", "--reset"])
-    arm.step(["shell", "input", "keyevent", "KEYCODE_HOME"])
-    arm.snap("before")
-    arm.step(["shell", "input", "keyevent", "KEYCODE_SLEEP"])
-    sleep(120)
-    _code, idle_text = arm.step(["shell", "dumpsys", "deviceidle", "force-idle"])
-    for line in idle_text.splitlines():
-        arm.emit(line)
-    idle = arm.epoch()
-    arm.emit(f"idle epoch={idle}")
-    if idle is None:
-        arm.failures.append("date after force-idle (no device time: window not timed)")
-    else:
-        end = idle + minutes * 60
-        while True:
-            now = arm.epoch()
-            if now is None:
-                arm.failures.append("date inside the window (window stopped early)")
-                break
-            if now >= end:
-                break
-            if cadence > 0:
-                arm.posted += 1
-                arm.step(["shell", "cmd", "notification", "post", "-t", f"r761 test {arm.posted}",
-                          f"r761tag{arm.posted}", f"r761 body {arm.posted}"])
-                arm.emit(f"posted {arm.posted} at {now}")
-                wait = cadence * 60
-            else:
-                wait = 60
-            # Never sleep past the window end: the shell slept a whole cadence and overshot (F332 defect).
-            sleep(min(wait, end - now))
+    # Sprint 85 7.7.1 L8: the emulator is unplugged and force-idle from the step below until restore().
+    # A Ctrl+C or any exception inside the window must still put it back, so the window is in a try/finally.
+    try:
+        arm.step(["shell", "am", "set-standby-bucket", pkg, "working_set"])
+        arm.step(["shell", "dumpsys", "battery", "unplug"])
+        arm.step(["shell", "dumpsys", "batterystats", "--reset"])
+        arm.step(["shell", "input", "keyevent", "KEYCODE_HOME"])
+        arm.snap("before")
+        arm.step(["shell", "input", "keyevent", "KEYCODE_SLEEP"])
+        sleep(120)
+        _code, idle_text = arm.step(["shell", "dumpsys", "deviceidle", "force-idle"])
+        for line in idle_text.splitlines():
+            arm.emit(line)
+        idle = arm.epoch()
+        arm.emit(f"idle epoch={idle}")
+        if idle is None:
+            arm.failures.append("date after force-idle (no device time: window not timed)")
+        else:
+            end = idle + minutes * 60
+            while True:
+                now = arm.epoch()
+                if now is None:
+                    arm.failures.append("date inside the window (window stopped early)")
+                    break
+                if now >= end:
+                    break
+                if cadence > 0:
+                    arm.posted += 1
+                    arm.step(["shell", "cmd", "notification", "post", "-t", f"r761 test {arm.posted}",
+                              f"r761tag{arm.posted}", f"r761 body {arm.posted}"])
+                    arm.emit(f"posted {arm.posted} at {now}")
+                    wait = cadence * 60
+                else:
+                    wait = 60
+                # Never sleep past the window end: the shell slept a whole cadence and overshot (F332 defect).
+                sleep(min(wait, end - now))
 
-    arm.snap("after")
-    arm.step(["shell", "dumpsys", "deviceidle", "unforce"])
-    arm.step(["shell", "dumpsys", "battery", "reset"])
+        arm.snap("after")
+        arm.restore()
+    finally:
+        if not arm.restored:
+            arm.restore()
     _code, text = arm.step(["shell", "dumpsys", "batterystats", pkg])
     (out / "after_batterystats_full_pkg.txt").write_text(text, encoding="utf-8")
     _code, text = arm.step(["shell", "dumpsys", "batterystats", "--checkin", pkg])

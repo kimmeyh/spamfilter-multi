@@ -12,9 +12,9 @@ Recognized literal forms (narrow, so dependency versions in comments are not mat
     _v<MAJOR>.<MINOR>.<PATCH>.log        scan-log filename token
     Version <MAJOR>.<MINOR>.<PATCH>      Settings version-display string
 
-Swept extensions: .dart .cpp .cc .h .ps1 (the same list as the Dart test; a .py file is not swept by
-either, so keep the two lists in step if one changes). The gate's own files are skipped because they
-hold stale-version fixture strings on purpose.
+Swept extensions: .dart .cpp .cc .h .ps1 .py (the same list as the Dart test, kept in step by
+LaneSyncTests; .py was added in Sprint 85 7.7.1 M-2 because the ported scripts can hold a log-name literal).
+The gate's own files are skipped because they hold stale-version fixture strings on purpose.
 
 Usage:
     python mobile-app/scripts/check-version-consistency.py               scan, exit 1 on a mismatch
@@ -37,7 +37,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 # Matches the two app-version literal forms. Case-sensitive, like [regex]::Matches in the original.
 VERSION_RE = re.compile(r"_v(\d+\.\d+\.\d+)\.log|Version\s(\d+\.\d+\.\d+)")
 SWEEP_DIRS = ["lib", "windows/runner", "scripts", "test"]
-SWEEP_EXTS = {".dart", ".cpp", ".cc", ".h", ".ps1"}
+SWEEP_EXTS = {".dart", ".cpp", ".cc", ".h", ".ps1", ".py"}
 # Files that hold stale-version fixture strings on purpose.
 SKIP_NAMES = {"check-version-consistency.py", "check-version-consistency.ps1",
               "version_consistency_test.dart"}
@@ -57,9 +57,9 @@ def get_versions(line: str) -> list[str]:
     return [m.group(1) or m.group(2) for m in VERSION_RE.finditer(line)]
 
 
-def find_mismatches(app_root: Path, canonical: str) -> list[tuple[Path, int, str, str]]:
-    """Returns (file, line number, found version, stripped line) for each stale literal."""
-    found: list[tuple[Path, int, str, str]] = []
+def swept_files(app_root: Path) -> list[Path]:
+    """Every file the gate reads: swept folders only, swept extensions only, the gate's own files skipped."""
+    files: list[Path] = []
     for sweep in SWEEP_DIRS:
         folder = app_root / sweep
         if not folder.is_dir():
@@ -67,11 +67,19 @@ def find_mismatches(app_root: Path, canonical: str) -> list[tuple[Path, int, str
         for path in sorted(folder.rglob("*"), key=lambda p: str(p).lower()):
             if not path.is_file() or path.suffix.lower() not in SWEEP_EXTS or path.name in SKIP_NAMES:
                 continue
-            text = path.read_bytes().decode("utf-8-sig", errors="replace")
-            for number, line in enumerate(LINE_SPLIT.split(text), start=1):
-                for version in get_versions(line):
-                    if version != canonical:
-                        found.append((path, number, version, line.strip()))
+            files.append(path)
+    return files
+
+
+def find_mismatches(app_root: Path, canonical: str) -> list[tuple[Path, int, str, str]]:
+    """Returns (file, line number, found version, stripped line) for each stale literal."""
+    found: list[tuple[Path, int, str, str]] = []
+    for path in swept_files(app_root):
+        text = path.read_bytes().decode("utf-8-sig", errors="replace")
+        for number, line in enumerate(LINE_SPLIT.split(text), start=1):
+            for version in get_versions(line):
+                if version != canonical:
+                    found.append((path, number, version, line.strip()))
     return found
 
 
@@ -140,6 +148,12 @@ def main(argv: list[str] | None = None) -> int:
     if msix != canonical + ".0":
         print("[FAIL] msix_version (%s) must equal pubspec version + '.0' (%s.0). Bump both together."
               % (msix, canonical))
+        return 1
+
+    # Sprint 85 7.7.1 L6: a sweep that read no file (wrong --app-root, folders renamed) proved nothing.
+    if not swept_files(app_root):
+        print("[FAIL] No file was swept under %s (folders: %s). Check --app-root or SWEEP_DIRS."
+              % (app_root, ", ".join(SWEEP_DIRS)))
         return 1
 
     print("[OK] All app-version literals match pubspec.yaml (%s); msix_version tracks it (%s)."

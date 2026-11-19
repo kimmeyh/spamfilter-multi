@@ -360,9 +360,20 @@ def platforms_for(runs: list[str], family: str) -> list[str]:
 
 # ---------------------------------------------------------------- git
 
+# Sprint 85 7.7.1 M3: a git failure used to return [] and every entry read as low likelihood (0 high tier) with
+# no sign anything was wrong. Each failure is now recorded here, printed to stderr, written into the output
+# document ("evidence_error") and turned into a non-zero exit by main().
+GIT_ERRORS: list[str] = []
+
+
 def git_lines(*args: str, timeout: int = 120) -> list[str]:
     code, out = common.git(*args, cwd=REPO, timeout=timeout)
-    return out.splitlines() if code == 0 else []
+    if code != 0:
+        GIT_ERRORS.append(f"git {args[0]} failed with exit code {code} "
+                          f"({'timed out' if code == 124 else 'could not run or returned an error'})")
+        print(f"warning: {GIT_ERRORS[-1]}; churn and fix evidence are incomplete", file=sys.stderr)
+        return []
+    return out.splitlines()
 
 
 def churn_counts(days: int = CHURN_DAYS) -> dict[str, set]:
@@ -435,6 +446,8 @@ def tier_for(impact: str, likelihood: str) -> str:
 
 def build_inventory(repo: Path = REPO, timings: dict | None = None, with_git: bool = True) -> list[dict]:
     jobs = load_workflows(repo)
+    if with_git:
+        GIT_ERRORS.clear()
     churn = churn_counts() if with_git else {}
     fixes = last_fix_evidence() if with_git else {}
     timings = timings or {}
@@ -646,12 +659,21 @@ def read_ci(workflow: str = "ci.yml", limit: int = 10) -> dict:
               "runs": []}
     for r in runs:
         c2, o2 = common.gh("run", "view", str(r["databaseId"]), "--json", "jobs", cwd=REPO, timeout=60)
-        try:
-            jobs = job_durations(json.loads(o2)) if c2 == 0 else []
-        except ValueError:
-            jobs = []
-        result["runs"].append({"id": r["databaseId"], "conclusion": r.get("conclusion"),
-                               "createdAt": r.get("createdAt"), "jobs": jobs})
+        run_error = None
+        jobs = []
+        if c2 != 0:
+            run_error = f"gh run view failed: {common.gh_failure_reason(c2)}"
+        else:
+            try:
+                jobs = job_durations(json.loads(o2))
+            except ValueError:
+                run_error = "gh run view returned text that is not JSON"
+        entry = {"id": r["databaseId"], "conclusion": r.get("conclusion"),
+                 "createdAt": r.get("createdAt"), "jobs": jobs}
+        if run_error:
+            entry["error"] = run_error
+            print(f"warning: run {r['databaseId']}: {run_error}", file=sys.stderr)
+        result["runs"].append(entry)
     # median per job and per step over runs where the job ran to completion
     agg: dict = {}
     for r in result["runs"]:
@@ -742,13 +764,18 @@ def main(argv: list[str] | None = None) -> int:
     doc = {"generated": datetime.now(timezone.utc).isoformat(timespec="seconds"), "git_head": head.strip() if code == 0 else None,
            "machine": machine_info(), "tier_rule": "see the docstring of scripts/test-inventory.py",
            "churn_days": CHURN_DAYS, "likelihood_thresholds": {"high": LIKELIHOOD_HIGH, "medium": LIKELIHOOD_MEDIUM},
-           "summary": summary, "artifacts": entries, "ci_timing": ci}
+           "summary": summary, "artifacts": entries, "ci_timing": ci,
+           "evidence_error": "; ".join(GIT_ERRORS) or None}
     out = Path(args.out) if args.out else tmp / "test-inventory.json"
     out.write_text(json.dumps(doc, indent=2), encoding="utf-8")
     print(f"wrote {out} ({summary['artifacts']} artifacts)")
     if args.markdown:
         Path(args.markdown).write_text(render_markdown(entries, summary, ci, timings), encoding="utf-8")
         print(f"wrote {args.markdown}")
+    if GIT_ERRORS:
+        print("error: git could not be read, so likelihood and fix evidence are NOT valid in the output; "
+              "exit 1", file=sys.stderr)
+        return 1
     return 0
 
 

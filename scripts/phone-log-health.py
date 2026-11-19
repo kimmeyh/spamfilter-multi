@@ -321,7 +321,11 @@ def read_log_lines(path: Path) -> list[str]:
 
 
 def expand_paths(paths: list[str]) -> tuple[list[Path], list[str]]:
-    """Each --path entry, comma-split and globbed. Returns (files unique by name, warnings)."""
+    """Each --path entry, comma-split and globbed. Returns (files unique by resolved path, warnings).
+
+    Sprint 85 7.7.1 L7: this used to dedup by file NAME, so a same-named diag log from another folder was dropped
+    without a word. Now only the same file reached twice (overlapping globs) is dropped; two different files that
+    share a name are both kept and a warning names them."""
     warnings: list[str] = []
     found: list[Path] = []
     for raw in paths:
@@ -333,13 +337,21 @@ def expand_paths(paths: list[str]) -> tuple[list[Path], list[str]]:
             if not hits:
                 warnings.append(f"WARNING: --path '{item}' matched no file; it is NOT in this check.")
             found.extend(hits)
-    found.sort(key=lambda p: p.name.lower())
+    found.sort(key=lambda p: (p.name.lower(), str(p).lower()))
     unique: list[Path] = []
     seen: set[str] = set()
     for p in found:
-        if p.name.lower() not in seen:
-            seen.add(p.name.lower())
+        key = os.path.normcase(str(p.resolve()))
+        if key not in seen:
+            seen.add(key)
             unique.append(p)
+    by_name: dict[str, list[Path]] = {}
+    for p in unique:
+        by_name.setdefault(p.name.lower(), []).append(p)
+    for name, paths in by_name.items():
+        if len(paths) > 1:
+            where = "; ".join(str(p) for p in paths)
+            warnings.append(f"WARNING: {len(paths)} different files are named '{name}' ({where}); all are read.")
     return unique, warnings
 
 
