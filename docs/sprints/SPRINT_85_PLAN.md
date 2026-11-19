@@ -1228,6 +1228,8 @@ written 11/07 19:22, SHA-256 prefix 464DC179B98A1F67 (unchanged).
   Harold, 2026-11-18: the Fold's Scan History goes back only to 11/14 1:30 PM, so the 11/13 01:42 row is gone. The
   phone log times are local (`diagnostic_logger.dart:409`, `DateTime.now().toIso8601String()`, no Z), so the
   11-14 17:13:38 stop (5:13 PM) is inside that window; its row is the one to screenshot.
+  CLOSED by Harold, 2026-11-18: "mv-4 close it, don't ask again". The Scan History text was not seen on the Fold;
+  the log evidence (a)-(c) stands. Standing fact: do not ask for this screenshot again.
 - MV-5: PASS.
 - MV-6 check 2: PASS (Gmail sign-in works on Windows and Android). Check 9: PASS (Harold, 2026-11-18: "mv-6 all
   good").
@@ -1266,8 +1268,8 @@ sprint q2. 3 q3. 1 q4. 1 q5. 3 q6. 2 q7. 1 q8. 1 q9. 1 q10. 2 q11. 1"
   ran then (the first session file of the night is 23:50). (3) Task Scheduler event 141 names user HKOMEN\kimme for
   all three, 6 to 8 seconds apart, the pace of a delete and a confirm in the Task Scheduler window. All four DEV task
   names start with the same account prefix, and the iCloud task was already absent (seen at the 5.1.9 rehearsal, 11/13).
-  Inference, unverified: the three deletes were by hand in Task Scheduler while looking for the iCloud task. Asked
-  Harold to confirm.
+  Inference: the three deletes were by hand in Task Scheduler while looking for the iCloud task. Confirmed by Harold,
+  2026-11-18 (T1 = 1, "yes"): no defect and no backlog card.
 
 **Steps (draft; each is rehearsed before handover, 5.1.9)**:
 - MV-1 (Windows DEV, F352 default account). Precondition: no default set (dev-DB copy: no `default_account_id` row,
