@@ -105,6 +105,9 @@ def get_health(lines: list[str], interval: int, since: datetime | None = None,
     acc: dict[str, _Account] = {}
     intervals: dict[str, set[int]] = {}
     recognized = 0
+    # Sprint 85 7.7.1 (5.1.2 recorded item): a scan line whose timestamp does not parse was dropped with no
+    # word unless NOTHING else matched, so a partly unreadable log undercounted in silence. Counted and flagged.
+    bad_ts = 0
     for line in lines:
         iv = INTERVAL_RX.search(line)
         if iv:
@@ -116,7 +119,8 @@ def get_health(lines: list[str], interval: int, since: datetime | None = None,
         hit = m if m else t
         ts = parse_ts(hit.group("ts"))
         if ts is None:
-            continue  # not a recognized line: the M-1 check reports the log when nothing else matches
+            bad_ts += 1  # not counted as recognized; flagged below, and M-1 still reports a log with none
+            continue
         if since and ts < since:
             continue
         # Counted only inside the window: a window with no scan line must not read as "No flags.".
@@ -201,6 +205,9 @@ def get_health(lines: list[str], interval: int, since: datetime | None = None,
             flags.append(f"FLAG: {a} has {errors} scan error(s).")
     if one_account and scanning > 1:
         flags.append(f"FLAG: {scanning} accounts scanned in the background; a single-account run needs exactly one.")
+    if bad_ts:
+        flags.append(f"FLAG: {bad_ts} scan line(s) had a timestamp that does not parse and were NOT counted; "
+                     "the counts above are incomplete.")
     return Health(out, flags, scanning, recognized)
 
 

@@ -59,10 +59,25 @@ class HappyPath(Base):
         self.assertNotIn("= * 80", out)
 
     def test_names_and_non_regex_values_are_not_counted(self):
-        text = "rules:\n- name: 'SpamAutoDeleteHeader'\n  enabled: 'True'\n  x:\n  - 'OR'\n  - 'plainword'\n"
+        text = ("rules:\n- name: 'SpamAutoDeleteHeader'\n  enabled: 'True'\n  x:\n  - 'OR'\n  - 'plainword'\n"
+                "  - 'a@(b|c)\\.com$'\n")
         code, out = self.run_main(self.write("r.yaml", text), self.write("s.yaml", SAFE_OK))
         self.assertEqual(code, 0, out)
-        self.assertIn("Found 0 regex patterns, 0 valid", out)
+        self.assertIn("Found 1 regex patterns, 1 valid", out)
+
+    def test_rules_file_with_no_pattern_fails_as_nothing_checked(self):
+        # Sprint 85 7.7.1 (5.1.2 L8): it printed "All validations passed!" with exit 0. NOT caught: a file whose
+        # patterns are read only in part (a layout the text scan misses for some items but not all).
+        text = "rules:\n- name: 'SpamAutoDeleteHeader'\n  x:\n  - 'plainword'\n"
+        code, out = self.run_main(self.write("r.yaml", text), self.write("s.yaml", SAFE_OK))
+        self.assertEqual(code, 1, out)
+        self.assertIn("[NOTHING CHECKED] rules.yaml", out)
+        self.assertNotIn("All validations passed", out)
+
+    def test_safe_senders_file_with_no_pattern_fails_as_nothing_checked(self):
+        code, out = self.run_main(self.write("r.yaml", RULES_OK), self.write("s.yaml", "'safe_senders': []\n"))
+        self.assertEqual(code, 1, out)
+        self.assertIn("[NOTHING CHECKED] rules_safe_senders.yaml", out)
 
     def test_escaped_single_quote_is_decoded(self):
         text = "rules:\n- x:\n  - 'it''s@(a|b)\\.com'\n"
@@ -160,8 +175,10 @@ class WarningsAndNotes(Base):
 
     def test_non_empty_flow_list_is_reported_as_not_read(self):
         code, out = self.run_main(self.write("r.yaml", "rules:\n- x:\n    header: ['a@b(']\n"), self.write("s.yaml", SAFE_OK))
-        self.assertEqual(code, 0, out)
+        # The flow list is the file's only pattern, so nothing was validated: exit 1 (Sprint 85 7.7.1, 5.1.2 L8).
+        self.assertEqual(code, 1, out)
         self.assertIn("[YAML NOT READ] rules.yaml line 3", out)
+        self.assertIn("[NOTHING CHECKED] rules.yaml", out)
 
     def test_empty_flow_list_is_not_reported(self):
         _code, out = self.run_main(self.write("r.yaml", RULES_OK), self.write("s.yaml", SAFE_OK))

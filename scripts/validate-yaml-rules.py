@@ -124,6 +124,12 @@ def validate_rules(path: Path, report: Report) -> int:
             valid += result == "valid"
             unchecked += result == "unchecked"
         print(_count_line(found, valid, unchecked, "regex patterns"))
+        # Sprint 85 7.7.1 (5.1.2 L8, same class as 7.7.1 L6): 0 patterns read passed as "All validations
+        # passed!". Nothing was checked, so it is an error: the file is empty or its layout is not one this
+        # validator reads.
+        if found == 0:
+            report.errors.append("[NOTHING CHECKED] rules.yaml: 0 regex patterns were read, so nothing was "
+                                 "validated (empty file, or a layout this validator does not read)")
     except (OSError, UnicodeDecodeError) as exc:
         report.errors.append(f"[YAML ERROR] Failed to parse rules.yaml: {exc}")
     return 0
@@ -151,6 +157,9 @@ def validate_safe_senders(path: Path, report: Report) -> None:
             valid += result == "valid"
             unchecked += result == "unchecked"
         print(_count_line(len(items), valid, unchecked, "safe sender patterns"))
+        if not items:
+            report.errors.append("[NOTHING CHECKED] rules_safe_senders.yaml: 0 patterns were read, so nothing was "
+                                 "validated (empty file, or a layout this validator does not read)")
         duplicates = len(items) - len({p for _line, p in items})
         if duplicates:
             report.warnings.append(f"[DUPLICATE WARNING] Found {duplicates} duplicate patterns in safe_senders.yaml")

@@ -113,6 +113,19 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(code, 3)
         self.assertIn("0 scan lines recognized", out)
 
+    def test_unparseable_timestamp_among_good_lines_is_flagged(self) -> None:
+        """Sprint 85 7.7.1 (a 5.1.2 recorded item): good lines plus one with a bad timestamp. Before, the bad line
+        was dropped in silence and the report said "No flags." NOT caught: a timestamp that parses but is wrong."""
+        text = (FIXTURES / "diag_sample_s84.log").read_text(encoding="utf-8")
+        bad = ("[2026-13-45T99:00:00.000000] [SCAN] [scan/background] acct1***@example.com start -- "
+               "platform=aol folders=3 daysBack=1")
+        with tempfile.TemporaryDirectory() as tmp:
+            log = Path(tmp) / "diag_mixed.log"
+            log.write_text(text + bad + "\n", encoding="utf-8")
+            _code, out = run_main(["--path", str(log)])
+        self.assertIn("1 scan line(s) had a timestamp that does not parse", out)
+        self.assertNotIn("No flags.", out)
+
     def test_crlf_and_utf8_logs_read_like_lf_ascii(self) -> None:
         """CRLF endings and a non-ASCII account name: same counts as the LF sample, name carried over."""
         text = (FIXTURES / "diag_sample_s84.log").read_text(encoding="utf-8")

@@ -107,7 +107,7 @@ q2. 3 q3. 1 q4. 1 q5. 3 q6. 2 q7. 1 q8. 1 q9. 1 q10. 2 q11. 1
   3. No action
 
   q11. The WinWright test runner. Two problems:
-  - The runner turns the Windows screen-reader flag on (run-winwright-tests.ps1:507) and never turns it off. I set it back to off today at 16:14.
+  - The runner turns the Windows screen-reader flag on (run-winwright-tests.ps1:507) and never turns it off. I seddt it back to off today at 16:14.
   - F124 fails only through the runner. I ruled out a background scan, a second window with the same title, the window state, the screen-reader flag, and the F124 script itself. The
     remaining suspect: WinWright gives up looking for the main window at once instead of retrying.
   1. One card for both: restore the flag when the runner ends, and investigate F124 with WinWright's own log (Recommended)
