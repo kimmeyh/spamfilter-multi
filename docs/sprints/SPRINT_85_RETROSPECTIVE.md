@@ -150,7 +150,31 @@ fixed without asking. Fix commits 6b5cea9a, 1748bdc3, 893be44f, 48160d51. Full d
 
 ## Improvement Decisions
 
-PENDING -- proposals i1-i8 presented to Harold 2026-11-19.
+Proposals i1-i8 presented 2026-11-19. Harold's answers, 2026-11-21 (verbatim): "i1. a i2. a i3. a i4. a i5. a i6. a
+i7. a i8. e" and "add to next sprint backlog and rank in top 10 for next sprint: add to Improvements Effort, what the
+change adds to full-suite and CI testing time".
+
+- **i1. a -- APPLIED**: 5.1.2 findings are fixed at 5.1.2 under the 7.7.1 rule; no "Not fixed, LOW"; a finding
+  over the size limit or decision-class becomes a numbered question at the MV handover.
+  `SPRINT_EXECUTION_WORKFLOW.md` 5.1.2, `SPRINT_CHECKLIST.md` Phase 5.
+- **i2. a -- APPLIED**: 5.1.2 class 3 lists every CHANGELOG line added and the Help page of every changed screen;
+  each behavior claim is recorded as `<claim>: <file:line>`. Same two files.
+- **i3. a -- APPLIED**: the class 6 "need not know" exception does not apply to a failure that changes what the user
+  sees; that failure shows its reason on that screen. Same two files.
+- **i4. a -- APPLIED**: the card template's "Port of existing code" line gains "Error paths" (with a test that runs a
+  real failing command) and "Gates by file type". `SPRINT_PLANNING.md`.
+- **i5. a -- APPLIED**: the card lines record RESULTS at completion; new close-out check 3d-4 in
+  `.claude/hooks/verify-closeout-complete.py` (Sprint 86+) blocks a line with a `<...>` placeholder or with no
+  file:line / "none found" / "no hits" / leading "N/A". Hook cases allow-12, violation-17, violation-18.
+  `SPRINT_PLANNING.md` template note.
+- **i6. a -- APPLIED**: 5.1.9 steps Claude cannot rehearse list their preconditions and record each readable one
+  as `Precondition: <what>: <how checked>`. `SPRINT_EXECUTION_WORKFLOW.md` 5.1.9, `SPRINT_CHECKLIST.md`.
+- **i7. a -- APPLIED**: the CODING_VELOCITY row is added with `Started <date HH:MM>` when the task starts.
+  `SPRINT_EXECUTION_WORKFLOW.md` 3.2.2.3, `SPRINT_CHECKLIST.md` Phase 4.
+- **i8. e -- TRACKED, not built**: Windows SDK check before a Windows build. Propose again if a toolchain update
+  breaks the Windows build again.
+- **New backlog item -- F361** (Priority 38, top 10 for Sprint 86): each retrospective improvement's Effort states
+  what the change adds to full-suite and CI test time. `ALL_SPRINTS_MASTER_PLAN.md`.
 
 ## Completeness Validation (Phase 7.3/7.4 exit gate)
 

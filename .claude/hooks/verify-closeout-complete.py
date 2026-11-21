@@ -4,7 +4,8 @@ Python port of verify-closeout-complete.ps1 (F327, Sprint 84; ADR-0051, F321 lay
 exit 0 allow, exit 2 block (stderr to Claude), bypass = a branch name containing `allow_stop_hook_bypass`,
 test overrides in the payload (`branch_override`, `repo_override`, `dirty_zero_files_override`,
 `skip_git_checks`). Every check keeps its number and message text (3a, 3a-1, 3a-2, 3d, 3e, 3d-2, 3d-3,
-3b, 3b-2, 3c); SPRINT_CHECKLIST.md and CLAUDE.md cite them.
+3b, 3b-2, 3c); SPRINT_CHECKLIST.md and CLAUDE.md cite them. Check 3d-4 (card-line results, Sprint 85 retro i5) was
+added after the port.
 
 Port rules (R-4): parsing is carried over exactly, not improved.
   - Markdown is read as BYTES and decoded utf-8-sig, so CR and CRLF survive (Python's text mode would turn
@@ -377,6 +378,61 @@ def check_executed_by(status, cwd: str, sprint_num: int, violations: list):
             "Every card records the model that executed it and its actual minutes before close-out (Sprint 77 retro IMP-3).")
 
 
+CARD_RESULT_LABEL = re.compile(r"^\s*(?:-\s*)?\*\*(Port of existing code|Old name search)\*\*\s*:?\s*(.*)$", I)
+BOLD_LABEL_LINE = re.compile(r"^\s*(?:-\s*)?\*\*[^*\r\n]+\*\*")
+TEMPLATE_PLACEHOLDER = re.compile(r"<(?!!--)[^<>\r\n]+>")
+CARD_RESULT_EVIDENCE = re.compile(r"[\w./\\-]+\.\w+:\d+|\bnone found\b|\bno (other )?hits\b|\b0 hits\b", I)
+CARD_RESULT_NA = re.compile(r"^[\s`*_]*N/A\b", I)
+
+
+def card_result_lines(plan_text: str) -> list:
+    """(label, value) for each "Port of existing code" / "Old name search" entry. The value runs from the label to
+    the next blank line or the next bold label line, with HTML comments removed (the template's guidance lives in
+    comments, so it never counts as a result)."""
+    lines = re.sub(r"<!--.*?-->", "", plan_text, flags=re.S).splitlines()
+    found = []
+    index = 0
+    while index < len(lines):
+        match = CARD_RESULT_LABEL.match(lines[index])
+        if not match:
+            index += 1
+            continue
+        parts = [match.group(2)]
+        index += 1
+        while index < len(lines) and lines[index].strip() and not BOLD_LABEL_LINE.match(lines[index]):
+            parts.append(lines[index].strip())
+            index += 1
+        found.append((match.group(1), " ".join(p.strip() for p in parts if p.strip())))
+    return found
+
+
+def check_card_results(status, cwd: str, sprint_num: int, violations: list):
+    """3d-4 (Sprint 86+; Sprint 85 retro i5): each "Port of existing code" and "Old name search" line records its
+    RESULT. A result is a file:line, "none found", "no hits" / "0 hits", or a value that starts with "N/A". A line that
+    still holds a `<...>` template placeholder, or only says what will be done, is not a result."""
+    if not (sprint_num >= 86 and status is not None and _plan_approved(status)):
+        return
+    plan_text = load_plan(cwd, sprint_num, violations)
+    if plan_text is None:
+        return
+    unrecorded = []
+    for label, value in card_result_lines(plan_text):
+        if CARD_RESULT_NA.match(value) and not TEMPLATE_PLACEHOLDER.search(value):
+            continue
+        placeholder = TEMPLATE_PLACEHOLDER.search(value)
+        if placeholder:
+            unrecorded.append(f"{label}: template text left ({placeholder.group(0)[:60]})")
+        elif not CARD_RESULT_EVIDENCE.search(value):
+            unrecorded.append(f"{label}: no result ({value[:60]})")
+    if unrecorded:
+        violations.append(
+            f"SPRINT_{sprint_num}_PLAN.md has {len(unrecorded)} 'Port of existing code' / 'Old name search' line(s) with no "
+            "recorded RESULT (a template placeholder, or only what will be done): " + "; ".join(unrecorded) + ". Record "
+            "the results at task completion: each hit or defect as file:line with 'updated' or 'kept because ...', or "
+            "'none found' / 'no hits', or 'N/A -- <reason>'. An ADR hit gets a dated note naming the replacement "
+            "(Sprint 85 retro i5: 7 cards carried both lines and none recorded a result).")
+
+
 def check_previous_summary(cwd: str, sprint_num: int, violations: list):
     """3b: the previous sprint's SUMMARY exists once its RETROSPECTIVE does (Phase 3.2.1)."""
     prev = sprint_num - 1
@@ -624,6 +680,7 @@ def decide(payload: dict) -> hooklib.Verdict:
     check_phase5_evidence(payload, status, cwd, sprint_num, violations)
     check_final_reviews(status, cwd, sprint_num, violations)
     check_executed_by(status, cwd, sprint_num, violations)
+    check_card_results(status, cwd, sprint_num, violations)
     check_previous_summary(cwd, sprint_num, violations)
     check_velocity_rows(cwd, sprint_num, violations)
     notices: list = []

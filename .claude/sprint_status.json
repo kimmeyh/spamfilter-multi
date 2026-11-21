@@ -1,13 +1,13 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-11-19T20:21:00-05:00",
+    "_last_updated": "2026-11-21T00:37:00-05:00",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 85,
         "branch": "feature/20261108_Sprint_85",
-        "status": "Phase 7.5 Improvement Proposals",
-        "status_detail": "Retrospective recorded 2026-11-19 (Harold: all 14 categories Very Good, 13/14 none; docs/sprints/SPRINT_85_RETROSPECTIVE.md); improvement proposals i1-i8 presented, awaiting decisions. 7.7.1 reviews done and all findings fixed (6b5cea9a, 1748bdc3, 893be44f, 48160d51; second pass 66 of 66 files). Manual Validation COMPLETE 2026-11-18 (all MV steps PASS or closed by Harold; decisions q1-q11, F357 q1/q2, T1 recorded in SPRINT_85_PLAN.md). 7.7.1 final code reviews started 2026-11-18 on draft PR #559 (Copilot by hand, code-reviewer, silent-failure-hunter) and the retrospective prompt sent. Earlier: Manual Validation handed over 2026-11-13 on Windows DEV 0.25.0+23 (1a1ec264, built 15:42 after the Visual Studio Repair restored the Windows SDK) and Play bundle 0.25.0+23 (322f5c70). 5.1.2, 5.1.5 (sweep-head 1a1ec264) and 5.1.9 markers recorded in SPRINT_85_PLAN.md. Plan approved 2026-11-10; cards #560-#575.",
+        "status": "Phase 7.7 Improvement Review",
+        "status_detail": "Improvement decisions 2026-11-21 (Harold: i1-i7 a, i8 e tracked; new F361 Priority 38): i1-i7 applied (workflow 5.1.2/5.1.9/3.2.2.3, checklist, card template, close-out check 3d-4 with hook cases). Next: improvement review (code-reviewer + silent-failure-hunter on the improvement commit) with CI run 1, then the 7.7.1 line, gh pr ready 559, CI run 2, 7.7.5. Retrospective recorded 2026-11-19 (Harold: all 14 categories Very Good, 13/14 none; docs/sprints/SPRINT_85_RETROSPECTIVE.md). 7.7.1 reviews done and all findings fixed (6b5cea9a, 1748bdc3, 893be44f, 48160d51; second pass 66 of 66 files). Manual Validation COMPLETE 2026-11-18 (all MV steps PASS or closed by Harold; decisions q1-q11, F357 q1/q2, T1 recorded in SPRINT_85_PLAN.md). 7.7.1 final code reviews started 2026-11-18 on draft PR #559 (Copilot by hand, code-reviewer, silent-failure-hunter) and the retrospective prompt sent. Earlier: Manual Validation handed over 2026-11-13 on Windows DEV 0.25.0+23 (1a1ec264, built 15:42 after the Visual Studio Repair restored the Windows SDK) and Play bundle 0.25.0+23 (322f5c70). 5.1.2, 5.1.5 (sweep-head 1a1ec264) and 5.1.9 markers recorded in SPRINT_85_PLAN.md. Plan approved 2026-11-10; cards #560-#575.",
         "plan_approved": true,
         "pr_number": 559,
         "version": "0.25.0+23"

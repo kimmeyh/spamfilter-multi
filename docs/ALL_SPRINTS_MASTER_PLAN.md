@@ -207,6 +207,22 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
+### Backlog from the Sprint 85 retrospective (Harold, 2026-11-21)
+
+**F361. Retrospective improvement Effort states what the change adds to full-suite and CI test time (~30-45m) Priority 38 -- NEW 2026-11-21 (Harold, Sprint 85 retro: "add to next sprint backlog and rank in top 10 for next sprint")**
+- Phase: Process
+- Platform: N/A
+- Harold, 2026-11-21: *"add to Improvements Effort, what the change adds to full-suite and CI testing time"*. Each
+  retrospective proposal's Effort field (`SPRINT_EXECUTION_WORKFLOW.md` Phase 7.3 STEP 5, and the CLAUDE.md
+  retrospective-improvement exception line) gains a second part: the time the change adds to the local full suite
+  (`flutter test`, the Python tests, the hook cases) and to the CI jobs, in seconds or minutes, with how it was
+  measured or estimated (for example "local: +3 hook cases, ~2 s, timed; CI: +1 unittest, ~0.1 s"). CI today runs
+  `flutter analyze`, `flutter test`, the Windows build, and the Python unit tests in `.claude/hooks/tests` and
+  `scripts/tests` (`.github/workflows/ci.yml:50,58`).
+- Measure, not guess: name where the number comes from (the run time of the new tests, a timed run before and
+  after). An improvement that adds nothing to either says "+0".
+- Depends on: none.
+
 ### Backlog from the Sprint 85 Manual Validation decisions (Harold, 2026-11-18)
 
 **F359. Android emulator integration test for the paths only a phone found (~120-180m) Priority 40 -- NEW 2026-11-18 (Harold, Sprint 85 q7 = 1)**
