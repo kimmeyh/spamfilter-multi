@@ -1743,13 +1743,24 @@ class FaultInjectionTests(unittest.TestCase):
                     self.assertIn("check 3e did not run: git diff against origin/develop and develop failed", shown)
 
     def test_closeout_gh_alone_failing_is_reported_as_check_3c_not_run(self):
+        """Sprint 85 CI run 2: 3c reads the REAL `git branch`, and a pull_request CI run checks out a detached
+        merge commit, so 3c stopped at "detached HEAD" before gh. The test now answers `git branch` itself and
+        no longer depends on how the repo was checked out. Does NOT catch a gh failure 3c sees only on a
+        branch whose PR has merged (gh fails on the first call here)."""
         module = load_hook("verify-closeout-complete.py")
+        real_git = common.git
+
+        def on_a_branch(*args, **kwargs):
+            if args[:2] == ("branch", "--show-current"):
+                return 0, "feature/20261030_Sprint_81\n"
+            return real_git(*args, **kwargs)
+
         for mode, how in FAILURE_MODES.items():
             with self.subTest(mode=mode):
                 payload = self.stop_payload(cwd=str(CASES / "fixtures" / "improvement-review-present-sprint"),
                                             branch_override="feature/20261030_Sprint_81",
                                             skip_git_checks=True, dirty_zero_files_override="")
-                with self.failing(("gh",), how):
+                with self.failing(("gh",), how), mock.patch.object(common, "git", on_a_branch):
                     shown = self.visible(module.decide(payload))
                 self.assertIn("check 3c did not run: gh unavailable", shown)
 
