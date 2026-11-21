@@ -273,7 +273,7 @@ pubspec.
 
 **Model**: main session (runs with 3.7.0 in the approval turn; a sub-agent would cost more than the task). Shape: Haiku.
 **Delegation checklist included in the sub-agent prompt** (when delegated): N/A (main session).
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Main session, ~15 min (CODING_VELOCITY row, recorded 2026-11-10 15:22).
 **Step-types**: DOCS, DATA. **Est-Effort**: 10-15m.
 
 ## Task 1 -- Carry-ins: the F342 Fold check after 0.24.1, and MV-3c
@@ -309,7 +309,7 @@ Windows and iOS have no WorkManager stop event). R-2 is the shared pop-up at the
 **Definition of Done**: AC-1 and AC-2 only (no code).
 
 **Model**: main session (interactive with Harold) -- N/A.
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Opus main session; actual minutes not recorded, 0 min logged (time was not read at start or end; Sprint 85 retro i7).
 **Step-types**: MANUAL, DIAG. **Est-Effort**: 15-30m plus Harold's phone time.
 
 ## Task 2 -- F350: Risk-based test analysis: effective, and as efficient and quick as reasonably possible (Priority 10)
@@ -368,7 +368,7 @@ with no automated coverage for a high-risk path is listed as a gap.
 (`SPRINT_PLANNING.md:94-108`, "Research Spikes"). R-1 and the timings: Sonnet sub-agent -- *why not Haiku*: timing
 runs need judgment about noise (antivirus, concurrency) and the CI history.
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes (R-1 sub-agent)
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Opus main session plus Sonnet sub-agent; actual minutes not recorded, 0 min logged (time was not read at start or end; Sprint 85 retro i7). Its commits span 17:39-19:29 on 2026-11-10.
 **Step-types**: RESEARCH `[no-history]`, SCRIPT, TEST-UNIT, DOCS. **Est-Effort**: 150-210m.
 
 ## Task 3 -- F352: Default email account (Priority 12)
@@ -441,7 +441,7 @@ Each new guard test is mutation-checked (retro i5).
 **Model**: Sonnet -- *why not Haiku*: it changes startup selection semantics across five screens and the account-delete
 path; the "caller safe by accident" check (IMP-1) needs judgment.
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
-**Executed-by** (filled at completion): Sonnet sub-agent as assigned, 2026-11-10 15:25-17:40. One key
+**Executed-by** (filled at completion): ~135 min. Sonnet sub-agent as assigned, 2026-11-10 15:25-17:40. One key
 (`default_account_id`) in `SettingsStore`; `SelectedAccountProvider.createSeeded` seeds before `runApp` (a stale id is
 cleared; an error starts the provider empty); `DataDeletionService.deleteAccountData` clears the default inside the same
 transaction; star control on the healthy Select Account row, "Default account" mark, read-only label in Settings >
@@ -513,7 +513,7 @@ declared in the ADR-0049 table.
 **Model**: Opus (main session) -- *why not Sonnet*: credential storage, a Class-1 decision, and a migration where a
 mistake loses production sign-ins.
 **Delegation checklist included in the sub-agent prompt** (when delegated): N/A (main session).
-**Executed-by** (filled at completion): Opus main session as assigned, 2026-11-10, interleaved with agent reviews
+**Executed-by** (filled at completion): actual minutes not recorded, 0 min logged (time was not read at start or end; Sprint 85 retro i7). Opus main session as assigned, 2026-11-10, interleaved with agent reviews
 (active time not recorded). Code: `Runner.rc` ProductName from `SPAMFILTER_IS_DEV` (CMake sets it when the env is not
 prod); `AppPaths.dataDirectoryPath` the one place the `_Dev` suffix is applied (5 callers moved to it);
 `DevCredentialSeparation` before any credential read; `AppIdentityMigration` production-only;
@@ -609,7 +609,7 @@ enable path (Settings > Background) runs on all three platforms; a cause found t
 **Model**: Opus (main session) -- *why not Sonnet*: native-thread deep debugging across the plugin and the engine, and
 it needs the emulator and the Fold interactively.
 **Delegation checklist included in the sub-agent prompt** (when delegated): N/A (main session).
-**Executed-by** (filled at completion): Opus main session as assigned. PARTIAL: R-1 and R-5 done; R-2 (Fold) waits for
+**Executed-by** (filled at completion): actual minutes not recorded, 0 min logged (time was not read at start or end; Sprint 85 retro i7). Opus main session as assigned. PARTIAL: R-1 and R-5 done; R-2 (Fold) waits for
 Manual Validation.
 **Result (Phase 5) -- R-1, emulator `pixel34_updated` (Android 14, 2 GB RAM, 1.5 GB swap), 2026-11-10**: 9 tries, 0 ANR
 (no "isn't responding" dialog in a uiautomator dump 20 s after each tap; 0 `ANR in` / `Input dispatching timed out` /
@@ -667,7 +667,7 @@ and no recent-scan check). R-2's store writes are shared Dart on all three platf
 **Model**: Sonnet -- *why not Haiku*: it changes a guard with several callers, and the decision rests on reading a
 phone log against the code.
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Main session, ~0 min of task work (both decisions waited on the Fold log; decided at MV, no code).
 **Step-types**: SVC-EDIT, TEST-UNIT. **Est-Effort**: 30-60m.
 
 _**Decision-class interrupts**_: Class 2 (R-3).
@@ -704,7 +704,7 @@ difference found is recorded as a parity gap or a declared exception.
 **Definition of Done**: AC-1 and AC-2 only (no code).
 
 **Model**: main session (interactive with Harold) -- N/A.
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Opus main session; actual minutes not recorded, 0 min logged (time was not read at start or end; Sprint 85 retro i7).
 **Result (Phase 5) -- R-1 check 6, Android emulator** (`pixel34_updated`, release 0.25.0 fresh install, 2026-11-10
 22:52-23:00): a Custom IMAP account for the local GreenMail test server (`10.0.2.2:3993`, user `tester`; certificate
 trusted through the app's own dialog; "[OK] Connection successful!") was saved and NOT scanned; app force-stopped and
@@ -780,7 +780,7 @@ Sprint 85.
   Validation (asked late, per the approval). Removal work is ready to run in one agent pass once decided.
 **Model**: Haiku -- the cheapest tier fits a removal with a written coverage check and the analyzer and suite as oracles.
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Haiku sub-agent (R-1 audit only; removal moved to Sprint 86 by Harold, q1); actual minutes not recorded, 0 min logged (time was not read at start or end; Sprint 85 retro i7).
 **Step-types**: UI-REMOVE `[no-history]`, TEST-WIDGET. **Est-Effort**: 45-75m.
 
 ## Task 9 -- F329: Python batch H4: the hook test tooling, then retire the PowerShell copies (Priority 36)
@@ -837,7 +837,7 @@ Harold for the screenshot.
 **Model**: Sonnet -- *why not Haiku*: the runner and `mutation-test` carry subtle rules (baseline, INVALID, byte-exact
 restore, line endings) whose loss would silently weaken every gate.
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
-**Executed-by** (filled at completion): Sonnet sub-agent as assigned, 2026-11-10 19:50-20:53; main session review and
+**Executed-by** (filled at completion): ~75 min. Sonnet sub-agent as assigned, 2026-11-10 19:50-20:53; main session review and
 CLAUDE.md, ADR-0051 and memory edits 20:53-21:05. PARTIAL: R-6 waits for Harold at Manual Validation. Port review
 (full text in the scratchpad `s85_f329\port_review.md`), defects fixed: the old runner SKIPPED an unknown case prefix and
 a missing route folder silently and passed with "0 total" (now FAIL, exit 2); fixture git errors were hidden by
@@ -899,7 +899,7 @@ port.
 **Model**: Sonnet -- *why not Haiku*: regex-dialect translation and a YAML reader decision; a silent difference would
 pass a bad rule.
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
-**Executed-by** (filled at completion): Sonnet sub-agent as assigned, 2026-11-10 15:26-17:05. Port review found 24
+**Executed-by** (filled at completion): ~99 min. Sonnet sub-agent as assigned, 2026-11-10 15:26-17:05. Port review found 24
 defects in the originals, recorded before the port (the largest: `validate-yaml-rules.ps1` lost every regex error
 through a variable-scope defect, and its default paths never existed, so `/validate-rules` always failed). 87
 unittests, 64 of 64 mutants KILLED. R-3: the line scan is enough (rules.yaml 1824 single-quoted items, 0 double-quoted,
@@ -943,7 +943,7 @@ stop.
 
 **Model**: Haiku -- the cheapest tier fits deterministic set-up scripts with a dry-run oracle.
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
-**Executed-by** (filled at completion): Haiku sub-agent as assigned, 2026-11-10 15:27-16:47. The originals wrote
+**Executed-by** (filled at completion): ~80 min. Haiku sub-agent as assigned, 2026-11-10 15:27-16:47. The originals wrote
 `~/.claude/config.json`, which Claude Code does not read for MCP servers (it reads `~/.claude.json`,
 https://code.claude.com/docs/en/mcp), so their registration never took effect; the port writes `~/.claude.json` with a
 backup first. 32 unittests, 16 of 16 mutants KILLED. AC-1 dry run matches the original's entries (temporary profile);
@@ -983,7 +983,7 @@ Old-name hits: docs updated; SPRINT_77_PLAN.md and this plan's R-1 kept as histo
 
 **Model**: Haiku -- deterministic log parsing with fixtures as the oracle.
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
-**Executed-by** (filled at completion): Haiku sub-agent as assigned, 2026-11-10 15:27 to the 16:43 commit (3356c223).
+**Executed-by** (filled at completion): ~76 min. Haiku sub-agent as assigned, 2026-11-10 15:27 to the 16:43 commit (3356c223).
 Phone report P1-P11 mutants KILLED. The fixture logs missed that commit (`.gitignore:150 *.log`) and were force-added
 in the follow-up commit; the fixtures use Sprint 83 and 84 samples, the newest available, not Sprint 82.
 **Step-types**: PORT-PY `[no-history]`, TEST-UNIT. **Est-Effort**: 90-150m.
@@ -1024,7 +1024,7 @@ in the follow-up commit; the fixtures use Sprint 83 and 84 samples, the newest a
 
 **Model**: Sonnet -- *why not Haiku*: a binary protobuf reader and release gates where a silent pass ships a bad bundle.
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
-**Executed-by** (filled at completion): Sonnet sub-agent as assigned, 2026-11-10 16:17-17:39. Five ports, six originals
+**Executed-by** (filled at completion): ~82 min. Sonnet sub-agent as assigned, 2026-11-10 16:17-17:39. Five ports, six originals
 deleted; `build-with-secrets.ps1:657` calls the Python AAB check. Outputs identical to the originals on the repo, the
 0.24.1 AAB (targetSdk 36, AD_ID absent) and the live IANA list (version 2026111000, 1436 TLDs). Port fixes: the IANA
 updater validated nothing it downloaded; the AAB reader checked a protobuf length after moving the cursor. 50
@@ -1067,7 +1067,7 @@ exists.
 
 **Model**: Haiku -- wrappers around `flutter test` and mail generation, with the test runs as the oracle.
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
-**Executed-by** (filled at completion): Haiku sub-agent as assigned, 2026-11-10 16:17 to about 17:30 (handback received
+**Executed-by** (filled at completion): ~92 min (agent ~75 + main session proofs ~17). Haiku sub-agent as assigned, 2026-11-10 16:17 to about 17:30 (handback received
 by 17:38). PARTIAL until Phase 5. Ported and originals deleted: `run-tests`, `check_scans`, `generate-test-emails`, with
 the shared helper `flutter_support.py`. Ported, original KEPT until proven on an idle machine:
 `run-integration-tests` (selection and argv identical; no real integration run yet), `monitor-tests` (both full-suite
@@ -1125,7 +1125,7 @@ itself as the integration check.
 **Model**: Sonnet -- *why not Haiku*: the release-signing path and the SEC-9 credential gate; a dropped property ships a
 credential-less build (the F119 class).
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
-**Executed-by** (filled at completion): Sonnet sub-agent as assigned, 2026-11-10 18:12-18:58. R-1:
+**Executed-by** (filled at completion): ~46 min. Sonnet sub-agent as assigned, 2026-11-10 18:12-18:58. R-1:
 `build-with-secrets-clean.ps1` deleted, not ported (no flavor, no SEC-9 property, no release signing). Port review: 17
 defects fixed (among them the client id prefix and the AOL address printed to the log, refusals that ran after the clean,
 and a bundle copied to `dist\` before the F204 check). AC-1: debug APK and release AAB built from the Python entry point;
@@ -1149,7 +1149,7 @@ built AAB checked for the OAuth scheme (`GOOGLE_PLAY_RELEASE_PROCESS.md` Step 4)
 - **5.2.3 architecture documentation**: F354 in ADR-0035 "Sprint 85 Update"; F352 in ADR-0052 and `ARCHITECTURE.md:524`. Found stale and fixed 2026-11-10: `ARCHITECTURE.md` SecureCredentialsStore said "Windows: Credential Manager"; it now names the DPAPI file `flutter_secure_storage.dat` (plugin 4.1.0, `pubspec.lock:421`) and the F354 DEV separation. The DEV data path on `ARCHITECTURE.md:74` is unchanged by F354 and still correct.
 - **Android JVM unit tests**: N/A -- the sprint diff touches no file under `mobile-app/android/app/src`.
 - **5.1.6 runtime launch gate**: N/A -- `build.gradle.kts` changed in comments and message text only (F335); no manifest, plugin or native change.
-- **5.1.5 WinWright sweep**: 2026-11-18, at 42b56afc (the q10 `lib/ui` commit itself), DEV build from
+- **5.1.5 WinWright sweep**: FINAL 2026-11-21 02:51-02:55 at b2780885 (after 6b5cea9a, the 7.7.1 `lib/ui` fix to Settings and Select Account), DEV build from `build-windows.ps1` 02:50 (exit 0): 3 scripts, 3/3 PASS (test_f124_rule_labels, test_f320_no_rule_review, test_s75_new_controls 25/25); tray icon PASS; DB drift none. The input desktop was LOCKED, so the runner ran f124 and s75 in F291 locked mode and skipped 6 mouse steps (every keyboard and UI Automation step ran). The runner left the screen-reader flag on (F360); set back to False after the sweep, before 03:00 (enable-screen-reader-flag.ps1 disable, status read False). Earlier sweep, superseded by b2780885: 2026-11-18, at 42b56afc (the q10 `lib/ui` commit itself), DEV build from
   `build-windows.ps1` 2026-11-18 about 02:13 (exit 0). `run-winwright-tests.ps1` (all scripts, exit 0): f124 PASS
   (1:17), f320 PASS (0:35), s75 PASS (0:59, 25 of 25); tray icon PASS. The input desktop was LOCKED, so 6 mouse steps
   were skipped by the runner (F291). f124 passed through the runner this time, after 6 of 6 failures on 11-13; cause of
@@ -1158,7 +1158,7 @@ built AAB checked for the OAuth scheme (`GOOGLE_PLAY_RELEASE_PROCESS.md` Step 4)
   kimmeyh@gmail.com. Start Scan"; invoking "Set kimmeyh@gmail.com as default account" turned it into "Remove ...
   as default account", and invoking that removed it (0 "Remove" buttons after; state as found).
   Earlier sweep, superseded by 42b56afc: 2026-11-13, at 1a1ec264 (newer than the last `lib/ui` commit 8011e99b), DEV build from `build-windows.ps1` 15:42 (exit 0, after the Visual Studio Repair restored the Windows SDK; see Builds below), workstation unlocked, 3 scripts, two full sweeps. Sweep 1 15:45-15:47 and sweep 2 16:02-16:04: test_f320_no_rule_review PASS (13/13) both times; test_s75_new_controls PASS (27/27) both times (sweep 2 on its announced retry); test_f124_rule_labels FAIL in both sweeps and in a run alone (`-TestName f124`, 15:51), 6 of 6 attempts, every one at step 2 "No main window found" within about 300 ms (the step timeout is 60 s, so the lookup is not retried). Tray icon PASS and DB drift none in every run; mouse steps skipped 0. F124's 29 checks PASS 29/29 eight times on the same build when the script is run with the CLI directly (`Civyk.WinWright.Mcp.exe run`, scratchpad `trial_premax.ps1`, 15:58-16:08), so the app side of F124 is proven at this build; the runner failure is not. Cause UNKNOWN. Ruled out with evidence: (a) a background scan: a sampler (`sample_dev_windows.ps1`, every 0.5 s, every DEV process and its titled windows) saw exactly one DEV process at every failing step; a background scan does create a hidden top-level window titled "MyEmailSpamFilter [DEV]" (seen 15:50:04, `--background-scan --account-id=...`), the same title the scripts attach by, so it remains a hazard but did not cause these failures; (b) a second window with that title anywhere on the desktop (EnumWindows over every process: one); (c) the window state (pre-maximized, the runner's fixed size, untouched: all pass in trials); (d) F124 itself: test_s75_new_controls failed the same way once from a plain `Start-Process` launch; (e) the screen-reader flag (on: 1 PASS, 2 FAIL). Not ruled out: WinWright's main-window lookup failing at once instead of within the step timeout. What would settle it: WinWright's own log or source for "No main window found", or a ww_get_session_info capture inside the failing script. Also found: the runner sets `SPI_SETSCREENREADER` on (`run-winwright-tests.ps1:507`) and never sets it back, so every sweep leaves Windows in screen-reader mode (it read True after the 15:45 sweep; set back to False 16:14). Earlier sweep, superseded by 8011e99b: 2026-11-10 at e110499b (newer than the last `lib/` commit 7fea8327), DEV build from `build-windows.ps1`, workstation unlocked, 3 scripts. Sweep 21:10-21:16: test_f320_no_rule_review PASS; test_f124_rule_labels and test_s75_new_controls FAIL (every cursor step, "SetCursorPos failed") while an unsecured screen saver (`Mystify.scr`) had run since 17:19. The lock gate reported "unlocked", which is correct: Microsoft's "Desktops" page states "Unsecured screen savers run on Winsta0\Default", so the saver did not switch the input desktop; the mechanism is unknown. After the saver process was ended: test_s75_new_controls 27/27 PASS (21:21); test_f124_rule_labels failed once at step 29 ("IsEnabled [#30010] is not supported" on the second Back; its retry failed at step 2, "No main window found", the Sprint 84 symptom), then 29/29 PASS run alone (21:22-21:23). Tray icon PASS; DB drift none in every run. Prevention: the runner now ends a running unsecured screen saver in its preflight and says so (`Stop-UnsecuredScreenSaver`, `run-winwright-tests.ps1`); it leaves a secure saver alone and fails loudly if a saver cannot be ended. Tested both ways (saver running: ended, 1 -> 0 processes; none running: empty list).
-  sweep-head: 42b56afc
+  sweep-head: b2780885
 - **5.1.9 MV rehearsal**: 2026-11-13 16:07-16:13 on the DEV build of 1a1ec264 (`dist\dev\MyEmailSpamFilter-Dev.exe`, built 15:42). 2 steps rehearsed on Windows (MV-1 live, with WinWright reads, real mouse clicks on the star and the title-bar X, screenshots, and dev-DB copy reads; MV-2 live: the Select Account screen and SHA-256 of both credential files), 1 rehearsed on the emulator only (MV-3, F355 R-1: 9 tries, 0 ANR), 4 not rehearsable by Claude (MV-4 and MV-5 need the Fold; MV-6 needs Harold's own sign-in and the folded Fold; MV-7 needs Harold's screen). The MV-1 draft was WRONG and is rewritten: it said the app opens "with that account selected and no account picker" and that "the picker asks again" without a default. ADR-0052 decision 3 says the start screen does not change, and the Settings button on Review No Rule Items never shows a picker: it opens the session selection, else the filtered account, else the first account (`no_rule_review_screen.dart:239-258`). Guard tests and their verdicts: F352's 21 tests and `account_row_phone_width_test` KILLED (specs listed in the F352 card); `test/policy/diagnostic_logger_reset_test.dart` 4/4 KILLED (`scratchpad\s85_phase5\mut_reset.json`); `scripts/tests/test_no_runs_of_missing_scripts.py` KILLED (5.1.2 M2); the M3 log-reason and L9 seed-order tests KILLED (5.1.2); F335 20/20 KILLED (F335 card). Findings from the rehearsal: (1) the account row is one accessibility element with `excludeSemantics: true` (`account_selection_screen.dart:1209-1217`), so UI Automation cannot reach the F352 star, Start Scan or Delete; a mouse works; keyboard reach NOT CHECKED; (2) the iCloud DEV account's `background_enabled` is `false` since 2026-11-04 16:33:41 (dev-DB copy), and its scheduled task is gone, while the standing fact below says it is on.
 
 ## Manual Validation (Phase 5.3) -- handed over 2026-11-13

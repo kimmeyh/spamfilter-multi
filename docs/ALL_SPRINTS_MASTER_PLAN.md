@@ -152,6 +152,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 82 | docs/sprints/SPRINT_82_SUMMARY.md | [OK] Complete | Oct 27-31, 2026 (PR #521 -> develop; 0.23.0+20. F306 suggested rule in the No Rule pop-up (schema v17), F314 Gmail cursor after evaluation, F319 No Rule list reloads on resume and a notification click opens it (Windows open and closed), F312 closed with counts, F315 Windows count 0, F317, F318, F320; F67a/F304/F67b wait on Apple; MV-3/MV-4 Fold checks to Sprint 83) |
 | 83 | docs/sprints/SPRINT_83_SUMMARY.md | [OK] Complete | Oct 31-Nov 5, 2026 (PR #534 -> develop; 0.24.0+21. F322 scan notification choice (two Android channels), F323 F306 v2 (Block Body, could-not-check, news_ pattern), F324 account settings kept, background-off line, IMAP Sign In Again with no background login, F270 v1 suggested safe senders, F305 R-2 counts (Reply-To mismatch), F308/F310 mining tools, F309 research, F321 Python pilot (ADR-0051), F237, F325 static pass; MV-3a/b and MV-4 closed F303/F315; body rules read HTML-only mail with link addresses; F325 live run to F341, MV-3c carried; F67a/F304/F67b wait on Apple) |
 | 84 | docs/sprints/SPRINT_84_SUMMARY.md | [OK] Complete | Nov 5-8, 2026 (PR #548 -> develop; 0.24.1+22. F342 Scan History reason for a stopped background scan (row closed when Android stops the worker), F280 not reproduced and reverted, F326/F327/F328 hooks ported to Python, F345 iOS Simulator CI and privacy manifest, small-screen fixes (Rule Test, Scan History chips, empty states); F341 Android leg done, rest to F341; MV-4 channels PASS, MV-3c (MV-5) carried; close-out hook time budget and watchdog; F67a/F304/F67b wait on Apple) |
+| 85 | docs/sprints/SPRINT_85_SUMMARY.md | [OK] Complete | Nov 8-21, 2026 (PR #559 -> develop; 0.25.0+23. F352 default email account (ADR-0052), F354 Windows DEV credential separation, F350 risk-based test inventory, F329-F335 tooling ported to Python (ADR-0051) with CI running the script tests, Play bundle without the Windows Gmail secret, account-row buttons reachable by screen readers; F355 not repeated, F357 no code, F341 check 6 -> F358; F307 removal to Sprint 86; retro i1-i7 applied incl. close-out check 3d-4) |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -159,27 +160,29 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 84** (2026-11-05 -- 2026-11-08; PR #548 -> develop; version 0.24.1+22)
-- **Type**: Fold background errors, the live first-run evaluation, Python hooks, and an iOS Simulator check.
-  Windows + Android + iPhone parity on every card (ADR-0042, ADR-0049, ADR-0050).
-- **F342 (#551)** 11 Fold logs, 9 groups; one fix: when Android stops the background worker, the scan row is
-  closed and Scan History shows why (F346, F347, F357 for the rest). **F280 (#552)** not reproduced on the
-  emulator (0 failed lookups in 3 arms); the constraint was reverted (Harold). **F341 part B (#553)** Android
-  emulator leg and the Windows checks done; the rest stays on F341 (Harold: "mv-6 move to next sprint").
-  **F326 (#554)**, **F327 (#555)**, **F328 (#556)** five hooks ported to Python; the `.ps1` copies go in F329.
-  **F345 (#557)** iOS Simulator CI (integration tests and first-run screens) and `PrivacyInfo.xcprivacy`.
-  **Task 1 (#550)** MV-4 0.24.0 channels PASS. **Version (#549)**.
-- **Open**: MV-3c (as MV-5; no YELLOW item yet); the F342 Fold check after 0.24.1 (feeds F357); Apple Tasks
-  (#509, #510, #523) wait on enrollment `R6QG2A9SHS`.
-- **7.7.1 final code reviews**: Copilot 1 HIGH / 1 LOW, code-reviewer 0/0/3 M/5 L, silent-failure-hunter
-  0/0/6 M/13 L, all fixed or decided by Harold (q1 = c, q2 = a, q3 = a, q4 faster); improvement review 1 HIGH
-  (the Windows timeout did not end a child process), fixed in 21d2171d; CI run 1 green. Details:
-  `SPRINT_84_PLAN.md` "Phase 7.7.1 final code reviews".
-- **Results**: suite 3,619 passed / 15 skipped / 3 failed (the known Task Scheduler timeouts, F349); analyzer
-  clean; hook suite 208/208; test_pylib 95 OK. Retro: Harold all categories Very Good; i3, i4, i5, i6 applied;
-  i2 and q3 to F329; i8 to F356; q1 and q2 to F357; i1 and i7 tracked.
+**Sprint 85** (2026-11-08 -- 2026-11-21; PR #559 -> develop; version 0.25.0+23)
+- **Type**: default email account, DEV credential separation, risk-based test analysis, and the Python ports of
+  the remaining tooling (ADR-0051). Windows + Android + iPhone parity on every card (ADR-0042, ADR-0049, ADR-0050).
+- **F352 (#563)** default email account (star on Select Account; ADR-0052). **F354 (#564)** Windows DEV builds copy
+  the sign-ins once into their own folder and never change the installed app's file. **F350 (#562)** test
+  inventory with risk tiers (`scripts/test-inventory.py`), full-suite and mutation decisions q4-q6. **F329-F335
+  (#569-#575)** hook tooling and 30+ scripts ported to Python, PowerShell copies deleted; CI runs the script tests.
+  **F355 (#565)** not repeated (0 ANR in 9 emulator tries, Fold PASS). **F357 (#566)** no code (Fold evidence).
+  **F341 (#567)** check 6 -> F358, iOS screens compared. **Task 1 (#561)** F342 Fold check (4 stops, each row
+  closed) and MV-3c PASS. **q2**: the Play bundle no longer holds the Windows Gmail secret. **q10**: account-row
+  buttons reachable by screen readers. **Version (#560)**.
+- **Open**: F307 removal (#568, Sprint 86); Apple Tasks (#509, #510, #523) wait on enrollment `R6QG2A9SHS`.
+- **7.7.1 final code reviews**: Copilot 1 LOW; code-reviewer 2 M / 3 L; silent-failure-hunter 4 M / 10 L; second
+  pass on the 66 unread files 0 findings; all fixed (6b5cea9a, 1748bdc3, 893be44f, 48160d51). Improvement review
+  2 HIGH / 7 M / 8 L in check 3d-4 and the docs, all fixed (b2780885). CI run 1: one Linux-only test fixed.
+  Details: `SPRINT_85_PLAN.md` "Phase 7.7.1 final code reviews".
+- **Results**: suite 3,672 passed / 15 skipped / 0 failed (2026-11-10, idle machine); analyzer clean; hook cases
+  216/216; hook unit tests 145 OK; script tests 379 OK. Retro: Harold all categories Very Good; i1-i7 applied
+  (close-out check 3d-4 from Sprint 86); i8 tracked; F361 added at Priority 38.
 
 ## Next Sprint Candidates
+
+**Sprint 85 scope -- COMPLETE 2026-11-21 (PR #559)**: version (#560), Task 1 F342 Fold check and MV-3c (#561), F350 (#562), F352 (#563, ADR-0052), F354 (#564), F355 (#565, not repeated: closed with evidence), F357 (#566, no code: decided with the Fold evidence), F341 remainder (#567; check 6 became F358), F329-F335 Python ports (#569-#575). F307 (#568) did the R-1 audit only; the removal is Sprint 86 scope (Harold q1) and #568 stays open. Open: Apple cards #509, #510, #523. New from the sprint: F358-F361. Plan: `docs/sprints/SPRINT_85_PLAN.md`.
 
 **Sprint 84 scope -- COMPLETE 2026-11-08 (PR #548)**: version (#549), Task 1 (#550, MV-4 PASS; MV-3c carried), F342 (#551), F280 (#552, not reproduced, reverted), F341 part B (#553, Android leg; rest on F341), F326 (#554), F327 (#555), F328 (#556), F345 (#557). Open: MV-3c, the F342 Fold check after 0.24.1, and the Apple cards #509, #510, #523. New from the sprint: F346-F357. Plan: `docs/sprints/SPRINT_84_PLAN.md`.
 
@@ -360,89 +363,6 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
 - AC: with the probe forced to fail (`debugWritableOverride = false`), the diagnostic line is written and the Settings
   line shows the fallback path. Mutation-verified. Paths above are from the code; confirm on disk at card time.
 
-**F329. Python conversion batch H4: the hook test tooling, then retire the PowerShell shims (~225-355m with the i2 fault-injection test and the q3 notice check, estimate unverified) Priority 36 -- NEW 2026-11-01 (Sprint 83 Task 10, F321 R-6)**
-- Phase: Process / Tooling
-- Platform: Development process.
-- Files (608 lines): `.claude/hooks/run-test-cases.ps1` (131 plus the Sprint 83 `.py` route support),
-  `.claude/hooks/status-footer.ps1` (160), `scripts/test-hook.ps1` (150 plus `.py` dispatch),
-  `scripts/mutation-test.ps1` (167).
-- Do: convert last among the hooks, because they run all of them. The Python runner keeps the allow-, violation- and
-  warn- rules and the fixture repos. `status-footer.ps1` prints the date, time and sprint phase footer line: keep its
-  output format byte for byte. `mutation-test` keeps the baseline, INVALID and restore-byte-for-byte rules (Sprint 74
-  and 75 retro).
-- Retire: `.claude/hooks/mutation-lock.ps1` and `scripts/agent-work-status.ps1` shims only after every caller (grep
-  `mutation-lock.ps1`, `agent-work-status.ps1`, the hourly wake-up, CLAUDE.md, docs) is updated in the same commit.
-- AC: the Python runner reports the same case counts as the PowerShell runner did (record both); `mutation-test` kills
-  its own sample spec; docs and CLAUDE.md command lines updated.
-- Added 2026-11-08 (Sprint 84 retro i2 = b): a fault-injection test in `test_pylib.py`. It runs each Stop and PreToolUse
-  hook with `git` and `gh` forced to fail (not found, non-zero exit, timeout) and asserts that each check ends in a
-  violation or a notice, never a silent pass. Evidence: hook checks that skipped silently in Sprints 82, 83 and 84
-  (9 findings in the Sprint 84 7.7.1 reviews). About 60-90 minutes.
-- Added 2026-11-08 (Sprint 84 retro q3 = a): confirm how a hook notice shows on Harold's screen. Make a hook skip a
-  check on purpose in a live session (on allow the notice is a `systemMessage`; on a block it is "Note: ..."), and
-  Harold takes a screenshot of the warning line. Record the screenshot path in the sprint plan. Evidence: no live
-  notice has been seen yet (Sprint 84 SF L13). About 15 minutes.
-
-**F330. Python conversion batch S1: repo helper scripts (~150-250m, estimate unverified) Priority 37 -- NEW 2026-11-01 (Sprint 83 Task 10, F321 R-6)**
-- Phase: Process / Tooling
-- Platform: Development process.
-- Files (713 lines): `scripts/clean-temp-scripts.ps1` (151), `scripts/run-full-suite.ps1` (132),
-  `scripts/validate-yaml-rules.ps1` (239), `scripts/test-regex-patterns.ps1` (191). All deterministic.
-- Care: `validate-yaml-rules` and `test-regex-patterns` parse YAML and .NET regex; list the Python `re` differences
-  first (named groups `(?<n>)` versus `(?P<n>)`, inline flag position). YAML parsing needs a dependency (PyYAML) the
-  standard library lacks, and a dependency change needs Harold's approval: the card first checks whether a minimal
-  reader of this repo's restricted YAML (single-quoted strings, lists) is enough, and asks Harold only if not.
-- AC: each script keeps its parameters and exit codes (or every caller and doc is updated in the same commit); a
-  `unittest` file per script; the `/validate-rules` skill still works.
-
-**F331. Python conversion batch S2: Claude and MCP set-up scripts, test mail servers (~90-150m, estimate unverified) Priority 37 -- NEW 2026-11-01 (Sprint 83 Task 10, F321 R-6)**
-- Phase: Process / Tooling
-- Platform: Development process.
-- Files (473 lines): `scripts/install-custom-mcp.ps1` (121), `scripts/setup-claude-mcp.ps1` (203),
-  `scripts/start-test-imap-servers.ps1` (149). Deterministic. Ported to `scripts/*.py` in Sprint 85 (F331). The MCP scripts edit the Claude MCP configuration
-  (JSON): use `common.find_tool` for `claude` and `node`, and write the user-level file with a backup.
-- AC: parameters and exit codes kept; `start-test-imap-servers` still starts the test servers the way
-  `TESTING_STRATEGY.md` documents (verify the command on the card's day, do not assume).
-
-**F332. Python conversion batch S3: phone log health and the battery arm script (~90-150m, estimate unverified) Priority 37 -- NEW 2026-11-01 (Sprint 83 Task 10, F321 R-6)**
-- Phase: Process / Tooling
-- Platform: Development process.
-- Files: `scripts/phone-log-health.py` (was `.ps1`, 267 lines), `mobile-app/scripts/r76_battery_arm.py` (was `.sh`). Deterministic log parsing.
-  `pull-phone-screenshots.ps1` is NOT here: it is Windows-bound (F337).
-- AC: the same report lines for two Sprint 82 phone log samples kept as fixtures; `unittest` file.
-
-**F333. Python conversion batch S4: mobile-app check and gate scripts (~180-300m, estimate unverified) Priority 37 -- NEW 2026-11-01 (Sprint 83 Task 10, F321 R-6)**
-- Phase: Process / Tooling
-- Platform: Development process (checks the Flutter app, not part of it).
-- Files (about 750 lines): `mobile-app/scripts/check-log-redaction.ps1` (113), `check-version-consistency.ps1`
-  (125), `validate-content-manifest.ps1` (143), `verify-aab-play-requirements.ps1` (305), `update_iana_tlds.ps1` (66)
-  and `update_iana_tlds.sh`. Deterministic.
-- Care: `verify-aab-play-requirements` reads a built bundle (zip and manifest bytes): Python `zipfile` covers it;
-  confirm the two F204 gaps it asserts are still the Play requirements (do not carry the old text forward unread).
-  `check-version-consistency` pairs with the `version_consistency` Dart test: keep both in step.
-- AC: each keeps its exit codes; the Dart gate tests that call them still pass; `unittest` file per script.
-
-**F334. Python conversion batch S5: mobile-app test runners and test mail (~150-250m, estimate unverified) Priority 37 -- NEW 2026-11-01 (Sprint 83 Task 10, F321 R-6)**
-- Phase: Process / Tooling
-- Platform: Development process.
-- Files (about 870 lines): `mobile-app/scripts/run-tests.ps1` (120), `run-integration-tests.ps1` (102),
-  `monitor-tests.ps1` (169), `check_scans.ps1` (18), `check_task.ps1` (16), `test-background-scan-skip.ps1` (215),
-  `generate-test-emails.ps1` (229), `ww-test-helper.sh`; `send-test-emails.py` is already Python (reuse its code).
-- Care: `run-tests` and `monitor-tests` wrap `flutter test` with progress output; the CLAUDE.md rule on background
-  logs (write the FULL output to a file, trim on read) applies.
-- AC: parameters kept; `unittest` file per script.
-
-**F335. Python conversion batch S6: Android build scripts (~180-300m, estimate unverified) Priority 37 -- NEW 2026-11-01 (Sprint 83 Task 10, F321 R-6)**
-- Phase: Process / Tooling
-- Platform: Development process. Android builds already run on Linux in CI (`android-build` job).
-- Files (1,231 lines): `mobile-app/scripts/build-with-secrets.ps1` (953), `build-with-secrets-clean.ps1` (254; likely
-  redundant: confirm and delete instead of converting), `build-apk.ps1` (24).
-- Care: CLAUDE.md Sprint 66 IMP-1: `build-with-secrets.ps1 -Output aab` injects the gradle properties the SEC-9 gate
-  needs; the Python version must inject the same ones, and the card proves it by building an AAB. Never run it at
-  the same time as a Windows build (`build/` is shared).
-- AC: a debug APK and a release AAB build from the Python entry point; the SEC-9 gate still fires when a property is
-  removed (mutation).
-
 **F336. Python conversion batch S7: emulator, adb and Android helper scripts (~150-260m, estimate unverified) Priority 37 -- NEW 2026-11-01 (Sprint 83 Task 10, F321 R-6)**
 - Phase: Process / Tooling
 - Platform: Development process (Android tooling; the phones cannot use adb, the emulator can).
@@ -496,39 +416,6 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   F329 rules.
 - AC: the list of deleted and kept files with the grep evidence.
 
-**F341. F325 part B: live first-run evaluation on Windows and the Android emulator (~90-150m, estimate unverified) Priority 32 -- NEW 2026-11-04 (Sprint 83 MV, Harold: "Wait this to a future sprint")**
-- Phase: Core App Quality
-- Platform: Windows and Android (emulator); iPhone when it ships.
-- Part A (static pass) is done: `docs/research/F325_FIRST_RUN_EVALUATION_S83.md`, with 10 live-run checks listed.
-- Do: run a clean first install on each platform and walk the 10 checks; record what a new user sees.
-- Static findings to confirm live: the Help walkthrough is outdated; the Gmail "Recommended" labels contradict each
-  other; "Turn on" does not request the notification permission; raw exception text reaches users; the GitHub
-  feedback address is plain text, not a link.
-- AC: each check has a result with a screenshot or log line; each confirmed finding becomes its own card.
-- Sprint 84 (Task 4, moved to the next sprint by Harold 2026-11-07, "mv-6 move to next sprint"): DONE on a clean
-  Android emulator: checks 1, 3, 4, 5, 7 and 10, plus layout notes (results in `SPRINT_84_PLAN.md` round 2/3).
-  Windows: the clean run is blocked by F354 (shared credential file), so Windows gets its own checks with accounts
-  present (Harold q1 = a): 1280 x 720 at 125% and 800 x 600 done; Ctrl+R / F5 not settled; the browser Gmail
-  sign-in needs Harold. LEFT: check 6 (relaunch after adding a real account), check 2 (Gmail sign-in, both
-  platforms), check 9 (Fold), the iOS Simulator screens, and a card per confirmed finding. Also LEFT: the ANR seen
-  when background scanning was turned on in the emulator debug build (cause unknown; repeat on a release build).
-
-**F355. Android "isn't responding" when background scanning is turned on (~30-90m, estimate unverified) Priority 16 -- NEW 2026-11-07 (Sprint 84 MV-6, Harold: "push it to next sprint and I will reboot before then")**
-- Phase: Core App Quality
-- Platform: Android (seen on the emulator, debug build); check the Fold release build.
-- Evidence (2026-11-07 19:13, emulator `pixel34_updated`, Android 14, DEV debug 0.24.1): Settings > Background >
-  Enable Background Scanning started the worker at once; logcat "ANR ... Input dispatching timed out ... Waited
-  5000ms". Main thread in `BackgroundWorker.executeBackgroundTask` (workmanager `BackgroundWorker.kt:439`) ->
-  `FlutterJNI.dispatchPlatformMessage`, waiting in ART. The dialog came back at 19:18 and 19:20. The emulator had
-  2 GB RAM with 1.24 GB of 1.5 GB swap in use. Evidence in the Sprint 84 session scratchpad `mv6_android\`
-  (`bugreport_anr.zip`, logcat). Cause unknown.
-- Harold (2026-11-07): it can probably be reconciled with a reboot, but there should be sufficient virtual memory;
-  he reboots before the next sprint.
-- Do: after the reboot, repeat the step on the emulator (debug and release) and on the Fold; if it repeats, find
-  what holds the main thread (the background engine start, or work the app does at that moment) and fix it.
-- AC: the step is repeated on a release build and recorded; a confirmed freeze has a fix and a test, or the card
-  closes with the evidence that it does not repeat.
-
 **F356. Android first-run polish (~45-90m, estimate unverified) Priority 50 -- NEW 2026-11-08 (Sprint 84 retro i8 = a)**
 - Phase: Core App Quality
 - Platform: Android (seen on a clean emulator install, Sprint 84 F341 round 2/3); check Windows for the shared text.
@@ -558,18 +445,6 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
 - AC: a widget test for each state (no scan; scan with zero No rule items; filters hiding items); screenshots on
   Windows and Android.
 
-**F357. Background scan rows marked `interrupted`: the recent-scan check and the completion overwrite (~30-60m, estimate unverified) Priority 34 -- NEW 2026-11-08 (Sprint 84 retro q2 = a, q1 = c; decide with the F342 Fold evidence)**
-- Phase: Core App Quality
-- Platform: Android (WorkManager); check Windows for the shared code.
-- q2: the recent-scan check counts the `interrupted` row that F342 writes when Android stops a scan, so a restart from
-  a Doze alarm is skipped until the scan interval has passed. Do: make the check ignore `interrupted` rows, if the
-  Fold evidence shows the restart is wanted.
-- q1: if a scan finishes in the milliseconds before the stop handler runs, the completion or error write replaces
-  `interrupted` (`scan_result_store.dart:419`, `:458`). Recommendation at the retro: N/A, because "completed" is the
-  more accurate record; Harold chose to decide it with the Fold evidence.
-- Depends on: the F342 Fold check after 0.24.1 (the carry-in in `SPRINT_84_PLAN.md`).
-- AC: both decisions recorded with the Fold log lines that support them; a test for any change.
-
 **F346. Log the device state when WorkManager stops a background scan (~30m) Priority 38 -- NEW 2026-11-06 (Sprint 84 F342 group 4)**
 - Phase: Core App Quality
 - Platform: Android (WorkManager stop; declared Android exception). Windows and iOS: no equivalent stop event.
@@ -595,70 +470,6 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
 - Do: rewrite the F175 cases to the current dialog and per-account rule; make the negative case seed the same account;
   settle the F178/F176 cause; then put `sprint62_surfaces_test.dart` back in the iOS Simulator gate.
 
-**F350. Risk-based test analysis: effective, and as efficient and quick as reasonably possible (~150-210m) Priority 10 -- NEW 2026-11-07 (Harold, Sprint 84: "highest priority")**
-- Phase: Tooling and Process
-- Platform: N/A (Flutter tests, integration tests, WinWright, the hook suites, the CI workflows, and the sprint steps that order them).
-- Why (measured in Sprint 84): 342 Dart test files (~3,634 tests), 11 integration_test files, 6 WinWright scripts, 236
-  hook cases and test_pylib. Local full suite 4 min 25 s (default concurrency, 6 failures) / 6 min 51 s (concurrency 4,
-  3 failures), all known F349 timeouts. CI: Analyze and Test ~8 min; iOS gate 33 min; iOS screens 45-69 min (one Xcode
-  build per test file). WinWright 8 min 22 s for 3 scripts. test_pylib 4 min 40 s under load. Phase 5 runs its steps
-  one after another and CI repeats the full suite twice; "fix approved" to "verified commit" is not measured. Defects
-  still passed the tests in Sprints 70 (F220), 72 (F233), 76 (POSIX lock) and 81 (failures only in the log).
-- Scope (6 parts):
-  1. Inventory made by a script that can run again: per test file, what it guards, kind, measured local and CI time,
-     where it runs, when it last caught a real defect, risk tier.
-  2. Effectiveness: gates that cannot fail or repeat another gate; source-text gates with no behavior test beside them;
-     defect classes from Sprints 78-84 that no test caught, each with the cheapest test that would have caught it;
-     tests that fail for unrelated reasons (F349, F302).
-  3. Efficiency: cost of each test kind in each place it runs; why local runs are slow (concurrency 2/4/6/8, antivirus,
-     real-PowerShell tests, the 500-message tests); the Sprint 84 timeline for two tasks with the steps that could run in
-     parallel (start CI early by hand; changed-file tests during Phase 4; WinWright while the full suite runs; one Xcode
-     build shared across iOS test files).
-  4. Risk-based tiers: risk = likelihood x impact (ISTQB CTFL v4.0.1 section 5.2, to be re-read). High impact: code that
-     can delete or move mail, credentials, the scan coordinator, background workers, DB migrations, release gates. High
-     likelihood: high recent churn. Proposal: high-tier tests on every change; others when their file or an imported file
-     changes; a shared-file change runs everything; CI full suite as backstop; local runs start with last failures.
-     Learned test selection rejected (not enough failure history).
-  5. Mutation-proof policy: re-run a proof when the guarded code, the test or a shared helper changes; measure what the
-     policy would have missed in Sprints 70-84; decide whether proof spec files are kept in the repository.
-  6. Which full runs are needed, and where (kept: Harold, 2026-11-07, q3 = a): the full suite runs three times
-     per sprint today. Decide whether an earlier CI run 1 can replace the local Phase 5 full run (local runs still cover
-     real-PowerShell tests, WinWright and devices), and whether the iOS screens job runs on every change or only at
-     sprint end.
-- Deliverable: `docs/research/F350_RISK_BASED_TESTING.md`; each recommendation asked as a numbered decision, prevention
-  first; approved ones become cards or updates to the testing and workflow docs and the CI files.
-- AC-1 the inventory covers every test file and a policy test fails when a new test file is missing from it; AC-2 every
-  time is measured, with command and date; AC-3 the Sprint 84 timeline is rebuilt from the records; AC-4 every outside
-  source is fetched and quoted or marked unverified; AC-5 a stated target (for example a small fix verified in its
-  development time plus about 15 minutes); AC-6 no test is removed or skipped without Harold's decision.
-- Depends on: nothing (F349 is an input). Model: Sonnet for the inventory script and measurements; the planner for the
-  tiers and recommendations. Reference: the HSBC F180 card.
-
-**F352. Default email account (~120-240m, estimate unverified) Priority 12 -- NEW 2026-11-07 (Harold, Sprint 84 MV: "add to backlog for next sprint")**
-- Phase: Core App Quality
-- Platform: All (shared Flutter screens and `SettingsStore`).
-- Request (Harold, 2026-11-07): let the user set one email account as the default, or no default. The user can set an
-  account as default and can remove the setting. The default shows on Select Account and on Settings > Account. When
-  the app starts, the default account is the currently selected account; the app still works normally when the user
-  selects another account during the session.
-- Today: `SelectedAccountProvider` (`selected_account_provider.dart:17-23`) is session-only and "deliberately NOT
-  persisted" (F135, Harold 2026-07-30), with the note "If that changes, persist via `SettingsStore`; do not add a second
-  source of truth here." The start screen is Review No Rule Items when accounts exist (`main_navigation_screen.dart:92-94`).
-  Screens that read the selection: Settings (335, 351), Scan History (99), Review No Rule Items (245), Help (138).
-- Design direction: one stored app-wide value (`default_account_id` in `SettingsStore`); at startup it seeds
-  `SelectedAccountProvider` once; selecting another account changes only the session; deleting the default account
-  clears the default. This changes the F135 decision (session selection starts empty), so Harold's answer is the decision
-  record.
-- Decisions (Harold, 2026-11-07): q4 = b, the default is set or removed only on Select Account, and Settings > Account
-  shows a read-only label; q5 = a, the start screen does not change and the default is selected at startup; q6 = a,
-  the F135 decision changes for the default only (ADR-0052, Accepted). No automatic default for a single account;
-  background scans do not change.
-- AC (draft): AC-1 each Select Account row has a control that sets or removes the default, and the default row is
-  marked; AC-2 Settings > Account shows a label when the shown account is the default; AC-3 removing it returns to "no
-  default"; AC-4 a restart opens on the same start screen with the default selected, and account-scoped screens skip
-  the picker; AC-5 picking another account works as today and is not kept after a restart; AC-6 deleting the default
-  account leaves no default and no stale id; AC-7 one `default_account_id` key in `SettingsStore`, no second store.
-
 **F353. Four empty states can overflow on a short screen (~30-45m plus a WinWright re-sweep) Priority 48 -- NEW 2026-11-07 (Sprint 84 5.1.2 F1-1, Harold Question A = 3: backlog)**
 - Phase: Core App Quality
 - Platform: All (shared Flutter screens).
@@ -672,23 +483,6 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   `scan_progress_screen.dart:546`, `rules_ready_gate.dart:50` and `:65`, `gmail_webview_oauth_screen.dart:187`.
   For each, either apply the fix or record why it cannot get short. The estimate above covers the first four only.
 - Do: apply the 36b724ac scrollable layout to the four screens with a short-viewport widget test each; sprint with F351.
-
-**F354. Windows DEV keeps its account credentials in the production-named folder (~60-120m, estimate unverified) Priority 14 (Harold, 2026-11-07, q2 = a) -- NEW 2026-11-07 (Sprint 84 MV-6)**
-- Phase: Core App Quality
-- Platform: Windows Desktop (Android and iOS keep secure storage per package; not affected).
-- Evidence (2026-11-07): the DEV exe version resource is Company `MyEmailSpamFilter`, Product `MyEmailSpamFilter`.
-  `flutter_secure_storage_windows` 4.1.0 writes `flutter_secure_storage.dat` to `getApplicationSupportDirectory()`
-  (`flutter_secure_storage_windows_ffi.dart:234,253`), which is `%APPDATA%\MyEmailSpamFilter\MyEmailSpamFilter\`.
-  ADR-0035 separates DEV data by the `_Dev` suffix, but only `AppPaths` applies it. A DEV run with an empty
-  `MyEmailSpamFilter_Dev` folder still found saved accounts. The `MyEmailSpamFilter_Dev\flutter_secure_storage.dat`
-  (630 bytes, 2026-03-15) is not read; Sprint 51 F130 copied a store there as a fix, which could not have worked.
-- Impact: DEV account changes (add, delete, sign in again) write the same credential file a production non-MSIX
-  build uses. Whether the Store MSIX app reads the same file is unverified: its package folder has no private copy,
-  which suggests it does. If it does, deleting an account in DEV removes its production credentials.
-- Do: confirm which file the Store app reads (Process Monitor, or a log line); give DEV its own store (for example a
-  DEV product name or a store path option), with a one-time copy so DEV keeps its accounts; a test that DEV and prod
-  resolve different credential paths. Check every other caller of `getApplicationSupportDirectory()` for the same gap.
-- Decision class: architecture (ADR-0035 data separation); fix approach is Harold's decision.
 
 **F349. Windows Task Scheduler tests time out on the dev machine (~45-60m) Priority 44 -- NEW 2026-11-06 (Sprint 84 Phase 5.2)**
 - Phase: Core App Quality

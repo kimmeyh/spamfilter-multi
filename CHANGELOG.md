@@ -26,6 +26,13 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-11-21 (Sprint 85)
+
+- **fix**: Windows development builds: when the start-up copy of the sign-ins into the development folder does not finish, Settings > General now says so in red ("DEV credential copy at start-up did not finish: ... Accounts may be missing until it succeeds; it is tried again at the next start."), and the copy is retried at the next start. Two starts at once no longer copy at the same time, and an earlier copy is kept under its own backup name (Issue #564)
+- **fix**: When the default account cannot be read, the Settings and Select Account screens show none, and the reason is written to the diagnostic log when that log is turned on (before, it went only to the console log, which release builds do not write) (Issue #563)
+- **chore**: Python tooling from the Sprint 85 ports never reports success after a failed or empty step: a check that could not start is NOT RUN in `mutation-test`, a git or gh failure in `test-inventory` exits 1, `validate-yaml-rules` fails when it read 0 patterns, `phone-log-health` flags scan lines it could not date, and `build-with-secrets.py` refuses a release build without the Android Gmail client id (ADR-0051) (Issues #569-#575)
+- **docs**: Sprint 85 retrospective improvements: self-review findings are fixed at self-review; CHANGELOG and Help claims are traced to code; a failure that changes a screen shows its reason there; port cards record error paths, file-type gates and their results; close-out check 3d-4 (from Sprint 86) refuses card lines with no recorded result; task start times are recorded when a task starts
+
 ### 2026-11-18 (Sprint 85)
 
 - **fix**: Screen readers can now reach the buttons inside each account row on the Select Account screen. The default-account star, Start Scan and Delete were hidden from assistive technology; a mouse could press them, but a screen reader could not. Each button now has its own name that includes the account (for example "Start scan for you@example.com"), and the row itself still reads as one item that selects the account. The Delete button on a "Missing credentials" row is reachable too (Issue #563)
