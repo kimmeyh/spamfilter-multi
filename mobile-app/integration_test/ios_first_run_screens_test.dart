@@ -4,7 +4,7 @@
 // This is NOT one of the nine regression files. It exists so the
 // `ios-simulator-screens` job in .github/workflows/ios.yml can hand Harold the first-run screens before
 // a real iPhone exists (they feed Sprint 84 Task 4 R-4). It skips itself unless
-// the job passes the output folder, so `scripts/run-integration-tests.ps1` on
+// the job passes the output folder, so `scripts/run-integration-tests.py` on
 // Windows runs it as a skipped test.
 //
 // Run (the job does this):

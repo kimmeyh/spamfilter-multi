@@ -34,6 +34,7 @@ import 'package:my_email_spam_filter/core/storage/scan_result_store.dart';
 import 'package:my_email_spam_filter/core/storage/unmatched_email_store.dart';
 
 import '../../helpers/database_test_helper.dart';
+import '../../helpers/diagnostic_log_reader.dart';
 
 /// Scripted server: SEARCH answers [searchFound]; FETCH answers one message
 /// per requested UID, with no UID for those in [noUidFor] (sequence number 7
@@ -147,19 +148,14 @@ void main() {
     debugResetNoValidImapUidLog();
   });
 
-  tearDown(() {
-    DiagnosticLogger.debugSetEnabled(null);
-    DiagnosticLogger.debugSetDir(null);
+  tearDown(() async {
+    await DiagnosticLogger.debugReset();
     try {
       diagDir.deleteSync(recursive: true);
     } on FileSystemException catch (_) {}
   });
 
-  String diag() => diagDir
-      .listSync(recursive: true)
-      .whereType<File>()
-      .map((f) => f.readAsStringSync())
-      .join('\n');
+  String diag() => readDiagnosticLog(diagDir);
 
   /// The log writes are queued behind unawaited calls; wait for [text].
   /// Up to 10 s: each write waits on the static write chain and a lock file

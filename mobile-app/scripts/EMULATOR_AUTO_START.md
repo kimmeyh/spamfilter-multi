@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `build-with-secrets.ps1` script now includes intelligent emulator auto-start functionality. This eliminates the need to manually launch Android emulators before building and testing.
+The `build-with-secrets.py` script now includes intelligent emulator auto-start functionality. This eliminates the need to manually launch Android emulators before building and testing.
 
 ## New Parameters
 
@@ -29,7 +29,7 @@ Specifies which emulator to launch (optional).
 
 ### Basic Auto-Start (uses first available AVD)
 ```powershell
-.\build-with-secrets.ps1 -BuildType debug -InstallToEmulator -StartEmulator
+python build-with-secrets.py --build-type debug --install-to-emulator --start-emulator
 ```
 
 **What happens**:
@@ -42,7 +42,7 @@ Specifies which emulator to launch (optional).
 
 ### Specify Exact Emulator
 ```powershell
-.\build-with-secrets.ps1 -BuildType debug -InstallToEmulator -StartEmulator -EmulatorName "Pixel_6_API_34"
+python build-with-secrets.py --build-type debug --install-to-emulator --start-emulator --emulator-name "Pixel_6_API_34"
 ```
 
 **What happens**:
@@ -52,10 +52,10 @@ Specifies which emulator to launch (optional).
 ### Combined with Other Flags
 ```powershell
 # Auto-start + preserve accounts + debug build
-.\build-with-secrets.ps1 -BuildType debug -InstallToEmulator -StartEmulator -SkipUninstall
+python build-with-secrets.py --build-type debug --install-to-emulator --start-emulator --skip-uninstall
 
 # Auto-start + release build
-.\build-with-secrets.ps1 -BuildType release -InstallToEmulator -StartEmulator
+python build-with-secrets.py --build-type release --install-to-emulator --start-emulator
 ```
 
 ## Error Handling
@@ -97,13 +97,13 @@ C:\Users\<YourName>\AppData\Local\Android\Sdk\emulator
 # Wait 30-60 seconds for boot
 
 # Step 2: Run build script
-.\build-with-secrets.ps1 -BuildType debug -InstallToEmulator
+python build-with-secrets.py --build-type debug --install-to-emulator
 ```
 
 ### After (Auto-Start Workflow)
 ```powershell
 # Single command does everything:
-.\build-with-secrets.ps1 -BuildType debug -InstallToEmulator -StartEmulator
+python build-with-secrets.py --build-type debug --install-to-emulator --start-emulator
 ```
 
 ## Technical Details
@@ -152,11 +152,11 @@ Progress is displayed every 10 seconds:
 ### CI/CD Integration
 ```powershell
 # Automated build pipeline
-.\build-with-secrets.ps1 `
-    -BuildType release `
-    -InstallToEmulator `
-    -StartEmulator `
-    -EmulatorName "CI_Test_Device"
+python build-with-secrets.py `
+    --build-type release `
+    --install-to-emulator `
+    --start-emulator `
+    --emulator-name "CI_Test_Device"
 ```
 
 ### Troubleshooting
@@ -187,7 +187,7 @@ adb devices
 
 ## Related Files
 
-- `build-with-secrets.ps1` - Main build script (lines 406-477)
+- `build-with-secrets.py` - Main build script
 - `CLAUDE.md` - Project documentation (Android Development section)
 - `README.md` - User-facing documentation
 

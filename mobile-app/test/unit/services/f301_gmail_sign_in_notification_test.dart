@@ -36,6 +36,7 @@ import 'package:my_email_spam_filter/core/storage/scan_result_store.dart';
 import 'package:my_email_spam_filter/core/storage/settings_store.dart';
 
 import '../../helpers/database_test_helper.dart';
+import '../../helpers/diagnostic_log_reader.dart';
 
 class _NeedsSignInPlatform extends MockEmailProvider {
   @override
@@ -217,9 +218,8 @@ void main() {
     final logDir = Directory.systemTemp.createTempSync('f301_diag_');
     DiagnosticLogger.debugSetEnabled(true);
     DiagnosticLogger.debugSetDir(logDir.path);
-    addTearDown(() {
-      DiagnosticLogger.debugSetEnabled(null);
-      DiagnosticLogger.debugSetDir(null);
+    addTearDown(() async {
+      await DiagnosticLogger.debugReset();
       logDir.deleteSync(recursive: true);
     });
     ScanCompleteNotifier.showOverride = ({
@@ -233,11 +233,7 @@ void main() {
     final posted = await GmailSignInNotifier.notifyIfDue(
         accountId: 'acct-a@gmail.com', settingsStore: store);
     expect(posted, isFalse);
-    final log = logDir
-        .listSync(recursive: true)
-        .whereType<File>()
-        .map((f) => f.readAsStringSync())
-        .join('\n');
+    final log = readDiagnosticLog(logDir);
     expect(log, contains('retry time NOT saved'));
     expect(log, isNot(contains('retry in 60 minutes')));
   });

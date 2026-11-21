@@ -314,7 +314,7 @@ class _HelpScreenState extends State<HelpScreen> {
                   // content. Adding a new section: declare the HelpSection
                   // enum case, add an entry to assets/content/manifest.yaml,
                   // and write the corresponding .md file. The validator at
-                  // scripts/validate-content-manifest.ps1 enforces drift.
+                  // scripts/validate-content-manifest.py enforces drift.
                   _section(HelpSection.selectAccount, title: 'Select Account'),
                   _section(HelpSection.accountSetup, title: 'Account Setup'),
                   _section(HelpSection.demoScan, title: 'Demo Scan'),

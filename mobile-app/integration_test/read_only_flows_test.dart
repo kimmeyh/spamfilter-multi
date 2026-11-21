@@ -25,7 +25,7 @@
 // As each flow is verified here, its WinWright script is retired (F100 scope).
 //
 // Run: flutter test integration_test/read_only_flows_test.dart
-//   (or .\scripts\run-integration-tests.ps1 -TestName read_only)
+//   (or python scripts\run-integration-tests.py --test-name read_only)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

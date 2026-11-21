@@ -44,7 +44,7 @@ cd mobile-app/scripts
 **Android**:
 ```powershell
 cd mobile-app/scripts
-.\build-with-secrets.ps1 -BuildType debug -InstallToEmulator -StartEmulator -SkipUninstall
+python build-with-secrets.py --build-type debug --install-to-emulator --start-emulator --skip-uninstall
 ```
 
 - Build completes without errors

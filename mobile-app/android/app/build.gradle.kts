@@ -48,7 +48,7 @@ android {
 
         // SEC-9 (Sprint 64): flutter_appauth redirect scheme (reversed Android
         // OAuth client ID), sourced from a gradle property instead of a
-        // hardcoded literal. build-with-secrets.ps1 supplies
+        // hardcoded literal. build-with-secrets.py supplies
         // -PandroidGmailClientId=<id> per -Env, reading the SAME
         // ANDROID_GMAIL_CLIENT_ID key from secrets.*.json that the Dart side
         // reads via --dart-define (single source of truth, both sides in
@@ -77,7 +77,7 @@ android {
                 throw GradleException(
                     "SEC-9: androidGmailClientId gradle property is missing for a " +
                     "RELEASE build. Build with " +
-                    "-PandroidGmailClientId=<id> (build-with-secrets.ps1 supplies " +
+                    "-PandroidGmailClientId=<id> (build-with-secrets.py supplies " +
                     "this from secrets.*.json's ANDROID_GMAIL_CLIENT_ID key). " +
                     "A release build must never ship with an empty OAuth redirect " +
                     "scheme (F119 lesson)."
@@ -107,7 +107,7 @@ android {
     // The applicationId split is the DECLARED ADR-0042 platform exception:
     // Android side-by-side install requires distinct OS-level identity, which
     // Windows achieves with mutex + data-dir suffix alone. Pass
-    // --dart-define=APP_ENV in LOCKSTEP with --flavor (build-with-secrets.ps1
+    // --dart-define=APP_ENV in LOCKSTEP with --flavor (build-with-secrets.py
     // -Env does both) so AppEnvironment/AppPaths agree with the installed
     // package. The launcher label carries the same [DEV] suffix as the
     // Windows window title.
@@ -135,7 +135,7 @@ android {
     // GP-2 (Sprint 64, executes ADR-0027 Option B -- Accepted 2026-02-15):
     // release signing via BUILD-TIME INJECTION, not key.properties (the ADR's
     // rejected Option A). Four parameters arrive as gradle -P properties
-    // (build-with-secrets.ps1 supplies them from a signing JSON stored
+    // (build-with-secrets.py supplies them from a signing JSON stored
     // OUTSIDE the repository) with environment-variable fallback for CI/CD
     // futures. The keystore file itself also lives outside the repository;
     // .gitignore additionally bans *.jks/*.keystore as a belt-and-suspenders
@@ -190,7 +190,7 @@ android {
                         "build (need androidKeystorePath / androidKeystorePassword / " +
                         "androidKeyAlias / androidKeyPassword gradle properties, or " +
                         "their ANDROID_* environment variables). " +
-                        "build-with-secrets.ps1 -BuildType release supplies them from " +
+                        "build-with-secrets.py --build-type release supplies them from " +
                         "the signing JSON outside the repository (ADR-0027). A release " +
                         "build must never fall back to debug signing silently."
                     )

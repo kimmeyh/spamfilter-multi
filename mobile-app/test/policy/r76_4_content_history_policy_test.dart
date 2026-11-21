@@ -53,10 +53,12 @@ void main() {
 
     test('the Android build script defaults to prod and passes APP_ENV with '
         'the flavor', () {
-      final script = File('scripts/build-with-secrets.ps1').readAsStringSync();
-      expect(script.contains(r"[string]$Env = 'prod'"), isTrue);
+      final script = File('scripts/build-with-secrets.py').readAsStringSync();
       expect(
-          script.contains(r"""@('--flavor', $Env, "--dart-define=APP_ENV=$Env")"""),
+          script.contains('parser.add_argument("--env", choices=("dev", "prod"), default="prod")'),
+          isTrue);
+      expect(
+          script.contains(r'return ["--flavor", env, f"--dart-define=APP_ENV={env}"]'),
           isTrue);
     });
 

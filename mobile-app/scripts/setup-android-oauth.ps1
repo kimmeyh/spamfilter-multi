@@ -97,8 +97,14 @@ Write-Host ""
 Write-Host "Building Flutter APK with OAuth credentials injected..." -ForegroundColor Yellow
 Write-Host ""
 
-$buildScript = Join-Path $PSScriptRoot "build-with-secrets.ps1"
-& $buildScript -InstallToEmulator
+# F335 (Sprint 85): the build script is Python now (build-with-secrets.py).
+# A missing script fails here, before $LASTEXITCODE could hold an older value.
+$buildScript = Join-Path $PSScriptRoot "build-with-secrets.py"
+if (-not (Test-Path $buildScript)) {
+    Write-Host "[FAIL] $buildScript not found" -ForegroundColor Red
+    exit 1
+}
+& python -I $buildScript --install-to-emulator
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host ""

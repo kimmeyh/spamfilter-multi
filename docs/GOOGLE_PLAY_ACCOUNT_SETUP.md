@@ -850,7 +850,7 @@ credential-less build to the Microsoft Store. The supported command is:
 
 ```powershell
 cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts
-.\build-with-secrets.ps1 -BuildType release -Output aab
+python build-with-secrets.py --build-type release --output aab
 ```
 
 Verified before upload: the bundle's `base/manifest/AndroidManifest.xml` contains a real

@@ -48,7 +48,7 @@ import 'package:my_email_spam_filter/core/storage/database_helper.dart';
 
 // EXECUTION MODEL (Harold direction 2026-06-20): the F99 runner invokes each
 // integration_test/*_test.dart in its OWN `flutter test` process (see
-// scripts/run-integration-tests.ps1). This is the standard Flutter pattern for
+// scripts/run-integration-tests.py). This is the standard Flutter pattern for
 // stateful apps and gives clean isolation at the FILE boundary -- the app's
 // process-wide singletons (DatabaseHelper, the fire-and-forget
 // RuleSetProvider.initialize() async tail) cannot bleed across files. WITHIN a

@@ -40,15 +40,15 @@ void main() {
             'rule (the WorkManager reflection-instantiation gap)');
   });
 
-  test('build-with-secrets.ps1 wires Dart obfuscation into the release path',
+  test('build-with-secrets.py wires Dart obfuscation into the release path',
       () {
     final script =
-        File('scripts/build-with-secrets.ps1').readAsStringSync();
+        File('scripts/build-with-secrets.py').readAsStringSync();
     expect(script, contains('--obfuscate'),
         reason: 'GP-9: release builds must pass --obfuscate');
     expect(script, contains('--split-debug-info='),
         reason: 'GP-9: release builds must pass --split-debug-info=<dir>');
-    expect(script, contains('.myemailspamfilter\\symbols'),
+    expect(script, contains('Path.home() / ".myemailspamfilter" / "symbols"'),
         reason: 'GP-9: symbol files must be written outside the repository');
   });
 }

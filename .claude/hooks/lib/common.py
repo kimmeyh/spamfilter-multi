@@ -92,7 +92,7 @@ def find_project_root(start: str | os.PathLike | None = None) -> Path:
     Order: CLAUDE_PROJECT_DIR when set and present; else walk up from `start` (default: the
     process working folder) to the first folder holding `.git` (a folder, or a file in a
     worktree) or a `.claude` folder; else `start` itself. This is the lookup order
-    mutation-lock.ps1 used (environment first, then walk up from the working folder).
+    the PowerShell mutation-lock (retired in F329) used (environment first, then walk up from the working folder).
     """
     from pathlib import Path
 

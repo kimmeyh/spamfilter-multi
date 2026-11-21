@@ -38,7 +38,7 @@
   real Gmail app IS preinstalled (`com.google.android.gm`) but has no signed-in account, so it cannot post. The
   listener was bound with `adb shell cmd notification allow_listener com.myemailspamfilter.dev/com.myemailspamfilter.MailNotificationListener`.
   End to end proof: a probe post produced `trigger=notification app=com.android.shell delay=2s`.
-- Script: `mobile-app/scripts/r76_battery_arm.sh <arm> <minutes> <cadence-minutes>`. Summary:
+- Script: `mobile-app/scripts/r76_battery_arm.py <arm> <minutes> <cadence-minutes>` (Python since F332; it was `r76_battery_arm.sh`). Summary:
   `mobile-app/scripts/r76_battery_summarize.py <arm dir>`. Raw files for each arm are in `docs/research/R76-1_raw/`.
 
 ## Protocol (per arm)
@@ -356,7 +356,7 @@ Prerequisites: F264 built into the dev debug APK (per-account new-mail mapping, 
 diagnostic log. Re-run arm 2 on the F264 build first as the new reference, because F264 may change the all-accounts
 path too.
 
-- Common command: `OUT_ROOT=<dir> bash mobile-app/scripts/r76_battery_arm.sh <arm> 60 <cadence>` then
+- Common command: `OUT_ROOT=<dir> python mobile-app/scripts/r76_battery_arm.py <arm> 60 <cadence>` then
   `python mobile-app/scripts/r76_battery_summarize.py <dir>/<arm>`. Use 60 minutes if the budget allows, otherwise 35 and
   say so. Clear WorkManager state between arms only while the app is force-stopped.
 - **Arm 3 (new-mail ON, per-account mapping)**: cadence 5. The shell package has no account. F264 needs a way to

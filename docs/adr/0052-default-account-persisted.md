@@ -2,9 +2,8 @@
 
 ## Status
 
-Accepted (Harold, 2026-11-07, Sprint 84 Manual Validation, q6 = a). It changes the F135 decision of 2026-07-30
-("does not need to be persisted between sessions") for the default account only. Implementation is backlog card F352
-(next sprint). Until F352 ships, the code still matches F135.
+Implemented (Sprint 85, card F352). Accepted by Harold on 2026-11-07, Sprint 84 Manual Validation, q6 = a. It changes
+the F135 decision of 2026-07-30 ("does not need to be persisted between sessions") for the default account only.
 
 ## Date
 

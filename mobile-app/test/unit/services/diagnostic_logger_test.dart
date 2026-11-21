@@ -33,8 +33,7 @@ void main() {
   });
 
   tearDown(() async {
-    DiagnosticLogger.debugSetDir(null);
-    DiagnosticLogger.debugSetEnabled(null);
+    await DiagnosticLogger.debugReset();
     if (await tempDir.exists()) {
       await tempDir.delete(recursive: true);
     }

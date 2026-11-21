@@ -72,6 +72,20 @@ IDI_APP_ICON            ICON                    "resources\\app_icon.ico"
 #define VERSION_AS_STRING "1.0.0"
 #endif
 
+// F354 (Sprint 85, ADR-0035): path_provider_windows builds the app-support
+// folder from CompanyName\ProductName, and flutter_secure_storage_windows keeps
+// its credential file there. A DEV build therefore gets its own ProductName, so
+// its credentials live in the DEV data folder and never in the production one.
+// SPAMFILTER_IS_DEV is set by runner/CMakeLists.txt when SPAMFILTER_APP_ENV is
+// not "prod" (the same value that drives the [DEV] window title). A production
+// build, including the Store MSIX, keeps "MyEmailSpamFilter" exactly
+// (gate: test/policy/runner_product_name_test.dart).
+#if defined(SPAMFILTER_IS_DEV)
+#define SPAMFILTER_PRODUCT_NAME "MyEmailSpamFilter_Dev"
+#else
+#define SPAMFILTER_PRODUCT_NAME "MyEmailSpamFilter"
+#endif
+
 VS_VERSION_INFO VERSIONINFO
  FILEVERSION VERSION_AS_NUMBER
  PRODUCTVERSION VERSION_AS_NUMBER
@@ -95,7 +109,7 @@ BEGIN
             VALUE "InternalName", "MyEmailSpamFilter" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 MyEmailSpamFilter. All rights reserved." "\0"
             VALUE "OriginalFilename", "MyEmailSpamFilter.exe" "\0"
-            VALUE "ProductName", "MyEmailSpamFilter" "\0"
+            VALUE "ProductName", SPAMFILTER_PRODUCT_NAME "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
