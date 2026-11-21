@@ -104,7 +104,9 @@ class VerdictTests(MutationTestBase):
 
     def test_check_that_cannot_start_is_not_run_never_killed(self):
         # Sprint 85 5.1.2 L1: with "baseline": false a missing command used to read KILLED.
-        for code in (127, 9009):
+        # 9009 is cmd.exe's code and exists only on Windows: a POSIX exit status is 8 bits, so sys.exit(9009) on
+        # the Linux CI runner exits 49, an ordinary failure (CI run 1 of Sprint 85 failed on exactly that).
+        for code in ((127, 9009) if os.name == "nt" else (127,)):
             (self.repo / "check.py").write_text(f"import sys\nsys.exit({code})\n", encoding="utf-8")
             lines, ok = self.run_one(baseline=False)
             self.assertEqual(len(lines), 1)

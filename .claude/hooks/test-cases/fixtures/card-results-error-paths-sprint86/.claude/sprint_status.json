@@ -1,0 +1,12 @@
+{
+  "_description": "Test fixture: Sprint 86 at close-out, plan approved with PR recorded, Phase 5 and 7.7.1 evidence present -- isolates check 3d-4 (Sprint 85 retro i5): every Port of existing code / Old name search line records a result.",
+  "_last_updated": "2026-11-30T20:00:00Z",
+  "current_sprint": {
+    "number": 86,
+    "branch": "feature/20261122_Sprint_86",
+    "status": "Phase 7.7 close-out",
+    "plan_approved": true,
+    "pr_number": 560,
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/560"
+  }
+}

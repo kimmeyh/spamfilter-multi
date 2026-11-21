@@ -134,7 +134,8 @@ def load_plan(cwd: str, sprint_num: int, violations: list):
     if os.path.exists(plan_path):
         return read_markdown(plan_path)
     message = (f"docs/sprints/SPRINT_{sprint_num}_PLAN.md is MISSING although sprint_status.json says the plan is "
-               "approved, so checks 3d (Phase 5 evidence), 3d-2 (7.7.1 reviews) and 3d-3 (Executed-by) cannot run. "
+               "approved, so checks 3d (Phase 5 evidence), 3d-2 (7.7.1 reviews), 3d-3 (Executed-by) and 3d-4 (card-line "
+               "results) cannot run. "
                "Restore the plan file (it is the record those checks read).")
     if message not in violations:
         violations.append(message)
@@ -378,59 +379,125 @@ def check_executed_by(status, cwd: str, sprint_num: int, violations: list):
             "Every card records the model that executed it and its actual minutes before close-out (Sprint 77 retro IMP-3).")
 
 
-CARD_RESULT_LABEL = re.compile(r"^\s*(?:-\s*)?\*\*(Port of existing code|Old name search)\*\*\s*:?\s*(.*)$", I)
+CARD_LABELS = r"(Port of existing code|Old name search)"
+CARD_RESULT_LABEL = re.compile(r"^\s*(?:-\s*)?\*\*" + CARD_LABELS + r"\*\*\s*:?\s*(.*)$", I)
+# Improvement review (silent-failure HIGH-1): a label in another shape (colon inside the bold, a heading, a table
+# row, another bullet, extra words inside the bold) was skipped, so the check passed having read nothing. Any line
+# that STARTS like one of the labels but is not the strict shape is reported.
+CARD_LABEL_LOOSE = re.compile(r"^[\s#>|*_\-\d.]*" + CARD_LABELS + r"\b", I)
+CARD_SUB_LINE = re.compile(r"^\s*-\s*(Error paths|Gates by file type)\s*:\s*(.*)$", I)
 BOLD_LABEL_LINE = re.compile(r"^\s*(?:-\s*)?\*\*[^*\r\n]+\*\*")
+# A comment that crosses a code fence is not stripped (review L4: a fenced `<!--` used to hide every card after it).
+HTML_COMMENT = re.compile(r"<!--(?:(?!```).)*?-->", re.S)
+CODE_SPAN = re.compile(r"`[^`\r\n]*`")
 TEMPLATE_PLACEHOLDER = re.compile(r"<(?!!--)[^<>\r\n]+>")
-CARD_RESULT_EVIDENCE = re.compile(r"[\w./\\-]+\.\w+:\d+|\bnone found\b|\bno (other )?hits\b|\b0 hits\b", I)
-CARD_RESULT_NA = re.compile(r"^[\s`*_]*N/A\b", I)
+CARD_RESULT_EVIDENCE = re.compile(r"[\w./\\-]+\.\w+:\d+|\bnone found\b|\bno (other )?hits\b|\b0 hits\b|\bnone\b", I)
+# Review M3 / MEDIUM-2: text that says what WILL be done, or the template's own option list, is not a result.
+CARD_RESULT_INTENT = re.compile(
+    r"\bat completion\b|\bTBD\b|\bTODO\b|\bif none\b|\bwill be\b|\bto be (recorded|filled|done)\b"
+    r"|/\s*none found\s*/\s*N/A", I)
+# Review MEDIUM-1: "N/A" needs a reason after it, as the message asks ("N/A -- <reason>").
+CARD_RESULT_NA = re.compile(r"^[\s`*_]*N/A\s*(--|:|-|\()\s*\w[^\r\n]{2,}", I)
+CARD_RESULT_BARE_NA = re.compile(r"^[\s`*_]*N/A\b", I)
+CARD_TEST_NAME = re.compile(r"`[^`<>\r\n]{3,}`")
 
 
-def card_result_lines(plan_text: str) -> list:
-    """(label, value) for each "Port of existing code" / "Old name search" entry. The value runs from the label to
-    the next blank line or the next bold label line, with HTML comments removed (the template's guidance lives in
-    comments, so it never counts as a result)."""
-    lines = re.sub(r"<!--.*?-->", "", plan_text, flags=re.S).splitlines()
-    found = []
+def card_result_lines(plan_text: str) -> tuple:
+    """Entries and unrecognized label lines.
+
+    Each entry is a dict: label, line (1-based), value (the label line and its plain continuation lines) and subs
+    (a list of (name, value) for "- Error paths:" / "- Gates by file type:" lines). An entry runs to the next blank
+    line or the next bold label line. HTML comments are removed first (the template's guidance lives in comments,
+    so it never counts as a result); line numbers are kept. `odd` lists (line, text) for lines that start like a
+    label but are not the `**Label**:` shape the check reads."""
+    stripped = HTML_COMMENT.sub(lambda m: "\n" * m.group(0).count("\n"), plan_text)
+    lines = stripped.splitlines()
+    entries, odd = [], []
     index = 0
     while index < len(lines):
         match = CARD_RESULT_LABEL.match(lines[index])
         if not match:
+            if CARD_LABEL_LOOSE.match(lines[index]):
+                odd.append((index + 1, lines[index].strip()[:80]))
             index += 1
             continue
+        entry = {"label": match.group(1), "line": index + 1, "subs": []}
         parts = [match.group(2)]
         index += 1
         while index < len(lines) and lines[index].strip() and not BOLD_LABEL_LINE.match(lines[index]):
-            parts.append(lines[index].strip())
+            sub = CARD_SUB_LINE.match(lines[index])
+            if sub:
+                entry["subs"].append((sub.group(1), sub.group(2).strip()))
+            else:
+                parts.append(lines[index].strip())
             index += 1
-        found.append((match.group(1), " ".join(p.strip() for p in parts if p.strip())))
-    return found
+        entry["value"] = " ".join(p.strip() for p in parts if p.strip())
+        entries.append(entry)
+    return entries, odd
+
+
+def card_value_problem(value: str, need_evidence: bool = True):
+    """None when the value records a result, else a short reason. Code spans are ignored for the placeholder test,
+    so a real result naming `Future<void>` is not read as template text (review M2). need_evidence=False (the
+    sub-lines) skips only the last test: a gate list or an error path is a sentence, not a file:line."""
+    outside_code = CODE_SPAN.sub("``", value)
+    placeholder = TEMPLATE_PLACEHOLDER.search(outside_code)
+    if placeholder:
+        return f"template text left ({placeholder.group(0)[:60]})"
+    if CARD_RESULT_INTENT.search(outside_code):
+        return f"says what will be done, not the result ({value[:60]})"
+    if CARD_RESULT_NA.match(value):
+        return None
+    if CARD_RESULT_BARE_NA.match(value):
+        return "N/A with no reason (write 'N/A -- <reason>')"
+    if not value.strip():
+        return "empty"
+    if need_evidence and not CARD_RESULT_EVIDENCE.search(value):
+        return f"no result ({value[:60]})"
+    return None
 
 
 def check_card_results(status, cwd: str, sprint_num: int, violations: list):
     """3d-4 (Sprint 86+; Sprint 85 retro i5): each "Port of existing code" and "Old name search" line records its
-    RESULT. A result is a file:line, "none found", "no hits" / "0 hits", or a value that starts with "N/A". A line that
-    still holds a `<...>` template placeholder, or only says what will be done, is not a result."""
+    RESULT on the line itself. A result is a file:line, "none found", "no hits" / "0 hits", or "N/A -- <reason>".
+    A line that still holds a `<...>` template placeholder, or only says what will be done, is not a result. A Port
+    line's "- Error paths:" sub-line also names a test in backticks; "- Gates by file type:" must be filled."""
     if not (sprint_num >= 86 and status is not None and _plan_approved(status)):
         return
     plan_text = load_plan(cwd, sprint_num, violations)
     if plan_text is None:
         return
+    entries, odd = card_result_lines(plan_text)
     unrecorded = []
-    for label, value in card_result_lines(plan_text):
-        if CARD_RESULT_NA.match(value) and not TEMPLATE_PLACEHOLDER.search(value):
-            continue
-        placeholder = TEMPLATE_PLACEHOLDER.search(value)
-        if placeholder:
-            unrecorded.append(f"{label}: template text left ({placeholder.group(0)[:60]})")
-        elif not CARD_RESULT_EVIDENCE.search(value):
-            unrecorded.append(f"{label}: no result ({value[:60]})")
+    for entry in entries:
+        where = f"line {entry['line']} {entry['label']}"
+        problem = card_value_problem(entry["value"])
+        if problem:
+            unrecorded.append(f"{where}: {problem}")
+        for name, value in entry["subs"]:
+            problem = card_value_problem(value, need_evidence=False)
+            if not problem and name.lower() == "error paths" and not CARD_RESULT_NA.match(value) \
+                    and not CARD_TEST_NAME.search(value):
+                problem = "names no test in backticks (the test that runs a real failing command)"
+            if problem:
+                unrecorded.append(f"{where} / {name}: {problem}")
+    # Review HIGH-2: a count on every run, so "0 lines read" is visible instead of a silent pass.
+    hooklib.notice(f"check 3d-4 read {len(entries)} 'Port of existing code' / 'Old name search' line(s) in "
+                   f"SPRINT_{sprint_num}_PLAN.md")
+    if odd:
+        violations.append(
+            f"SPRINT_{sprint_num}_PLAN.md has {len(odd)} line(s) that start like a 'Port of existing code' / 'Old name "
+            "search' label but are not in the shape check 3d-4 reads ('**Port of existing code**: ...' or '**Old name "
+            "search**: ...', optionally after '- '), so their results cannot be checked: "
+            + "; ".join(f"line {n}: {text}" for n, text in odd) + ". Rewrite each in that shape.")
     if unrecorded:
         violations.append(
-            f"SPRINT_{sprint_num}_PLAN.md has {len(unrecorded)} 'Port of existing code' / 'Old name search' line(s) with no "
-            "recorded RESULT (a template placeholder, or only what will be done): " + "; ".join(unrecorded) + ". Record "
-            "the results at task completion: each hit or defect as file:line with 'updated' or 'kept because ...', or "
-            "'none found' / 'no hits', or 'N/A -- <reason>'. An ADR hit gets a dated note naming the replacement "
-            "(Sprint 85 retro i5: 7 cards carried both lines and none recorded a result).")
+            f"SPRINT_{sprint_num}_PLAN.md has {len(unrecorded)} 'Port of existing code' / 'Old name search' entry part(s) "
+            "with no recorded RESULT: " + "; ".join(unrecorded) + ". At task completion, REPLACE the text on the "
+            "labeled line itself with the results (a separate completion note is not read): each hit or defect as "
+            "file:line with 'updated' or 'kept because ...', or 'none found' / 'no hits', or 'N/A -- <reason>'. An ADR "
+            "hit gets a dated note naming the replacement (Sprint 85 retro i5: 7 cards carried both lines and none "
+            "recorded a result).")
 
 
 def check_previous_summary(cwd: str, sprint_num: int, violations: list):
