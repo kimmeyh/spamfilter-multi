@@ -39,6 +39,7 @@ import 'package:my_email_spam_filter/core/storage/rule_database_store.dart';
 import 'package:my_email_spam_filter/core/storage/safe_sender_database_store.dart';
 
 import '../../helpers/database_test_helper.dart';
+import '../../helpers/diagnostic_log_reader.dart';
 
 /// Fake Gmail API. [labels] is mutable: a test adds a label between calls.
 class _FakeGmail implements gmail.GmailApi {
@@ -177,19 +178,14 @@ void main() {
     DiagnosticLogger.debugSetDir(diagDir.path);
   });
 
-  tearDown(() {
-    DiagnosticLogger.debugSetEnabled(null);
-    DiagnosticLogger.debugSetDir(null);
+  tearDown(() async {
+    await DiagnosticLogger.debugReset();
     try {
       diagDir.deleteSync(recursive: true);
     } on FileSystemException catch (_) {}
   });
 
-  String diag() => diagDir
-      .listSync(recursive: true)
-      .whereType<File>()
-      .map((f) => f.readAsStringSync())
-      .join('\n');
+  String diag() => readDiagnosticLog(diagDir);
 
   /// Up to 10 s (see f302_no_valid_imap_uid_test: a 3 s limit failed once
   /// under a loaded parallel run). Returns as soon as [text] shows.

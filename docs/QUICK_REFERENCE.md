@@ -41,8 +41,8 @@
 |------|-------------|---------|-------|
 | **Build Windows** | `scripts\build-windows.ps1` | `cd mobile-app/scripts && .\build-windows.ps1` (use `-Environment prod` for production build) | Clean build + secrets injection |
 | **Run Windows** | `scripts\run-windows.ps1` | `cd mobile-app/scripts && .\run-windows.ps1` | Launch Windows app |
-| **Build Android Debug** | `scripts\build-with-secrets.ps1` | `cd mobile-app/scripts && .\build-with-secrets.ps1 -BuildType debug -InstallToEmulator` | Build APK with secrets |
-| **Build APK Release** | `scripts\build-apk.ps1` | `cd mobile-app/scripts && .\build-apk.ps1` | Release APK |
+| **Build Android Debug** | `scripts\build-with-secrets.py` | `cd mobile-app/scripts && python build-with-secrets.py --build-type debug --install-to-emulator` | Build APK with secrets |
+| **Build APK Release** | `scripts\build-apk.py` | `cd mobile-app/scripts && python build-apk.py` | Release APK |
 
 ---
 
@@ -146,7 +146,7 @@ cd mobile-app/scripts
 
 # Build for Android
 cd mobile-app/scripts
-.\build-with-secrets.ps1 -BuildType debug -InstallToEmulator
+python build-with-secrets.py --build-type debug --install-to-emulator
 ```
 
 ### Log Monitoring

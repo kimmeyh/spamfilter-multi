@@ -2,6 +2,10 @@
 
 ## Status
 
+Sprint 85 update (F335, ADR-0051): `build-with-secrets.ps1` is now `mobile-app/scripts/build-with-secrets.py`, with
+the same environment route for the four signing values: they are set only in the environment of the child build
+process and never put on a command line ("GP-2: release signing injected via the child environment" in its output). Every `build-with-secrets.ps1` below is the Sprint 64 original, kept as history.
+
 Accepted -- IMPLEMENTED Sprint 64 (2026-08-28, Issue #373): gradle signingConfigs read the
 four values as project properties with an `ANDROID_*` ENVIRONMENT-VARIABLE fallback, and
 `build-with-secrets.ps1` supplies them by the ENVIRONMENT route (not `-P`), because

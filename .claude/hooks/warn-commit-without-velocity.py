@@ -13,7 +13,7 @@ shows the model only the JSON form of an exit-0 hook (code.claude.com/docs/en/ho
     did not run"), so a broken gate does not look like a passing one.
   - Any other exception is reported the same way (the first exception handler in decide()).
 
-Tests: .claude/hooks/test-cases/velocity-warn/ (run-test-cases.ps1) and .claude/hooks/tests/test_pylib.py.
+Tests: .claude/hooks/test-cases/velocity-warn/ (run-test-cases.py) and .claude/hooks/tests/test_pylib.py.
 """
 import json
 import os

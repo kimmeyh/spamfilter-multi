@@ -66,7 +66,8 @@ bool _isSweepable(String p) =>
     p.endsWith('.cpp') ||
     p.endsWith('.cc') ||
     p.endsWith('.h') ||
-    p.endsWith('.ps1');
+    p.endsWith('.ps1') ||
+    p.endsWith('.py');
 
 void main() {
   group('version-consistency invariant (Sprint 44 retro IMP-1)', () {
@@ -103,7 +104,10 @@ void main() {
           if (entity is! File || !_isSweepable(entity.path)) continue;
           // Skip the gate's own CLI -- it intentionally contains stale-version
           // FIXTURE strings (e.g. 'Version 0.5.3') for its self-test.
-          if (entity.path.endsWith('check-version-consistency.ps1')) continue;
+          // (F333, Sprint 85: the CLI is now check-version-consistency.py. Both lanes
+          // sweep .py since Sprint 85 7.7.1 M-2, so this skip is what keeps the CLI's
+          // fixture strings from flagging itself.)
+          if (entity.path.endsWith('check-version-consistency.py')) continue;
           // Skip THIS test file -- it too contains deliberate stale-version
           // FIXTURE literals (e.g. 'background_scan_v0.5.3.log', 'Version 0.5.3')
           // in the matcher self-check above. Now that `test/` is swept, this

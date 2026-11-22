@@ -18,6 +18,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../platform/platform_capabilities.dart';
+import 'app_environment.dart';
 
 /// Migrates app data from the old identity directory to the new one.
 ///
@@ -58,6 +59,13 @@ class AppIdentityMigration {
   /// Returns true if migration was performed, false if skipped.
   static Future<bool> migrateIfNeeded() async {
     if (!PlatformCapabilities.current.canBeMsixPackaged) return false;
+    // F354 (Sprint 85): production-only. Since F354 a Windows DEV executable's
+    // support folder is the DEV folder, which has no `.migration_complete`
+    // marker; running here would copy the 2026-02 `com.example` data into the
+    // DEV folder. DEV was seeded from production by DevEnvironmentSeeder
+    // instead, and before F354 this migration had already run (and been
+    // marked complete) in the shared production-named folder.
+    if (AppEnvironment.isDev) return false;
 
     final oldDirPath = await _getOldDirPath();
     final newDirPath = await _getNewDirPath();

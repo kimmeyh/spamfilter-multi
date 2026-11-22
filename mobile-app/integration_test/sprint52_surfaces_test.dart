@@ -25,7 +25,7 @@
 //   3. F133-REMEDIATE -- named rows on a list-heavy management screen
 //
 // Run: flutter test integration_test/sprint52_surfaces_test.dart
-//   (or .\scripts\run-integration-tests.ps1 -TestName sprint52)
+//   (or python scripts\run-integration-tests.py --test-name sprint52)
 
 import 'dart:io';
 

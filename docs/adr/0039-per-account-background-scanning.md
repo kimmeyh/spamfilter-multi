@@ -568,7 +568,8 @@ is open. The F109c ingest stays: it only converts an old handoff file into
 `deferred` rows, and existing rows stay readable.
 
 **What is not proven by tests.** Two real processes writing at once under load
-(the native integration script, `scripts/test-background-scan-skip.ps1`,
+(the native integration script, `scripts/test-background-scan-skip.py` since
+Sprint 85, `.ps1` before,
 proves the launch PROCEEDS with the UI open, against a non-existent account so
 it touches no mail); the claim's behavior across processes is covered by the
 Dart tests on one connection and by Manual Validation.

@@ -230,7 +230,7 @@ If you haven't built with the diagnostic code yet:
 cd mobile-app/scripts
 
 # For Android emulator with secrets
-.\build-with-secrets.ps1 -BuildType debug -InstallToEmulator
+python build-with-secrets.py --build-type debug --install-to-emulator
 
 # For Windows desktop
 .\build-windows.ps1 -RunAfterBuild:$false

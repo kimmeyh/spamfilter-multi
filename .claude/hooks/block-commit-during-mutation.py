@@ -26,7 +26,7 @@ Changes from the PowerShell version (recorded in ADR-0051 and the Sprint 83 Task
     version used the process working folder), which makes the cases deterministic.
 
 Exit 0 allow; exit 2 block. An internal error ALLOWS with exit 1, a visible non-blocking error (hooklib.run).
-Tests: .claude/hooks/test-cases/commit-lock/ (run-test-cases.ps1), .claude/hooks/tests/test_pylib.py.
+Tests: .claude/hooks/test-cases/commit-lock/ (run-test-cases.py), .claude/hooks/tests/test_pylib.py.
 """
 import re
 import sys

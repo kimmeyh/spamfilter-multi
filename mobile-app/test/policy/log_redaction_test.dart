@@ -3,7 +3,7 @@
 //
 // Codifies the narrowed ADR-0030 "Logging & Redaction" invariant in the
 // standard test suite (`flutter test`), so a new un-redacted SENSITIVE log line
-// FAILS the build -- not just the standalone scripts/check-log-redaction.ps1
+// FAILS the build -- not just the standalone scripts/check-log-redaction.py
 // CLI. Mirrors that script's logic so both lanes agree.
 //
 // FAILS when a log call in lib/ interpolates a raw ACCOUNT ID / token / secret

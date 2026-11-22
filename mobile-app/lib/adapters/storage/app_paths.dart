@@ -52,6 +52,30 @@ class AppPaths {
   /// unchanged. Tests must reset it to null in tearDown.
   static String? testOverrideBaseDir;
 
+  /// The environment's data directory for an app-support path (ADR-0035,
+  /// F354 Sprint 85). The ONE place the `_Dev` suffix is applied to the
+  /// app-support directory: every caller that builds a data, log or
+  /// credential path from `getApplicationSupportDirectory()` goes through
+  /// this (gate: `test/policy/data_dir_suffix_single_source_test.dart`).
+  ///
+  /// Since F354 a Windows DEV executable carries the product name
+  /// `MyEmailSpamFilter_Dev` in its version resource (`windows/runner/Runner.rc`),
+  /// so `getApplicationSupportDirectory()` already returns the DEV folder, and
+  /// the suffix must NOT be added a second time. An older DEV executable (built
+  /// before F354) still returns the production-named folder, and the suffix IS
+  /// added. Both resolve the same folder, so a stale build cannot split DEV
+  /// data across two folders.
+  ///
+  /// Android, iOS, macOS and Linux: the support folder never ends in the
+  /// suffix, so it is appended exactly as before F354.
+  static String dataDirectoryPath(String supportPath, {String? suffix}) {
+    final s = suffix ?? AppEnvironment.dataDirSuffix;
+    if (s.isEmpty) return supportPath;
+    final trimmed = supportPath.replaceAll(RegExp(r'[\\/]+$'), '');
+    if (path.basename(trimmed).endsWith(s)) return trimmed;
+    return '$trimmed$s';
+  }
+
   /// Initialize application directories (must call before accessing paths)
   ///
   /// For development builds (APP_ENV=dev), the data directory is suffixed
@@ -68,10 +92,10 @@ class AppPaths {
       // Get base app support directory
       final baseDir = await getApplicationSupportDirectory();
 
-      // Apply environment suffix for dev builds (ADR-0035)
-      final suffix = AppEnvironment.dataDirSuffix;
-      if (suffix.isNotEmpty) {
-        _appSupportDir = Directory('${baseDir.path}$suffix');
+      // Apply environment suffix for dev builds (ADR-0035; F354: once only)
+      final dataPath = dataDirectoryPath(baseDir.path);
+      if (dataPath != baseDir.path) {
+        _appSupportDir = Directory(dataPath);
         await _appSupportDir.create(recursive: true);
       } else {
         _appSupportDir = baseDir;

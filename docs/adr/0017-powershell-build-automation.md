@@ -2,7 +2,10 @@
 
 ## Status
 
-Accepted
+Accepted. Narrowed by ADR-0051 (Sprint 85): deterministic tooling scripts are Python. Most `.ps1` scripts named
+below were ported and deleted in Sprint 85 (for example `build-with-secrets.ps1` is now `build-with-secrets.py`;
+`build-windows.ps1` and `run-winwright-tests.ps1` stay PowerShell). The text below is the original decision, kept as
+history; ADR-0051 lists what is current.
 
 ## Date
 
@@ -31,10 +34,14 @@ Use PowerShell as the sole build and automation shell. All build scripts are `.p
 | Script | Purpose |
 |--------|---------|
 | `build-windows.ps1` | 5-step Windows build (clean, pub get, analyze, build, run) |
-| `build-with-secrets.ps1` | Android build with secrets injection, emulator management |
-| `build-apk.ps1` | Release APK generation |
-| `run-tests.ps1` | Flutter test execution with coverage |
-| `analyze.ps1` | Code quality analysis |
+| `build-with-secrets.ps1` | Android build with secrets injection, emulator management (ported to `build-with-secrets.py` in Sprint 85, F335, ADR-0051) |
+| `build-apk.ps1` | Release APK generation (ported to `build-apk.py` in Sprint 85, F335, ADR-0051) |
+| `run-tests.ps1` | Flutter test execution with coverage (ported to `run-tests.py` in Sprint 85, F334, ADR-0051) |
+| `analyze.ps1` | Code quality analysis (never created; `flutter analyze` is run directly) |
+
+Sprint 85: `build-windows.ps1` and `run-winwright-tests.ps1` stay PowerShell; the deterministic tooling scripts are
+Python (ADR-0051). The examples below are the original PowerShell interface; the Python equivalent of the second is
+`python mobile-app/scripts/build-with-secrets.py --build-type debug --install-to-emulator` (see its `--help`).
 
 ### Key Design Patterns
 
@@ -97,8 +104,9 @@ From CLAUDE.md: "When running PowerShell commands programmatically, execute them
 ## References
 
 - `mobile-app/scripts/build-windows.ps1` - Windows desktop build (5-step process)
-- `mobile-app/scripts/build-with-secrets.ps1` - Android build with secrets and emulator management
-- `mobile-app/scripts/build-apk.ps1` - Release APK generation
+- `mobile-app/scripts/build-with-secrets.py` - Android build with secrets and emulator management (the `.ps1` until Sprint 85)
+- `mobile-app/scripts/build-apk.py` - Release APK generation (the `.ps1` until Sprint 85)
+- ADR-0051 (Python for deterministic tooling) - narrows this decision
 - `CLAUDE.md` - Windows Tool Restrictions section, PowerShell execution constraint
 - ADR-0014 (Windows Background Scanning) - PowerShell scripts for Task Scheduler
 - ADR-0018 (Windows Toast Notifications) - PowerShell scripts for WinRT Toast API

@@ -16,7 +16,7 @@
 // is platform-neutral (ADR-0042: parity of coverage from ONE suite).
 //
 // Run: flutter test integration_test/sprint62_surfaces_test.dart
-//   (or .\scripts\run-integration-tests.ps1 -TestName sprint62)
+//   (or python scripts\run-integration-tests.py --test-name sprint62)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
