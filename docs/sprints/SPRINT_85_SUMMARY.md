@@ -6,7 +6,9 @@
 **Suite**: 3,672 passed, 15 skipped, 0 failed (2026-11-10 21:04-21:09 at e110499b, `run-full-suite.py
 --concurrency 6`, idle machine) | Analyzer clean | Hook cases 216/216 | Hook unit tests 145 OK | Script tests 379 OK |
 CI run 1 (44873531314): Flutter analyze and test and both builds green, 1 Linux-only Python test failed and was fixed;
-CI run 2 at 7.7.5: see `SPRINT_85_PLAN.md` "Phase 7.7.1 final code reviews" and the PR checks
+CI run 2: first run (44882990189) failed one hook unit test that read the real `git branch` (fixed in the test,
+15d0c941); retry (44887869324) green on every job. Details: `SPRINT_85_PLAN.md` "7.7.1 final code reviews"
+**Merged**: 2026-11-22 by Harold -- develop 328f6e29 (PR #559), main 8f2e6f5c (PR #576)
 
 ## What this sprint was for
 

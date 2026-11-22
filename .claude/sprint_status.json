@@ -1,23 +1,23 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-11-21T03:00:00-05:00",
+    "_last_updated": "2026-11-22T15:15:26-05:00",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
-        "number": 85,
-        "branch": "feature/20261108_Sprint_85",
-        "status": "Phase 7.7 Final Gate",
-        "status_detail": "Improvement decisions 2026-11-21 (Harold: i1-i7 a, i8 e tracked; new F361 Priority 38): i1-i7 applied (b05cb6c8). Improvement review done, all findings fixed (b2780885); CI run 1 done (1 Linux-only test fixed). Close-out docs written 2026-11-21 (summary, Sprint 86 stub, master plan, CHANGELOG, release notes re-derived); final WinWright sweep at b2780885 3/3 PASS. Next: gh pr ready 559, CI run 2 green, 7.7.5 announcement. Retrospective recorded 2026-11-19 (Harold: all 14 categories Very Good, 13/14 none; docs/sprints/SPRINT_85_RETROSPECTIVE.md). 7.7.1 reviews done and all findings fixed (6b5cea9a, 1748bdc3, 893be44f, 48160d51; second pass 66 of 66 files). Manual Validation COMPLETE 2026-11-18 (all MV steps PASS or closed by Harold; decisions q1-q11, F357 q1/q2, T1 recorded in SPRINT_85_PLAN.md). 7.7.1 final code reviews started 2026-11-18 on draft PR #559 (Copilot by hand, code-reviewer, silent-failure-hunter) and the retrospective prompt sent. Earlier: Manual Validation handed over 2026-11-13 on Windows DEV 0.25.0+23 (1a1ec264, built 15:42 after the Visual Studio Repair restored the Windows SDK) and Play bundle 0.25.0+23 (322f5c70). 5.1.2, 5.1.5 (sweep-head 1a1ec264) and 5.1.9 markers recorded in SPRINT_85_PLAN.md. Plan approved 2026-11-10; cards #560-#575.",
-        "plan_approved": true,
-        "pr_number": 559,
-        "version": "0.25.0+23"
+        "number": 86,
+        "branch": "feature/20261122_Sprint_86",
+        "status": "Phase 8.2 Backlog Refinement pass 1",
+        "status_detail": "Phase 8 Release Cycle for Sprint 85. 8.1 done: develop 328f6e29, main 8f2e6f5c (2026-11-22). Sprint 86 branch opened from the Sprint 85 branch (6.6). Pass 1 (completeness sweep) 2026-11-22: cards verified, docs triad present, CI run 2 and merges recorded, F362 added (Harold). Next: tag v0.25.0, 8.3 MSIX 0.25.0.0 then AAB 0.25.0+23 (serialized), then 8.4 pass 2. Open question q-S85-min in SPRINT_86_PLAN.md.",
+        "plan_approved": false,
+        "pr_number": null,
+        "version": "0.25.0+23 (Sprint 86 bump happens at 3.7.0b)"
     },
     "previous_sprint": {
-        "number": 84,
-        "branch": "feature/20261105_Sprint_84",
-        "pr_number": 548,
-        "result": "Merged to develop cc251012 and main (#558) 962a1b25 on 2026-11-08 (UTC 2026-11-09); tag v0.24.1 (annotated, pushed). Closed by the merge: #549-#557. Open as intended: #509 #510 #523 (Apple).",
-        "docs": "docs/sprints/SPRINT_84_PLAN.md, SPRINT_84_RETROSPECTIVE.md, SPRINT_84_SUMMARY.md"
+        "number": 85,
+        "branch": "feature/20261108_Sprint_85",
+        "pr_number": 559,
+        "result": "Merged to develop 328f6e29 (PR #559) and main 8f2e6f5c (PR #576) on 2026-11-22 by Harold. CI run 2 retry 44887869324 green. Closed by the merge: #560-#567, #569-#575. Open as intended: #568 (F307, Sprint 86 by Harold q1) and #509 #510 #523 (Apple).",
+        "docs": "docs/sprints/SPRINT_85_PLAN.md, SPRINT_85_RETROSPECTIVE.md, SPRINT_85_SUMMARY.md"
     },
     "github_issues": {
         "sprint_73": "#428 (open, MV74-1), #422 (open, MV74-3), #430 closed, #434 (open, MV74-2), #431 closed, #432 closed, #433 (open, MV74-3). Also closed in pass 1: #426 (superseded by #428), #427 (leftover captured as F236).",
@@ -69,8 +69,10 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "7.7.5: gh pr ready 559, CI run 2 green, then the readiness announcement to Harold.",
-        "After Harold merges PR #559: Phase 8 (8.1 develop -> main by Harold, 8.2 refinement pass 1, 8.3 0.25.0 store builds from main, 8.4 scope selection)."
+        "Tag v0.25.0 (annotated) on main 8f2e6f5c and push the tag.",
+        "8.3: pull the prod worktree to main, build and verify MSIX 0.25.0.0 (STORE_RELEASE_PROCESS.md), then the Play AAB 0.25.0+23 from main; never both builds at once. Harold uploads both.",
+        "8.4: Backlog Refinement pass 2, Harold selects Sprint 86 scope; then Phase 3 planning.",
+        "Open question q-S85-min (six Sprint 85 Executed-by lines with no minutes): full text in SPRINT_86_PLAN.md 'Open questions'."
     ],
     "next_sprint_targeted": {
         "number": 86,

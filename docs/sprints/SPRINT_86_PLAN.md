@@ -38,4 +38,16 @@ Phase 3; this stub only records what Sprint 85 carried in.
 
 F358 "All reviewed" shows before any scan has run (from F341 R-6); F359 Android emulator integration test (Priority
 40); F360 WinWright runner screen-reader flag restore and the F124 runner-only failure (Priority 42); F361
-improvement Effort states its full-suite and CI test time (Priority 38, Harold: top 10 for this sprint).
+improvement Effort states its full-suite and CI test time (Priority 38, Harold: top 10 for this sprint); F362
+store every question, decision and improvement in full and re-ask an open one in full (Priority 34, Harold
+2026-11-22: "Add to backlog for next sprint").
+
+## Open questions (carried from the Sprint 85 cycle, in full)
+
+- **q-S85-min (asked 2026-11-21 04:15 at 7.7.5, not yet answered)**: Sprint 85 Tasks 1, 2, 4, 5, 7 and 8 never had
+  their minutes recorded. Their `**Executed-by**` lines in `SPRINT_85_PLAN.md` say "actual minutes not recorded, 0
+  min logged ... (Sprint 85 retro i7)", and close-out check 3d-3 accepts that. How should they be recorded?
+  1. Keep "actual minutes not recorded, 0 min logged" (Recommendation: it does not invent numbers; i7 now records
+     a start time so this does not happen again). Con: the velocity table has six rows with no time.
+  2. Write estimated minutes from the commit times, each marked "estimated". Pro: the velocity table has a number.
+     Con: commit gaps include review, builds and idle time, so the number can be wrong by a large amount.
