@@ -13,6 +13,7 @@
 library;
 
 import '../storage/content_history_store.dart';
+import '../storage/settings_store.dart' show SettingsStore;
 import 'package:logger/logger.dart';
 import 'package:sqflite/sqflite.dart' show Transaction;
 
@@ -179,6 +180,15 @@ class DataDeletionService {
       for (final table in ['account_folder_cursors', 'background_scan_log']) {
         await txn.delete(table, where: 'account_id = ?', whereArgs: [accountId]);
       }
+
+      // F352 (ADR-0052 item 5): if this account is the default account,
+      // clear the default in the SAME transaction, so no stale id remains.
+      // Only the matching value is removed; another account's default stays.
+      await txn.delete(
+        'app_settings',
+        where: 'key = ? AND value = ?',
+        whereArgs: [SettingsStore.keyDefaultAccountId, accountId],
+      );
 
       await txn.delete(
         'accounts',

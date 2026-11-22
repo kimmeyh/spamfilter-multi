@@ -68,7 +68,7 @@
 // below is the regression test this should have been from the start.
 //
 // Run: flutter test integration_test/help_deep_link_test.dart
-//   (or via scripts/run-integration-tests.ps1 -TestName help_deep_link)
+//   (or via scripts/run-integration-tests.py --test-name help_deep_link)
 library;
 
 import 'package:flutter/material.dart';

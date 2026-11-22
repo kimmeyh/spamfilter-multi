@@ -21,6 +21,7 @@ import '../../core/storage/database_helper.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/services/export_directories.dart';
 import '../../core/services/diagnostic_logger.dart';
+import '../../core/services/dev_credential_separation.dart';
 import '../../core/storage/unmatched_email_store.dart'
     show kBodyPreviewMaxLength;
 import '../../core/providers/email_scan_provider.dart';
@@ -103,6 +104,11 @@ class SettingsScreen extends StatefulWidget {
   /// Existing callers that already know the account keep passing it and see no
   /// behavior change -- the field is nullable, not removed.
   final String? accountId;
+
+  /// F352 (ADR-0052): the read-only label on Settings > Account when the shown
+  /// account is the default. It is set on Select Account only, whose row mark
+  /// uses this same constant (AccountSelectionScreen.defaultAccountLabel).
+  static const String defaultAccountLabel = 'Default account';
 
   /// Subtitle of the "Pin Google OAuth certificates" switch, per platform
   /// (Sprint 77 Phase 5.1.2 F-PRECHECK). On Windows the switch controls the
@@ -189,6 +195,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   // Loaded once during _loadSettings so the header renders synchronously
   // without per-tab FutureBuilders. Empty string while loading.
   String _accountEmail = '';
+
+  /// F352 (ADR-0052): the stored default account, read in [_loadSettings].
+  /// Null = no default (or unreadable, which is logged and shows no label).
+  String? _defaultAccountId;
 
   /// The account actually in use. Seeded from `_requireAccountId` and filled in
   /// lazily when the user first opens an account-scoped tab (F133-S52 R-10).
@@ -489,6 +499,21 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         _accountEmail = creds?.email ?? '';
       } catch (_) {
         _accountEmail = '';
+      }
+
+      // F352: is the shown account the default? Read-only here.
+      try {
+        _defaultAccountId = await _settingsStore.getDefaultAccountId();
+      } catch (e) {
+        _defaultAccountId = null;
+        _logger.w('F352: could not read the default account: $e');
+        // Sprint 85 7.7.1 M-1: Logger is a no-op in release builds.
+        await DiagnosticLogger.failure(
+          context: 'F352/settings',
+          kind: DiagnosticLogger.kindException,
+          reason: 'default account could not be read (shown as none): '
+              '${DiagnosticLogger.describeError(e)}',
+        );
       }
 
       // [UPDATED] ISSUE #123: Load per-account settings (with app-wide fallback)
@@ -853,6 +878,24 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         const SizedBox(height: 12),
         _buildUnmatchedRetentionSelector(),
         const SizedBox(height: 12),
+        // Sprint 85 7.7.1 M4: a failed F354 DEV credential copy leaves Select
+        // Account empty; the diagnostic log is opt-in, so say it here. Set only
+        // on a Windows DEV build (DevCredentialSeparation.run returns
+        // notApplicable everywhere else and leaves lastError null).
+        if (DevCredentialSeparation.lastError != null)
+          Padding(
+            key: const Key('f354_problem'),
+            padding: const EdgeInsets.only(bottom: 12),
+            child: SelectableText(
+              'DEV credential copy at start-up did not finish: '
+              '${DevCredentialSeparation.lastError}. Accounts may be missing '
+              'until it succeeds; it is tried again at the next start.',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
         // F233 (Sprint 72): the diagnostic log controls.
         SwitchListTile(
           key: const Key('diagnostic_log_toggle'),
@@ -1282,6 +1325,31 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             // header card. Mirrors the same card shown on Manual Scan and
             // Background tabs.
             _buildAccountHeaderCard(),
+            // F352 (ADR-0052): read-only; the default is set on Select Account.
+            if (_defaultAccountId != null &&
+                _defaultAccountId == _resolvedAccountId)
+              Semantics(
+                container: true,
+                label: SettingsScreen.defaultAccountLabel,
+                child: ExcludeSemantics(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 8, left: 4),
+                    child: Row(
+                      children: [
+                        Icon(Icons.star,
+                            size: 18,
+                            color: Theme.of(context).colorScheme.primary),
+                        const SizedBox(width: 8),
+                        Text(
+                          SettingsScreen.defaultAccountLabel,
+                          key: const Key('settings_default_account_label'),
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             const SizedBox(height: 24),
 
             // Folder configuration section

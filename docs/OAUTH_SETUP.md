@@ -67,7 +67,7 @@ Copy the SHA-1 value (format: `XX:XX:XX:XX:...`)
 
 ```powershell
 cd mobile-app/scripts
-.\build-with-secrets.ps1 -BuildType debug -InstallToEmulator -StartEmulator
+python build-with-secrets.py --build-type debug --install-to-emulator --start-emulator
 ```
 
 ### Step 5: Enable the Custom URI scheme on the Android OAuth client (F211, REQUIRED)
@@ -124,9 +124,12 @@ cause of F211 than the scheme setting was.
 
 **WHICH CLIENT THE PLAY BUILD ACTUALLY USES** (settled by Harold, 2026-09-14):
 
-`build-with-secrets.ps1` passes `--dart-define-from-file=secrets.dev.json` for EVERY build
-including release, and `secrets.prod.json` does not exist in the dev worktree at all -- so a Play
-bundle is always built with the DEV worktree credentials. The two worktrees hold DIFFERENT Android
+`build-with-secrets.py` reads `secrets.dev.json` for EVERY build including release (unless
+`--secrets-file` names another file), and `secrets.prod.json` does not exist in the dev worktree at
+all -- so a Play bundle is always built with the DEV worktree credentials. Since issue #575 (Sprint 85)
+the Android build receives only `ANDROID_GMAIL_CLIENT_ID` from that file, through a filtered
+temporary copy (`ANDROID_DART_DEFINE_KEYS` in the script); the Windows keys, including
+`WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET`, are never compiled into an APK or bundle. The two worktrees hold DIFFERENT Android
 client ids (dev `577022808534-0ejd...`, prod `577022808534-v94j...`).
 
 Harold confirmed the dev client (`0ejd`) is correct and is what ships: it is what 0.15.0 shipped
@@ -301,6 +304,14 @@ Build scripts use `--dart-define-from-file` to inject secrets at compile time:
 ```powershell
 flutter run --dart-define-from-file=secrets.dev.json
 ```
+
+- **Windows** (`build-windows.ps1`, and `msix_config` `windows_build_args` for the Store MSIX): the
+  whole secrets file is passed.
+- **Android** (`build-with-secrets.py`, issue #575): only the keys in `ANDROID_DART_DEFINE_KEYS`
+  (today `ANDROID_GMAIL_CLIENT_ID`) are passed, through a filtered copy in the system temp folder
+  that the script deletes when it ends. The Android sign-in uses no client secret, so
+  `WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET` stays out of the APK and the bundle. The same client id also
+  reaches gradle as the `androidGmailClientId` property (SEC-9).
 
 ---
 

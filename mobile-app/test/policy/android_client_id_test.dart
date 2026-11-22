@@ -84,7 +84,7 @@ void main() {
       final content = File('android/app/build.gradle.kts').readAsStringSync();
       expect(content, contains('androidGmailClientId'),
           reason: 'SEC-9: build.gradle.kts must read the gradle property '
-              'androidGmailClientId (set by build-with-secrets.ps1 via '
+              'androidGmailClientId (set by build-with-secrets.py via '
               '-PandroidGmailClientId, fed from secrets.*.json).');
       expect(content, contains('appAuthRedirectScheme'),
           reason: 'SEC-9: the manifestPlaceholder must still be set so the '

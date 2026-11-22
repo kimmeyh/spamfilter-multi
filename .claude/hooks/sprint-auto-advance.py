@@ -29,7 +29,7 @@ Failure rule (R-6): ONLY the reads of sprint_status.json and of the plan's first
 the F193 evidence evaluation that the PowerShell swallowed inside the Gate 1c try block, reaches hooklib.run, which
 prints a one-line "internal error" notice and exits 1, a visible non-blocking hook error and never a silent pass.
 
-Tests: .claude/hooks/test-cases/*.json (run-test-cases.ps1, route "(top)") and .claude/hooks/tests/test_pylib.py.
+Tests: .claude/hooks/test-cases/*.json (run-test-cases.py, route "(top)") and .claude/hooks/tests/test_pylib.py.
 """
 import json
 import os

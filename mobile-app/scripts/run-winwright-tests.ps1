@@ -390,6 +390,30 @@ if ($TrayCheckOnly) {
     exit @{ PASS = 0; FAIL = 1; SKIPPED = 2 }[$tray.Status]
 }
 
+# Sprint 85: end a running UNSECURED screen saver before the sweep (see the call in the
+# preflight for the evidence). Returns the names of the processes it ended. A secure saver
+# (ScreenSaverIsSecure = 1) is left alone: it switches the input desktop, so the lock check
+# already handles it, and ending it would be a security action the runner must not take.
+# A saver that cannot be ended is a hard stop, because every cursor step would then fail
+# and read like a UI regression.
+function Stop-UnsecuredScreenSaver {
+    # A missing ScreenSaverIsSecure value reads as "not secure", the Windows default; that is
+    # why the lookup may fail quietly. Only a value of 1 marks a saver the runner must not end.
+    $secure = (Get-ItemProperty -Path 'HKCU:\Control Panel\Desktop' -Name ScreenSaverIsSecure -ErrorAction SilentlyContinue).ScreenSaverIsSecure
+    if ("$secure" -eq '1') { return @() }
+    $running = @(Get-Process | Where-Object { $_.Name -like '*.scr' })
+    $ended = @()
+    foreach ($p in $running) {
+        try {
+            Stop-Process -Id $p.Id -ErrorAction Stop
+            $ended += $p.Name
+        } catch {
+            throw "A screen saver ($($p.Name), pid $($p.Id)) is running and could not be ended: $($_.Exception.Message). Move the mouse, then run the sweep again."
+        }
+    }
+    return $ended
+}
+
 # Cursor-driven tools -- see the "Locked-workstation gate" comment further down
 # for why each is on this list. Defined here so the F291 self-test can run
 # before the preflight (it needs no app and no WinWright).
@@ -528,6 +552,21 @@ public class WinWrightDesk {
         Write-Host "[Setup] Workstation is unlocked -- input desktop available." -ForegroundColor Green
     } else {
         Write-Host "[Setup] Workstation is LOCKED -- only cursor-free (pattern-only) scripts can run." -ForegroundColor Yellow
+    }
+
+    # Sprint 85: a RUNNING SCREEN SAVER also breaks every cursor step. The 2026-11-10 sweep
+    # ran under Mystify.scr (unsecured): every ww_click failed with "SetCursorPos failed
+    # (Win32 error 0)" while this gate reported "unlocked"; after the saver ended, the same
+    # scripts passed. The mechanism is NOT known: Microsoft's "Desktops" page says
+    # "Unsecured screen savers run on Winsta0\Default", so the input desktop did not change
+    # and the check above cannot see it. A SECURE saver switches to the ScreenSaver desktop,
+    # which the check above already treats as locked. An unsecured saver protects nothing, so
+    # ending it is the same as moving the mouse.
+    if ($script:inputDesktopAvailable) {
+        $savers = Stop-UnsecuredScreenSaver
+        if ($savers.Count -gt 0) {
+            Write-Host "[Setup] Ended a running screen saver ($($savers -join ', ')): cursor steps fail while one runs." -ForegroundColor Yellow
+        }
     }
 
     # Verify winwright doctor

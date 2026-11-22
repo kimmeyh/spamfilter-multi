@@ -2,6 +2,184 @@
 
 Copilot review - see 0Claudedev_prompts.txt
 ---------------------------------------------------------------------------------------------------------
+Sprint 85  Improvement proposals
+
+Answers: 
+i1. a
+i2. a
+i3. a
+i4. a
+i5. a
+i6. a
+i7. a
+i8. e
+add to next sprint backlog and rank in top 10 for next sprint: add to Improvements Effort, what the change adds to full-suite and CI testing time
+
+  i1. Fix 5.1.2 findings at 5.1.2; stop marking them "recorded, not fixed"
+  - What it is: findings from the 5.1.2 self-review follow the 7.7.1 rule: fixed without asking, prevention first, unless decision-class or 4+ code files / 600+ lines. Any finding
+    left unfixed becomes a numbered question to you at MV handover.
+  - Source: Category 9 (Claude); 7.7.1 class B.
+  - What it prevents: on 11/10, 5.1.2 recorded three silent-failure items as "Not fixed, LOW". On 11/18, 7.7.1 found the same class in the same files (test-inventory.py, rated
+    MEDIUM). Two were still open today.
+  - Prevention or control: prevention (development stage).
+  - Extends: the 5.1.2 checklist item and the 7.7.1 fix rule.
+  - Long-term value: a self-review finding costs one fix, not a second review round.
+  - Evidence: 3 items in Sprint 85. This is the first sprint where I checked 5.1.2 dispositions against 7.7.1. About 40 minutes of 7.7.1 rework.
+  - Effort: ~10 min, 2 files (SPRINT_EXECUTION_WORKFLOW.md, SPRINT_CHECKLIST.md).
+  - Options:
+    - a. (Recommendation) Doc rule, now; ~10 min. Pro: closes the exact gap seen. Con: a rule with no gate.
+    - b. Same, plus the close-out hook refuses a 5.1.2 marker that says "Not fixed" without your decision; ~45 min, 2 files plus hook cases. Pro: enforced. Con: more hook surface.
+    - e. Skip this sprint, track. Pro: no work. Con: 7.7.1 keeps re-finding 5.1.2 items.
+    - f. Skip.
+
+  i2. Trace user-visible behavior text to code, with evidence (Sprint 84 i1, re-proposed as tracked)
+  - What it is: 5.1.2 class 3 (doc versus code) lists every CHANGELOG line added this sprint, plus the Help page of every screen whose code changed. Each behavior claim gets a
+    file:line in the 5.1.2 record, and those Help pages are re-read.
+  - Source: 7.7.1 class D; Category 8 (Claude); Sprint 84 i1 ("propose again if it recurs").
+  - What it prevents: "The app opens on that account" in the CHANGELOG (the start screen does not change, ADR-0052). "Swipe an account to delete" on the Help page (it is the trash
+    can icon).
+  - Prevention or control: prevention (development stage).
+  - Extends: 5.1.2 class 3, and the CLAUDE.md rule from Sprint 74 IMP-2 (that rule exists but leaves no evidence).
+  - Long-term value: customer text stops promising behavior the app does not have.
+  - Evidence: 5 sprints in a row (81, 82, 83, 84, 85). 2 findings this sprint.
+  - Effort: ~15 min, 2 files.
+  - Options:
+    - a. (Recommendation) Evidence list in the 5.1.2 record, now; ~15 min. Pro: makes the existing rule leave a trace. Con: still checked by hand.
+    - b. a, plus the F193 evidence gate requires a "text claims traced: N" field in the 5.1.2 marker; ~45 min, 2 files plus hook cases. Pro: cannot be skipped. Con: a count says
+      nothing about quality.
+    - c. Release-notes "Source:" line only (the Sprint 84 shape); ~10 min. Pro: smallest. Con: misses CHANGELOG and Help pages, where both findings were.
+    - e. Skip, track again. Con: it has recurred 5 times.
+    - f. Skip.
+
+  i3. A failure that changes a screen shows its reason on that screen
+  - What it is: 5.1.2 class 6 currently accepts "the log alone" when the card says the user need not know. That exception is removed for any failure that changes what the user sees
+    (an empty list, a missing account, a setting that does not stay). Those failures show their reason on that screen. The exception stays only for failures with no visible effect.
+  - Source: 7.7.1 class A.
+  - What it prevents: a failed F354 copy showed an empty DEV account list with no reason. The 5.1.2 M3 fix used the exception and sent the reason to the opt-in log only. 7.7.1 found
+    it again (SF M4, CR M-1).
+  - Prevention or control: prevention (card and development stage).
+  - Extends: 5.1.2 class 6 (Sprint 81 IMP-1).
+  - Long-term value: users see why the app looks wrong, without having to turn on a log.
+  - Evidence: Sprint 81 (6 findings), Sprint 85 (3).
+  - Effort: ~10 min, 2 files.
+  - Options:
+    - a. (Recommendation) Tighten the exception, now; ~10 min. Pro: closes the loophole that was used. Con: some DEV-only paths need a visible line.
+    - e. Skip, track. Con: the loophole stays.
+    - f. Skip.
+
+  i4. Port cards cover error paths, real failing commands and file-type gates
+  - What it is: the card template line "Port of existing code" gains two parts:
+    - (1) "Error paths": for each external call, what the port does when the call fails or returns nothing, with at least one test that runs a real failing command, not a faked exit
+  - Extends: the Sprint 84 i3 "Port of existing code" line.
+  - Long-term value: the 29 remaining .ps1 ports start with these questions answered.
+  - Evidence: Sprint 83 IMP-3 (5 tools), Sprint 84 class C (3), Sprint 85 (10).
+  - Effort: ~15 min, 1 file (SPRINT_PLANNING.md).
+  - Options:
+    - a. (Recommendation) Template change, now; ~15 min. Pro: covers both classes at the card. Con: depends on i5 for the results to be recorded.
+    - b. a, plus a policy test comparing each file-type gate's extension list with the extensions of tracked scripts; ~60 min, 2 files. Pro: catches class C by machine. Con: more
+      work, and one gate per test.
+    - e. Skip, track.
+    - f. Skip.
+
+  i5. Record card-line results where the close-out gate can read them
+  - What it is: two changes.
+    - The "Old name search" and "Port of existing code" lines are filled in at completion with their results (hits: file:line, updated or kept because...; defects: ...).
+    - Close-out hook check 3d-3 flags a card whose line still holds only template text. An ADR hit is never "kept" bare: it gets a dated note that names the replacement.
+  - Source: 7.7.1 class E; Categories 4 and 8 (Claude).
+  - What it prevents: 7 cards carried both lines and none recorded a result. ADR-0017, 0027 and 0039 kept naming the deleted .ps1 scripts until Copilot and the code reviewer found
+    them.
+  - Prevention or control: both (card plus close-out control).
+  - Extends: the Sprint 84 i3/i4 card lines and verify-closeout-complete.py check 3d-3.
+  - Long-term value: a card line becomes evidence, not a reminder.
+  - Evidence: Sprint 83 (ADR-0051 "Proposed" in 3 files), Sprint 84 class D (2), Sprint 85 class E (2) plus 7 unrecorded cards.
+  - Effort: ~60 min, 2 files plus hook test cases; hook suite run.
+  - Options:
+    - a. (Recommendation) Template plus hook, now; ~60 min. Pro: the gate makes recording happen. Con: one more hook check to maintain.
+    - b. Template now (~10 min), hook check to the backlog. Pro: fast. Con: Sprint 84's lines show that an unenforced line gets skipped.
+    - c. Template only, no hook ever.
+    - e. Skip, track.
+    - f. Skip.
+
+  i6. For MV steps Claude cannot rehearse, check the preconditions Claude can read
+  - What it is: in 5.1.9, each step not rehearsable lists its preconditions, and Claude checks every one it can read. That covers the starting screen named and reached in the DEV
+    build, any data the step needs still being within its retention (row date against the history window), and the needed setting state.
+  - Source: Categories 6 and 9 (Claude).
+  - What it prevents: MV-1(a) did not name its starting screen, so you got the picker. MV-4 asked for a Scan History row that had already aged out of the Fold's history.
+  - Prevention or control: prevention (before handover).
+  - Extends: 5.1.9 MV rehearsal (Sprint 77 IMP-1) and Sprint 75 IMP-5.
+  - Long-term value: fewer validation rounds lost to steps that cannot work.
+  - Evidence: 2 rounds this sprint. The same family appeared in Sprints 75 and 77.
+  - Effort: ~10 min, 2 files.
+  - Options:
+    - a. (Recommendation) Now; ~10 min. Pro: aimed at the two misses. Con: a hand check.
+    - e. Skip, track.
+    - f. Skip.
+
+  i7. Write the start time when a task starts
+  - What it is: in Phase 4, each task's CODING_VELOCITY row gets "Started HH:MM" (from Get-Date) when the task begins. Completion fills in the end time.
+  - Source: Category 3 (Claude).
+  - What it prevents: 5 rows this sprint (Tasks 1, 2, 5, 7, 8) and Sprint 84 Task 8 say "time not recorded", so estimate accuracy cannot be judged.
+  - Prevention or control: prevention.
+  - Extends: the Phase 4 velocity step and Sprint 82 IMP-6 (clock read in the same turn).
+  - Long-term value: estimates calibrate on complete data.
+  - Evidence: 2 sprints in a row, 6 rows.
+  - Effort: ~10 min, 2 files.
+  - Options:
+    - a. (Recommendation) Now; ~10 min. Pro: one line per task. Con: none significant.
+    - e. Skip, track.
+    - f. Skip.
+
+  i8. Check for the Windows SDK before a Windows build
+  - What it is: build-windows.ps1 checks that the Windows SDK the build needs exists before it runs flutter build. If the SDK is missing, it stops and names the cause and the fix
+    (Visual Studio Installer Repair).
+  - Source: Categories 1 and 14 (Claude).
+  - What it prevents: 11/10-11/13 the DEV rebuild was blocked after a Visual Studio update removed the SDK manifest. The error did not name the cause.
+  - Prevention or control: control (fails fast with the cause).
+  - Extends: build-windows.ps1 pre-build checks.
+  - Long-term value: a toolchain update costs minutes, not days.
+  - Evidence: 1 occurrence, about 3 days of wall-clock delay. The diagnosis time was not recorded.
+  - Effort: ~30-45 min, 1 script, plus a Windows build to prove it.
+  - Options:
+    - a. Now; ~45 min. Pro: done. Con: a build-script change in Phase 7 needs a Windows build and enters the improvement review.
+    - b. (Recommendation) Backlog card, low priority; ~5 min now. Pro: cheap, no Phase 7 build risk. Con: no protection until it is scheduled.
+    - e. Skip, track: build it if a toolchain update breaks the build again.
+    - f. Skip.
+
+
+
+Manual Validation complete
+Sprint 85 Review/Retrospective - Combined Product Owner, Scrum Master and Lead Developer feedback
+- Effective while as Efficient as Reasonably Possible
+  - Very Good
+- Testing Approach
+  - Very Good
+- Effort Accuracy
+  - Very Good
+- Planning Quality
+  - Very Good
+- Model Assignments
+  - Very Good
+- Communication
+  - Very Good
+- Requirements Clarity
+  - Very Good
+- Documentation
+  - Very Good
+- Process Issues
+  - Very Good
+- Risk Management
+  - Very Good
+- Next Sprint Readiness
+  - Very Good
+- Architecture Maintenance
+  - Very Good
+- Minor function updates that need to be added to the next sprint plan
+  - none
+- Function updates that can be added to the backlog for a future sprint
+  - none
+- Questions to be discussed before ending the sprint
+  - none
+---------------------------------------------------------------------------------------------------------
 Manual Validation complete
 Sprint 84 Review/Retrospective - Combined Product Owner, Scrum Master and Lead Developer feedback
 - Effective while as Efficient as Reasonably Possible

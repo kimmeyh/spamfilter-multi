@@ -4,13 +4,9 @@
     {
       "label": "Mobile: Build APK",
       "type": "shell",
-      "command": "powershell",
+      "command": "python",
       "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "${workspaceFolder}/mobile-app/scripts/build-apk.ps1"
+        "${workspaceFolder}/mobile-app/scripts/build-apk.py"
       ],
       "group": "build",
       "problemMatcher": []

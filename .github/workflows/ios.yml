@@ -312,7 +312,7 @@ jobs:
           plutil -lint "$app/PrivacyInfo.xcprivacy"
           plutil -p "$app/PrivacyInfo.xcprivacy"
 
-      # One flutter test process per file, as scripts/run-integration-tests.ps1
+      # One flutter test process per file, as scripts/run-integration-tests.py
       # does on Windows (TESTING_STRATEGY.md "Execution model"). The first-run
       # screens test needs dart-defines and runs in ios-simulator-screens.
       - name: Run the integration tests on the iPhone Simulator

@@ -1,0 +1,700 @@
+[2026-10-29T00:02:18.498046] [SCAN] [worker/android] start acct1***@example.com trigger=periodic
+[2026-10-29T00:02:18.498108] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T00:02:18.596883] [SCAN] [scan/background] acct1***@example.com start -- platform=aol folders=3 daysBack=1
+[2026-10-29T00:02:18.599905] [SCAN] [scan/background] acct1***@example.com claim -- granted, mode=safeSendersAndRules
+[2026-10-29T00:02:18.600480] [SCAN] [scan/background] acct1***@example.com connect -- begin (fFa)
+[2026-10-29T00:02:19.502668] [SCAN] [scan/background] acct1***@example.com connect -- done in 902ms
+[2026-10-29T00:02:19.503298] [SCAN] [scan/background] acct1***@example.com rules -- rules=2198 enabled=2198 safeSenders=530
+[2026-10-29T00:02:19.503613] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" begin
+[2026-10-29T00:02:21.734404] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Inbox" IMAP backlog re-scan from UID 234054
+[2026-10-29T00:02:23.179032] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" done: 7 emails in 3675ms
+[2026-10-29T00:02:23.180781] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" begin
+[2026-10-29T00:02:24.468985] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk" IMAP backlog re-scan from UID 204823
+[2026-10-29T00:02:25.931359] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" done: 1 emails in 2750ms
+[2026-10-29T00:02:25.932871] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" begin
+[2026-10-29T00:02:27.057152] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk Mail" IMAP full fetch daysBack=1 (no backlog cursor)
+[2026-10-29T00:02:27.624869] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" done: 0 emails in 1691ms
+[2026-10-29T00:02:27.626181] [SCAN] [scan/background] acct1***@example.com actions -- mode=safeSendersAndRules executeRules=true executeSafeSenders=true planned: delete=0 moveToJunk=0 safeSenderMove=0 safeSenderTarget="INBOX"
+[2026-10-29T00:02:27.685132] [SCAN] [scan/background] acct1***@example.com outcome -- completed found=8 processed=1 deleted=0 moved=0 safe=0 noRule=1 errors=0 alreadyFiled=7 in 9.1s
+[2026-10-29T00:02:28.120343] [SCAN] [worker/android] exit success
+[2026-10-29T00:02:49.185085] [SCAN] [worker/android] start acct1***@example.com trigger=doze-alarm delay=0s
+[2026-10-29T00:02:49.185241] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T00:02:49.206108] [SCAN] [worker/android] start acct2***@example.com trigger=doze-alarm delay=0s
+[2026-10-29T00:02:49.206467] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T00:02:49.352571] [SCAN] [worker/android] account acct1***@example.com skipped: a scan started 30s ago (interval 10m; doze alarm)
+[2026-10-29T00:02:49.352578] [SCAN] [worker/android] exit success
+[2026-10-29T00:02:49.359801] [SCAN] [worker/android] account acct2***@example.com skipped: a scan started 2130s ago (interval 1440m; doze alarm)
+[2026-10-29T00:02:49.359807] [SCAN] [worker/android] exit success
+[2026-10-29T00:15:26.402561] [SCAN] [worker/android] start acct1***@example.com trigger=doze-alarm delay=0s
+[2026-10-29T00:15:26.402656] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T00:15:26.547849] [SCAN] [scan/background] acct1***@example.com start -- platform=aol folders=3 daysBack=1
+[2026-10-29T00:15:26.553459] [SCAN] [scan/background] acct1***@example.com claim -- granted, mode=safeSendersAndRules
+[2026-10-29T00:15:26.554531] [SCAN] [scan/background] acct1***@example.com connect -- begin (fFa)
+[2026-10-29T00:15:27.330315] [SCAN] [scan/background] acct1***@example.com connect -- done in 775ms
+[2026-10-29T00:15:27.330564] [SCAN] [scan/background] acct1***@example.com rules -- rules=2198 enabled=2198 safeSenders=530
+[2026-10-29T00:15:27.330872] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" begin
+[2026-10-29T00:15:29.312589] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Inbox" IMAP backlog re-scan from UID 234054
+[2026-10-29T00:15:30.880423] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" done: 7 emails in 3549ms
+[2026-10-29T00:15:30.881522] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" begin
+[2026-10-29T00:15:32.248527] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk" IMAP backlog re-scan from UID 204823
+[2026-10-29T00:15:33.654065] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" done: 1 emails in 2772ms
+[2026-10-29T00:15:33.654592] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" begin
+[2026-10-29T00:15:34.965035] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk Mail" IMAP full fetch daysBack=1 (no backlog cursor)
+[2026-10-29T00:15:35.526848] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" done: 0 emails in 1872ms
+[2026-10-29T00:15:35.527392] [SCAN] [scan/background] acct1***@example.com actions -- mode=safeSendersAndRules executeRules=true executeSafeSenders=true planned: delete=0 moveToJunk=0 safeSenderMove=0 safeSenderTarget="INBOX"
+[2026-10-29T00:15:35.564304] [SCAN] [scan/background] acct1***@example.com outcome -- completed found=8 processed=1 deleted=0 moved=0 safe=0 noRule=1 errors=0 alreadyFiled=7 in 9.0s
+[2026-10-29T00:15:36.008342] [SCAN] [worker/android] exit success
+[2026-10-29T00:17:49.728018] [SCAN] [worker/android] start acct1***@example.com trigger=periodic
+[2026-10-29T00:17:49.730253] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T00:17:49.994968] [SCAN] [worker/android] account acct1***@example.com skipped: a completed scan started 143s ago (interval 10m; periodic)
+[2026-10-29T00:17:49.994976] [SCAN] [worker/android] exit success
+[2026-10-29T00:27:25.691872] [SCAN] [worker/android] start acct1***@example.com trigger=doze-alarm delay=0s
+[2026-10-29T00:27:25.691956] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T00:27:25.826910] [SCAN] [scan/background] acct1***@example.com start -- platform=aol folders=3 daysBack=1
+[2026-10-29T00:27:25.831385] [SCAN] [scan/background] acct1***@example.com claim -- granted, mode=safeSendersAndRules
+[2026-10-29T00:27:25.832508] [SCAN] [scan/background] acct1***@example.com connect -- begin (fFa)
+[2026-10-29T00:27:26.853415] [SCAN] [scan/background] acct1***@example.com connect -- done in 1020ms
+[2026-10-29T00:27:26.854222] [SCAN] [scan/background] acct1***@example.com rules -- rules=2198 enabled=2198 safeSenders=530
+[2026-10-29T00:27:26.854538] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" begin
+[2026-10-29T00:27:29.103822] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Inbox" IMAP backlog re-scan from UID 234054
+[2026-10-29T00:27:30.755085] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" done: 7 emails in 3900ms
+[2026-10-29T00:27:30.756446] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" begin
+[2026-10-29T00:27:32.180671] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk" IMAP backlog re-scan from UID 204823
+[2026-10-29T00:27:33.758490] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" done: 1 emails in 3002ms
+[2026-10-29T00:27:33.759003] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" begin
+[2026-10-29T00:27:34.944201] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk Mail" IMAP full fetch daysBack=1 (no backlog cursor)
+[2026-10-29T00:27:35.575593] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" done: 0 emails in 1816ms
+[2026-10-29T00:27:35.576937] [SCAN] [scan/background] acct1***@example.com actions -- mode=safeSendersAndRules executeRules=true executeSafeSenders=true planned: delete=0 moveToJunk=0 safeSenderMove=0 safeSenderTarget="INBOX"
+[2026-10-29T00:27:35.614709] [SCAN] [scan/background] acct1***@example.com outcome -- completed found=8 processed=1 deleted=0 moved=0 safe=0 noRule=1 errors=0 alreadyFiled=7 in 9.8s
+[2026-10-29T00:27:36.090252] [SCAN] [worker/android] exit success
+[2026-10-29T00:32:50.093362] [SCAN] [worker/android] start acct1***@example.com trigger=periodic
+[2026-10-29T00:32:50.093441] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T00:32:50.216187] [SCAN] [worker/android] account acct1***@example.com skipped: a completed scan started 324s ago (interval 10m; periodic)
+[2026-10-29T00:32:50.216197] [SCAN] [worker/android] exit success
+[2026-10-29T00:38:01.284253] [SCAN] [worker/android] start acct1***@example.com trigger=doze-alarm delay=0s
+[2026-10-29T00:38:01.284331] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T00:38:01.396131] [SCAN] [scan/background] acct1***@example.com start -- platform=aol folders=3 daysBack=1
+[2026-10-29T00:38:01.399612] [SCAN] [scan/background] acct1***@example.com claim -- granted, mode=safeSendersAndRules
+[2026-10-29T00:38:01.400409] [SCAN] [scan/background] acct1***@example.com connect -- begin (fFa)
+[2026-10-29T00:38:02.347699] [SCAN] [scan/background] acct1***@example.com connect -- done in 947ms
+[2026-10-29T00:38:02.348268] [SCAN] [scan/background] acct1***@example.com rules -- rules=2198 enabled=2198 safeSenders=530
+[2026-10-29T00:38:02.348504] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" begin
+[2026-10-29T00:38:04.447591] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Inbox" IMAP backlog re-scan from UID 234054
+[2026-10-29T00:38:05.887256] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" done: 7 emails in 3538ms
+[2026-10-29T00:38:05.888197] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" begin
+[2026-10-29T00:38:07.464311] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk" IMAP backlog re-scan from UID 204823
+[2026-10-29T00:38:09.435680] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" done: 2 emails in 3547ms
+[2026-10-29T00:38:09.436227] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" begin
+[2026-10-29T00:38:10.537324] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk Mail" IMAP full fetch daysBack=1 (no backlog cursor)
+[2026-10-29T00:38:11.150603] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" done: 0 emails in 1714ms
+[2026-10-29T00:38:11.152029] [SCAN] [scan/background] acct1***@example.com actions -- mode=safeSendersAndRules executeRules=true executeSafeSenders=true planned: delete=1 moveToJunk=0 safeSenderMove=0 safeSenderTarget="INBOX"
+[2026-10-29T00:38:12.841919] [SCAN] [scan/background] acct1***@example.com action-result -- mark as read: 1 succeeded, 0 failed
+[2026-10-29T00:38:14.632321] [SCAN] [scan/background] acct1***@example.com action-result -- delete: 1 succeeded, 0 failed
+[2026-10-29T00:38:14.674238] [SCAN] [scan/background] acct1***@example.com outcome -- completed found=9 processed=2 deleted=1 moved=0 safe=0 noRule=1 errors=0 alreadyFiled=7 in 13.3s
+[2026-10-29T00:38:15.271446] [SCAN] [worker/android] exit success
+[2026-10-29T00:47:50.281432] [SCAN] [worker/android] start acct1***@example.com trigger=periodic
+[2026-10-29T00:47:50.281506] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T00:47:50.422052] [SCAN] [scan/background] acct1***@example.com start -- platform=aol folders=3 daysBack=1
+[2026-10-29T00:47:50.426506] [SCAN] [scan/background] acct1***@example.com claim -- granted, mode=safeSendersAndRules
+[2026-10-29T00:47:50.427679] [SCAN] [scan/background] acct1***@example.com connect -- begin (fFa)
+[2026-10-29T00:47:51.556321] [SCAN] [scan/background] acct1***@example.com connect -- done in 1128ms
+[2026-10-29T00:47:51.557254] [SCAN] [scan/background] acct1***@example.com rules -- rules=2198 enabled=2198 safeSenders=530
+[2026-10-29T00:47:51.557791] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" begin
+[2026-10-29T00:47:53.712367] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Inbox" IMAP backlog re-scan from UID 234054
+[2026-10-29T00:47:56.891011] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" done: 7 emails in 5333ms
+[2026-10-29T00:47:56.892509] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" begin
+[2026-10-29T00:47:58.518683] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk" IMAP backlog re-scan from UID 204823
+[2026-10-29T00:48:00.277663] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" done: 2 emails in 3385ms
+[2026-10-29T00:48:00.278267] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" begin
+[2026-10-29T00:48:01.546073] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk Mail" IMAP full fetch daysBack=1 (no backlog cursor)
+[2026-10-29T00:48:02.107173] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" done: 0 emails in 1828ms
+[2026-10-29T00:48:02.107626] [SCAN] [scan/background] acct1***@example.com actions -- mode=safeSendersAndRules executeRules=true executeSafeSenders=true planned: delete=1 moveToJunk=0 safeSenderMove=0 safeSenderTarget="INBOX"
+[2026-10-29T00:48:03.581041] [SCAN] [scan/background] acct1***@example.com action-result -- mark as read: 1 succeeded, 0 failed
+[2026-10-29T00:48:05.276771] [SCAN] [scan/background] acct1***@example.com action-result -- delete: 1 succeeded, 0 failed
+[2026-10-29T00:48:05.319841] [SCAN] [scan/background] acct1***@example.com outcome -- completed found=9 processed=2 deleted=1 moved=0 safe=0 noRule=1 errors=0 alreadyFiled=7 in 14.9s
+[2026-10-29T00:48:05.681527] [SCAN] [worker/android] exit success
+[2026-10-29T00:48:42.851154] [SCAN] [worker/android] start acct1***@example.com trigger=doze-alarm delay=0s
+[2026-10-29T00:48:42.851236] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T00:48:42.970570] [SCAN] [worker/android] account acct1***@example.com skipped: a scan started 52s ago (interval 10m; doze alarm)
+[2026-10-29T00:48:42.970577] [SCAN] [worker/android] exit success
+[2026-10-29T01:03:05.743009] [SCAN] [worker/android] start acct1***@example.com trigger=periodic
+[2026-10-29T01:03:05.743085] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T01:03:05.866942] [SCAN] [scan/background] acct1***@example.com start -- platform=aol folders=3 daysBack=1
+[2026-10-29T01:03:05.871293] [SCAN] [scan/background] acct1***@example.com claim -- granted, mode=safeSendersAndRules
+[2026-10-29T01:03:05.872425] [SCAN] [scan/background] acct1***@example.com connect -- begin (fFa)
+[2026-10-29T01:03:06.811363] [SCAN] [scan/background] acct1***@example.com connect -- done in 938ms
+[2026-10-29T01:03:06.812290] [SCAN] [scan/background] acct1***@example.com rules -- rules=2198 enabled=2198 safeSenders=530
+[2026-10-29T01:03:06.813407] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" begin
+[2026-10-29T01:03:08.871883] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Inbox" IMAP backlog re-scan from UID 234054
+[2026-10-29T01:03:10.334075] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" done: 7 emails in 3520ms
+[2026-10-29T01:03:10.335366] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" begin
+[2026-10-29T01:03:11.925638] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk" IMAP backlog re-scan from UID 204823
+[2026-10-29T01:03:13.539408] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" done: 1 emails in 3204ms
+[2026-10-29T01:03:13.540017] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" begin
+[2026-10-29T01:03:14.793959] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk Mail" IMAP full fetch daysBack=1 (no backlog cursor)
+[2026-10-29T01:03:15.406800] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" done: 0 emails in 1866ms
+[2026-10-29T01:03:15.407998] [SCAN] [scan/background] acct1***@example.com actions -- mode=safeSendersAndRules executeRules=true executeSafeSenders=true planned: delete=0 moveToJunk=0 safeSenderMove=0 safeSenderTarget="INBOX"
+[2026-10-29T01:03:15.443318] [SCAN] [scan/background] acct1***@example.com outcome -- completed found=8 processed=1 deleted=0 moved=0 safe=0 noRule=1 errors=0 alreadyFiled=7 in 9.6s
+[2026-10-29T01:03:16.048075] [SCAN] [worker/android] exit success
+[2026-10-29T01:06:12.864837] [SCAN] [worker/android] start acct1***@example.com trigger=doze-alarm delay=0s
+[2026-10-29T01:06:12.864900] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T01:06:12.980393] [SCAN] [worker/android] account acct1***@example.com skipped: a scan started 187s ago (interval 10m; doze alarm)
+[2026-10-29T01:06:12.980401] [SCAN] [worker/android] exit success
+[2026-10-29T01:17:31.377158] [SCAN] [worker/android] start acct1***@example.com trigger=doze-alarm delay=0s
+[2026-10-29T01:17:31.377238] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T01:17:31.503737] [SCAN] [scan/background] acct1***@example.com start -- platform=aol folders=3 daysBack=1
+[2026-10-29T01:17:31.509980] [SCAN] [scan/background] acct1***@example.com claim -- granted, mode=safeSendersAndRules
+[2026-10-29T01:17:31.510790] [SCAN] [scan/background] acct1***@example.com connect -- begin (fFa)
+[2026-10-29T01:17:32.295503] [SCAN] [scan/background] acct1***@example.com connect -- done in 784ms
+[2026-10-29T01:17:32.297137] [SCAN] [scan/background] acct1***@example.com rules -- rules=2198 enabled=2198 safeSenders=530
+[2026-10-29T01:17:32.297481] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" begin
+[2026-10-29T01:17:34.378829] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Inbox" IMAP backlog re-scan from UID 234054
+[2026-10-29T01:17:36.191937] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" done: 7 emails in 3894ms
+[2026-10-29T01:17:36.193227] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" begin
+[2026-10-29T01:17:37.618738] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk" IMAP backlog re-scan from UID 204823
+[2026-10-29T01:17:39.173894] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" done: 1 emails in 2980ms
+[2026-10-29T01:17:39.174574] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" begin
+[2026-10-29T01:17:40.481984] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk Mail" IMAP full fetch daysBack=1 (no backlog cursor)
+[2026-10-29T01:17:41.096549] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" done: 0 emails in 1921ms
+[2026-10-29T01:17:41.097750] [SCAN] [scan/background] acct1***@example.com actions -- mode=safeSendersAndRules executeRules=true executeSafeSenders=true planned: delete=0 moveToJunk=0 safeSenderMove=0 safeSenderTarget="INBOX"
+[2026-10-29T01:17:41.139955] [SCAN] [scan/background] acct1***@example.com outcome -- completed found=8 processed=1 deleted=0 moved=0 safe=0 noRule=1 errors=0 alreadyFiled=7 in 9.6s
+[2026-10-29T01:17:41.737309] [SCAN] [worker/android] exit success
+[2026-10-29T01:18:16.111616] [SCAN] [worker/android] start acct1***@example.com trigger=periodic
+[2026-10-29T01:18:16.111691] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T01:18:16.241552] [SCAN] [worker/android] account acct1***@example.com skipped: a completed scan started 44s ago (interval 10m; periodic)
+[2026-10-29T01:18:16.241560] [SCAN] [worker/android] exit success
+[2026-10-29T01:27:39.232719] [SCAN] [worker/android] start acct1***@example.com trigger=doze-alarm delay=0s
+[2026-10-29T01:27:39.232796] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T01:27:39.371248] [SCAN] [scan/background] acct1***@example.com start -- platform=aol folders=3 daysBack=1
+[2026-10-29T01:27:39.376684] [SCAN] [scan/background] acct1***@example.com claim -- granted, mode=safeSendersAndRules
+[2026-10-29T01:27:39.377661] [SCAN] [scan/background] acct1***@example.com connect -- begin (fFa)
+[2026-10-29T01:27:40.344060] [SCAN] [scan/background] acct1***@example.com connect -- done in 966ms
+[2026-10-29T01:27:40.344860] [SCAN] [scan/background] acct1***@example.com rules -- rules=2198 enabled=2198 safeSenders=530
+[2026-10-29T01:27:40.345807] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" begin
+[2026-10-29T01:27:42.390077] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Inbox" IMAP backlog re-scan from UID 234054
+[2026-10-29T01:27:44.038942] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" done: 7 emails in 3693ms
+[2026-10-29T01:27:44.040365] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" begin
+[2026-10-29T01:27:45.461984] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk" IMAP backlog re-scan from UID 204823
+[2026-10-29T01:27:46.962442] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" done: 1 emails in 2922ms
+[2026-10-29T01:27:46.963122] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" begin
+[2026-10-29T01:27:48.048879] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk Mail" IMAP full fetch daysBack=1 (no backlog cursor)
+[2026-10-29T01:27:48.639634] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" done: 0 emails in 1676ms
+[2026-10-29T01:27:48.640784] [SCAN] [scan/background] acct1***@example.com actions -- mode=safeSendersAndRules executeRules=true executeSafeSenders=true planned: delete=0 moveToJunk=0 safeSenderMove=0 safeSenderTarget="INBOX"
+[2026-10-29T01:27:48.679823] [SCAN] [scan/background] acct1***@example.com outcome -- completed found=8 processed=1 deleted=0 moved=0 safe=0 noRule=1 errors=0 alreadyFiled=7 in 9.3s
+[2026-10-29T01:27:49.169323] [SCAN] [worker/android] exit success
+[2026-10-29T01:33:16.306597] [SCAN] [worker/android] start acct1***@example.com trigger=periodic
+[2026-10-29T01:33:16.306680] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T01:33:16.435365] [SCAN] [worker/android] account acct1***@example.com skipped: a completed scan started 337s ago (interval 10m; periodic)
+[2026-10-29T01:33:16.435371] [SCAN] [worker/android] exit success
+[2026-10-29T01:37:46.163008] [SCAN] [worker/android] start acct1***@example.com trigger=doze-alarm delay=0s
+[2026-10-29T01:37:46.163082] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T01:37:46.305673] [SCAN] [scan/background] acct1***@example.com start -- platform=aol folders=3 daysBack=1
+[2026-10-29T01:37:46.312448] [SCAN] [scan/background] acct1***@example.com claim -- granted, mode=safeSendersAndRules
+[2026-10-29T01:37:46.313740] [SCAN] [scan/background] acct1***@example.com connect -- begin (fFa)
+[2026-10-29T01:37:47.166091] [SCAN] [scan/background] acct1***@example.com connect -- done in 852ms
+[2026-10-29T01:37:47.166843] [SCAN] [scan/background] acct1***@example.com rules -- rules=2198 enabled=2198 safeSenders=530
+[2026-10-29T01:37:47.167408] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" begin
+[2026-10-29T01:37:49.111506] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Inbox" IMAP backlog re-scan from UID 234054
+[2026-10-29T01:37:50.904833] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" done: 8 emails in 3737ms
+[2026-10-29T01:37:50.905421] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" begin
+[2026-10-29T01:37:52.199981] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk" IMAP backlog re-scan from UID 204823
+[2026-10-29T01:37:53.793106] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" done: 1 emails in 2887ms
+[2026-10-29T01:37:53.793557] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" begin
+[2026-10-29T01:37:55.358397] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk Mail" IMAP full fetch daysBack=1 (no backlog cursor)
+[2026-10-29T01:37:55.969721] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" done: 0 emails in 2176ms
+[2026-10-29T01:37:55.971212] [SCAN] [scan/background] acct1***@example.com actions -- mode=safeSendersAndRules executeRules=true executeSafeSenders=true planned: delete=0 moveToJunk=0 safeSenderMove=0 safeSenderTarget="INBOX"
+[2026-10-29T01:37:56.024796] [SCAN] [scan/background] acct1***@example.com outcome -- completed found=9 processed=2 deleted=0 moved=0 safe=0 noRule=2 errors=0 alreadyFiled=7 in 9.7s
+[2026-10-29T01:37:56.611454] [SCAN] [worker/android] exit success
+[2026-10-29T01:48:20.135069] [SCAN] [worker/android] start acct1***@example.com trigger=periodic
+[2026-10-29T01:48:20.135157] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T01:48:20.269560] [SCAN] [scan/background] acct1***@example.com start -- platform=aol folders=3 daysBack=1
+[2026-10-29T01:48:20.276762] [SCAN] [scan/background] acct1***@example.com claim -- granted, mode=safeSendersAndRules
+[2026-10-29T01:48:20.277924] [SCAN] [scan/background] acct1***@example.com connect -- begin (fFa)
+[2026-10-29T01:48:21.225691] [SCAN] [scan/background] acct1***@example.com connect -- done in 947ms
+[2026-10-29T01:48:21.226289] [SCAN] [scan/background] acct1***@example.com rules -- rules=2198 enabled=2198 safeSenders=530
+[2026-10-29T01:48:21.226599] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" begin
+[2026-10-29T01:48:23.476233] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Inbox" IMAP backlog re-scan from UID 234064
+[2026-10-29T01:48:25.153026] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" done: 1 emails in 3926ms
+[2026-10-29T01:48:25.153641] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" begin
+[2026-10-29T01:48:26.548750] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk" IMAP backlog re-scan from UID 204823
+[2026-10-29T01:48:28.123880] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" done: 1 emails in 2970ms
+[2026-10-29T01:48:28.124351] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" begin
+[2026-10-29T01:48:29.315389] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk Mail" IMAP full fetch daysBack=1 (no backlog cursor)
+[2026-10-29T01:48:29.932357] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" done: 0 emails in 1807ms
+[2026-10-29T01:48:29.933936] [SCAN] [scan/background] acct1***@example.com actions -- mode=safeSendersAndRules executeRules=true executeSafeSenders=true planned: delete=0 moveToJunk=0 safeSenderMove=0 safeSenderTarget="INBOX"
+[2026-10-29T01:48:29.978011] [SCAN] [scan/background] acct1***@example.com outcome -- completed found=2 processed=2 deleted=0 moved=0 safe=0 noRule=2 errors=0 alreadyFiled=0 in 9.7s
+[2026-10-29T01:48:30.459862] [SCAN] [worker/android] exit success
+[2026-10-29T01:51:28.928159] [SCAN] [worker/android] start acct1***@example.com trigger=doze-alarm delay=0s
+[2026-10-29T01:51:28.928346] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T01:51:29.054171] [SCAN] [worker/android] account acct1***@example.com skipped: a scan started 188s ago (interval 10m; doze alarm)
+[2026-10-29T01:51:29.054176] [SCAN] [worker/android] exit success
+[2026-10-29T02:03:30.527570] [SCAN] [worker/android] start acct1***@example.com trigger=periodic
+[2026-10-29T02:03:30.527652] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T02:03:30.650910] [SCAN] [scan/background] acct1***@example.com start -- platform=aol folders=3 daysBack=1
+[2026-10-29T02:03:30.654621] [SCAN] [scan/background] acct1***@example.com claim -- granted, mode=safeSendersAndRules
+[2026-10-29T02:03:30.655741] [SCAN] [scan/background] acct1***@example.com connect -- begin (fFa)
+[2026-10-29T02:03:31.568578] [SCAN] [scan/background] acct1***@example.com connect -- done in 912ms
+[2026-10-29T02:03:31.569420] [SCAN] [scan/background] acct1***@example.com rules -- rules=2198 enabled=2198 safeSenders=530
+[2026-10-29T02:03:31.569782] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" begin
+[2026-10-29T02:03:33.418077] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Inbox" IMAP backlog re-scan from UID 234064
+[2026-10-29T02:03:34.816294] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" done: 1 emails in 3246ms
+[2026-10-29T02:03:34.816866] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" begin
+[2026-10-29T02:03:36.230826] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk" IMAP backlog re-scan from UID 204823
+[2026-10-29T02:03:37.477863] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" done: 1 emails in 2660ms
+[2026-10-29T02:03:37.478414] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" begin
+[2026-10-29T02:03:38.741165] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk Mail" IMAP full fetch daysBack=1 (no backlog cursor)
+[2026-10-29T02:03:40.403196] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" done: 2 emails in 2924ms
+[2026-10-29T02:03:40.403777] [SCAN] [scan/background] acct1***@example.com actions -- mode=safeSendersAndRules executeRules=true executeSafeSenders=true planned: delete=2 moveToJunk=0 safeSenderMove=0 safeSenderTarget="INBOX"
+[2026-10-29T02:03:41.105176] [SCAN] [scan/background] acct1***@example.com action-result -- mark as read: 2 succeeded, 0 failed
+[2026-10-29T02:03:42.824937] [SCAN] [scan/background] acct1***@example.com action-result -- delete: 2 succeeded, 0 failed
+[2026-10-29T02:03:42.871164] [SCAN] [scan/background] acct1***@example.com outcome -- completed found=4 processed=4 deleted=2 moved=0 safe=0 noRule=2 errors=0 alreadyFiled=0 in 12.2s
+[2026-10-29T02:03:43.448679] [SCAN] [worker/android] exit success
+[2026-10-29T02:08:33.493605] [SCAN] [worker/android] start acct1***@example.com trigger=doze-alarm delay=0s
+[2026-10-29T02:08:33.493679] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T02:08:33.627492] [SCAN] [worker/android] account acct1***@example.com skipped: a scan started 302s ago (interval 10m; doze alarm)
+[2026-10-29T02:08:33.627499] [SCAN] [worker/android] exit success
+[2026-10-29T02:18:39.849278] [SCAN] [worker/android] start acct1***@example.com trigger=doze-alarm delay=0s
+[2026-10-29T02:18:39.849381] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T02:18:39.993609] [SCAN] [scan/background] acct1***@example.com start -- platform=aol folders=3 daysBack=1
+[2026-10-29T02:18:40.000036] [SCAN] [scan/background] acct1***@example.com claim -- granted, mode=safeSendersAndRules
+[2026-10-29T02:18:40.000967] [SCAN] [scan/background] acct1***@example.com connect -- begin (fFa)
+[2026-10-29T02:18:40.689959] [SCAN] [scan/background] acct1***@example.com connect -- done in 689ms
+[2026-10-29T02:18:40.690150] [SCAN] [scan/background] acct1***@example.com rules -- rules=2198 enabled=2198 safeSenders=530
+[2026-10-29T02:18:40.690249] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" begin
+[2026-10-29T02:18:42.726178] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Inbox" IMAP backlog re-scan from UID 234064
+[2026-10-29T02:18:43.534067] [SCAN] [worker/android] start acct1***@example.com trigger=periodic
+[2026-10-29T02:18:43.537266] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T02:18:43.689515] [SCAN] [scan/background] acct1***@example.com skip -- a background scan is in progress on this account (scan id 5229)
+[2026-10-29T02:18:43.689522] [SCAN] [scan/background] acct1***@example.com busy-retry -- waiting 204s (a background scan is in progress on this account (scan id 5229))
+[2026-10-29T02:18:44.188111] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" done: 1 emails in 3497ms
+[2026-10-29T02:18:44.188886] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" begin
+[2026-10-29T02:18:45.422235] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk" IMAP backlog re-scan from UID 204823
+[2026-10-29T02:18:46.870445] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" done: 1 emails in 2681ms
+[2026-10-29T02:18:46.871186] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" begin
+[2026-10-29T02:18:47.329008] [SCAN] [worker/android] stopped by WorkManager before it finished: reason=deviceState raw=4 (acct1***@example.com trigger=doze-alarm delay=0s)
+[2026-10-29T02:18:47.329326] [SCAN] [worker/android] stopped by WorkManager before it finished: reason=deviceState raw=4 (acct1***@example.com trigger=periodic)
+[2026-10-29T02:18:47.382447] [SCAN] [worker/android] start acct1***@example.com trigger=periodic
+[2026-10-29T02:18:47.382555] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T02:18:47.540850] [SCAN] [scan/background] acct1***@example.com skip -- a background scan is in progress on this account (scan id 5229)
+[2026-10-29T02:18:47.540860] [SCAN] [scan/background] acct1***@example.com busy-retry -- waiting 160s (a background scan is in progress on this account (scan id 5229))
+[2026-10-29T02:19:09.819356] [SCAN] [worker/android] start acct1***@example.com trigger=doze-alarm delay=30s
+[2026-10-29T02:19:09.819638] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T02:19:10.007442] [SCAN] [worker/android] account acct1***@example.com skipped: a scan started 30s ago (interval 10m; doze alarm)
+[2026-10-29T02:19:10.007455] [SCAN] [worker/android] exit success
+[2026-10-29T02:21:27.550378] [SCAN] [scan/background] acct1***@example.com skip -- a background scan is in progress on this account (scan id 5229)
+[2026-10-29T02:21:27.550416] [SCAN] [worker/android] exit success
+[2026-10-29T02:30:03.970882] [SCAN] [worker/android] start acct1***@example.com trigger=doze-alarm delay=0s
+[2026-10-29T02:30:03.970998] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T02:30:04.085662] [SCAN] [scan/background] acct1***@example.com start -- platform=aol folders=3 daysBack=1
+[2026-10-29T02:30:04.090233] [SCAN] [scan/background] acct1***@example.com claim -- granted, mode=safeSendersAndRules
+[2026-10-29T02:30:04.091210] [SCAN] [scan/background] acct1***@example.com connect -- begin (fFa)
+[2026-10-29T02:30:04.981680] [SCAN] [scan/background] acct1***@example.com connect -- done in 890ms
+[2026-10-29T02:30:04.981988] [SCAN] [scan/background] acct1***@example.com rules -- rules=2198 enabled=2198 safeSenders=530
+[2026-10-29T02:30:04.982106] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" begin
+[2026-10-29T02:30:07.527736] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Inbox" IMAP backlog re-scan from UID 234064
+[2026-10-29T02:30:09.369438] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" done: 1 emails in 4387ms
+[2026-10-29T02:30:09.370113] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" begin
+[2026-10-29T02:30:10.816318] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk" IMAP backlog re-scan from UID 204823
+[2026-10-29T02:30:12.616331] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" done: 1 emails in 3246ms
+[2026-10-29T02:30:12.616867] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" begin
+[2026-10-29T02:30:14.115032] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk Mail" IMAP full fetch daysBack=1 (no backlog cursor)
+[2026-10-29T02:30:14.934971] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" done: 0 emails in 2318ms
+[2026-10-29T02:30:14.937139] [SCAN] [scan/background] acct1***@example.com actions -- mode=safeSendersAndRules executeRules=true executeSafeSenders=true planned: delete=0 moveToJunk=0 safeSenderMove=0 safeSenderTarget="INBOX"
+[2026-10-29T02:30:14.979232] [SCAN] [scan/background] acct1***@example.com outcome -- completed found=2 processed=2 deleted=0 moved=0 safe=0 noRule=2 errors=0 alreadyFiled=0 in 10.9s
+[2026-10-29T02:30:15.580552] [SCAN] [worker/android] exit success
+[2026-10-29T02:37:08.781413] [SCAN] [worker/android] start acct1***@example.com trigger=periodic
+[2026-10-29T02:37:08.781484] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T02:37:08.930117] [SCAN] [scan/background] acct1***@example.com start -- platform=aol folders=3 daysBack=1
+[2026-10-29T02:37:08.935772] [SCAN] [scan/background] acct1***@example.com claim -- granted, mode=safeSendersAndRules
+[2026-10-29T02:37:08.936938] [SCAN] [scan/background] acct1***@example.com connect -- begin (fFa)
+[2026-10-29T02:37:09.861309] [SCAN] [scan/background] acct1***@example.com connect -- done in 924ms
+[2026-10-29T02:37:09.862026] [SCAN] [scan/background] acct1***@example.com rules -- rules=2198 enabled=2198 safeSenders=530
+[2026-10-29T02:37:09.862406] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" begin
+[2026-10-29T02:37:12.116772] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Inbox" IMAP backlog re-scan from UID 234064
+[2026-10-29T02:37:13.782940] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" done: 1 emails in 3920ms
+[2026-10-29T02:37:13.783702] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" begin
+[2026-10-29T02:37:15.184615] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk" IMAP backlog re-scan from UID 204823
+[2026-10-29T02:37:16.898985] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" done: 2 emails in 3115ms
+[2026-10-29T02:37:16.899673] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" begin
+[2026-10-29T02:37:18.256360] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk Mail" IMAP full fetch daysBack=1 (no backlog cursor)
+[2026-10-29T02:37:18.788053] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" done: 0 emails in 1888ms
+[2026-10-29T02:37:18.789901] [SCAN] [scan/background] acct1***@example.com actions -- mode=safeSendersAndRules executeRules=true executeSafeSenders=true planned: delete=1 moveToJunk=0 safeSenderMove=0 safeSenderTarget="INBOX"
+[2026-10-29T02:37:20.305636] [SCAN] [scan/background] acct1***@example.com action-result -- mark as read: 1 succeeded, 0 failed
+[2026-10-29T02:37:22.557541] [SCAN] [scan/background] acct1***@example.com action-result -- delete: 1 succeeded, 0 failed
+[2026-10-29T02:37:22.608921] [SCAN] [scan/background] acct1***@example.com outcome -- completed found=3 processed=3 deleted=1 moved=0 safe=0 noRule=2 errors=0 alreadyFiled=0 in 13.7s
+[2026-10-29T02:37:23.196514] [SCAN] [worker/android] exit success
+[2026-10-29T02:47:34.072115] [SCAN] [worker/android] start acct1***@example.com trigger=doze-alarm delay=0s
+[2026-10-29T02:47:34.072203] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T02:47:34.213559] [SCAN] [scan/background] acct1***@example.com start -- platform=aol folders=3 daysBack=1
+[2026-10-29T02:47:34.218241] [SCAN] [scan/background] acct1***@example.com claim -- granted, mode=safeSendersAndRules
+[2026-10-29T02:47:34.218898] [SCAN] [scan/background] acct1***@example.com connect -- begin (fFa)
+[2026-10-29T02:47:35.063698] [SCAN] [scan/background] acct1***@example.com connect -- done in 844ms
+[2026-10-29T02:47:35.064033] [SCAN] [scan/background] acct1***@example.com rules -- rules=2198 enabled=2198 safeSenders=530
+[2026-10-29T02:47:35.064202] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" begin
+[2026-10-29T02:47:36.976432] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Inbox" IMAP backlog re-scan from UID 234064
+[2026-10-29T02:47:38.389558] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" done: 1 emails in 3325ms
+[2026-10-29T02:47:38.390324] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" begin
+[2026-10-29T02:47:39.634511] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk" IMAP backlog re-scan from UID 204823
+[2026-10-29T02:47:41.121748] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" done: 2 emails in 2731ms
+[2026-10-29T02:47:41.122251] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" begin
+[2026-10-29T02:47:42.285029] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk Mail" IMAP full fetch daysBack=1 (no backlog cursor)
+[2026-10-29T02:47:42.816411] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" done: 0 emails in 1694ms
+[2026-10-29T02:47:42.817499] [SCAN] [scan/background] acct1***@example.com actions -- mode=safeSendersAndRules executeRules=true executeSafeSenders=true planned: delete=1 moveToJunk=0 safeSenderMove=0 safeSenderTarget="INBOX"
+[2026-10-29T02:47:44.330426] [SCAN] [scan/background] acct1***@example.com action-result -- mark as read: 1 succeeded, 0 failed
+[2026-10-29T02:47:46.172828] [SCAN] [scan/background] acct1***@example.com action-result -- delete: 1 succeeded, 0 failed
+[2026-10-29T02:47:46.247896] [SCAN] [scan/background] acct1***@example.com outcome -- completed found=3 processed=3 deleted=1 moved=0 safe=0 noRule=2 errors=0 alreadyFiled=0 in 12.0s
+[2026-10-29T02:47:46.807991] [SCAN] [worker/android] exit success
+[2026-10-29T02:52:23.267818] [SCAN] [worker/android] start acct1***@example.com trigger=periodic
+[2026-10-29T02:52:23.267913] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T02:52:23.399364] [SCAN] [worker/android] account acct1***@example.com skipped: a completed scan started 289s ago (interval 10m; periodic)
+[2026-10-29T02:52:23.399374] [SCAN] [worker/android] exit success
+[2026-10-29T03:01:54.997646] [SCAN] [worker/android] start acct1***@example.com trigger=doze-alarm delay=0s
+[2026-10-29T03:01:54.997977] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T03:01:55.187155] [SCAN] [scan/background] acct1***@example.com start -- platform=aol folders=3 daysBack=1
+[2026-10-29T03:01:55.191245] [SCAN] [scan/background] acct1***@example.com claim -- granted, mode=safeSendersAndRules
+[2026-10-29T03:01:55.192574] [SCAN] [scan/background] acct1***@example.com connect -- begin (fFa)
+[2026-10-29T03:01:56.117842] [SCAN] [scan/background] acct1***@example.com connect -- done in 925ms
+[2026-10-29T03:01:56.118052] [SCAN] [scan/background] acct1***@example.com rules -- rules=2198 enabled=2198 safeSenders=530
+[2026-10-29T03:01:56.118158] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" begin
+[2026-10-29T03:01:57.986014] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Inbox" IMAP backlog re-scan from UID 234064
+[2026-10-29T03:01:59.506060] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" done: 1 emails in 3387ms
+[2026-10-29T03:01:59.507243] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" begin
+[2026-10-29T03:02:00.940426] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk" IMAP backlog re-scan from UID 204823
+[2026-10-29T03:02:02.364655] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" done: 1 emails in 2857ms
+[2026-10-29T03:02:02.365325] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" begin
+[2026-10-29T03:02:03.668536] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk Mail" IMAP full fetch daysBack=1 (no backlog cursor)
+[2026-10-29T03:02:04.284657] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" done: 0 emails in 1919ms
+[2026-10-29T03:02:04.285200] [SCAN] [scan/background] acct1***@example.com actions -- mode=safeSendersAndRules executeRules=true executeSafeSenders=true planned: delete=0 moveToJunk=0 safeSenderMove=0 safeSenderTarget="INBOX"
+[2026-10-29T03:02:04.319222] [SCAN] [scan/background] acct1***@example.com outcome -- completed found=2 processed=2 deleted=0 moved=0 safe=0 noRule=2 errors=0 alreadyFiled=0 in 9.1s
+[2026-10-29T03:02:04.915092] [SCAN] [worker/android] exit success
+[2026-10-29T03:07:23.485695] [SCAN] [worker/android] start acct1***@example.com trigger=periodic
+[2026-10-29T03:07:23.485764] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T03:07:23.610946] [SCAN] [worker/android] account acct1***@example.com skipped: a completed scan started 328s ago (interval 10m; periodic)
+[2026-10-29T03:07:23.610953] [SCAN] [worker/android] exit success
+[2026-10-29T03:13:24.638696] [SCAN] [worker/android] start acct1***@example.com trigger=doze-alarm delay=0s
+[2026-10-29T03:13:24.638749] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T03:13:24.755086] [SCAN] [scan/background] acct1***@example.com start -- platform=aol folders=3 daysBack=1
+[2026-10-29T03:13:24.758642] [SCAN] [scan/background] acct1***@example.com claim -- granted, mode=safeSendersAndRules
+[2026-10-29T03:13:24.759304] [SCAN] [scan/background] acct1***@example.com connect -- begin (fFa)
+[2026-10-29T03:13:25.467156] [SCAN] [scan/background] acct1***@example.com connect -- done in 707ms
+[2026-10-29T03:13:25.467374] [SCAN] [scan/background] acct1***@example.com rules -- rules=2198 enabled=2198 safeSenders=530
+[2026-10-29T03:13:25.467477] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" begin
+[2026-10-29T03:13:27.367639] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Inbox" IMAP backlog re-scan from UID 234064
+[2026-10-29T03:13:28.885817] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" done: 1 emails in 3418ms
+[2026-10-29T03:13:28.886736] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" begin
+[2026-10-29T03:13:30.363588] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk" IMAP backlog re-scan from UID 204823
+[2026-10-29T03:13:31.754565] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" done: 1 emails in 2867ms
+[2026-10-29T03:13:31.755155] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" begin
+[2026-10-29T03:13:32.970615] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk Mail" IMAP full fetch daysBack=1 (no backlog cursor)
+[2026-10-29T03:13:33.561867] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" done: 0 emails in 1806ms
+[2026-10-29T03:13:33.562823] [SCAN] [scan/background] acct1***@example.com actions -- mode=safeSendersAndRules executeRules=true executeSafeSenders=true planned: delete=0 moveToJunk=0 safeSenderMove=0 safeSenderTarget="INBOX"
+[2026-10-29T03:13:33.603114] [SCAN] [scan/background] acct1***@example.com outcome -- completed found=2 processed=2 deleted=0 moved=0 safe=0 noRule=2 errors=0 alreadyFiled=0 in 8.8s
+[2026-10-29T03:13:34.077912] [SCAN] [worker/android] exit success
+[2026-10-29T03:22:23.732593] [SCAN] [worker/android] start acct1***@example.com trigger=periodic
+[2026-10-29T03:22:23.732647] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T03:22:23.878214] [SCAN] [scan/background] acct1***@example.com start -- platform=aol folders=3 daysBack=1
+[2026-10-29T03:22:23.882289] [SCAN] [scan/background] acct1***@example.com claim -- granted, mode=safeSendersAndRules
+[2026-10-29T03:22:23.883199] [SCAN] [scan/background] acct1***@example.com connect -- begin (fFa)
+[2026-10-29T03:22:24.874642] [SCAN] [scan/background] acct1***@example.com connect -- done in 990ms
+[2026-10-29T03:22:24.881108] [SCAN] [scan/background] acct1***@example.com rules -- rules=2198 enabled=2198 safeSenders=530
+[2026-10-29T03:22:24.881627] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" begin
+[2026-10-29T03:22:27.149886] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Inbox" IMAP backlog re-scan from UID 234064
+[2026-10-29T03:22:28.624248] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" done: 1 emails in 3742ms
+[2026-10-29T03:22:28.626016] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" begin
+[2026-10-29T03:22:29.917424] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk" IMAP backlog re-scan from UID 204823
+[2026-10-29T03:22:31.301026] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" done: 1 emails in 2674ms
+[2026-10-29T03:22:31.301612] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" begin
+[2026-10-29T03:22:32.306075] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk Mail" IMAP full fetch daysBack=1 (no backlog cursor)
+[2026-10-29T03:22:32.885925] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" done: 0 emails in 1584ms
+[2026-10-29T03:22:32.892199] [SCAN] [scan/background] acct1***@example.com actions -- mode=safeSendersAndRules executeRules=true executeSafeSenders=true planned: delete=0 moveToJunk=0 safeSenderMove=0 safeSenderTarget="INBOX"
+[2026-10-29T03:22:32.949932] [SCAN] [scan/background] acct1***@example.com outcome -- completed found=2 processed=2 deleted=0 moved=0 safe=0 noRule=2 errors=0 alreadyFiled=0 in 9.1s
+[2026-10-29T03:22:33.521845] [SCAN] [worker/android] exit success
+[2026-10-29T03:30:54.675327] [SCAN] [worker/android] start acct1***@example.com trigger=doze-alarm delay=0s
+[2026-10-29T03:30:54.675390] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T03:30:54.819550] [SCAN] [scan/background] acct1***@example.com start -- platform=aol folders=3 daysBack=1
+[2026-10-29T03:30:54.825275] [SCAN] [scan/background] acct1***@example.com claim -- granted, mode=safeSendersAndRules
+[2026-10-29T03:30:54.826245] [SCAN] [scan/background] acct1***@example.com connect -- begin (fFa)
+[2026-10-29T03:30:55.714058] [SCAN] [scan/background] acct1***@example.com connect -- done in 887ms
+[2026-10-29T03:30:55.714382] [SCAN] [scan/background] acct1***@example.com rules -- rules=2198 enabled=2198 safeSenders=530
+[2026-10-29T03:30:55.714576] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" begin
+[2026-10-29T03:30:57.557283] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Inbox" IMAP backlog re-scan from UID 234064
+[2026-10-29T03:30:59.217769] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" done: 1 emails in 3503ms
+[2026-10-29T03:30:59.218621] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" begin
+[2026-10-29T03:31:00.572292] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk" IMAP backlog re-scan from UID 204823
+[2026-10-29T03:31:02.172646] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" done: 1 emails in 2954ms
+[2026-10-29T03:31:02.173216] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" begin
+[2026-10-29T03:31:03.346694] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk Mail" IMAP full fetch daysBack=1 (no backlog cursor)
+[2026-10-29T03:31:03.966923] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" done: 0 emails in 1793ms
+[2026-10-29T03:31:03.967516] [SCAN] [scan/background] acct1***@example.com actions -- mode=safeSendersAndRules executeRules=true executeSafeSenders=true planned: delete=0 moveToJunk=0 safeSenderMove=0 safeSenderTarget="INBOX"
+[2026-10-29T03:31:04.010450] [SCAN] [scan/background] acct1***@example.com outcome -- completed found=2 processed=2 deleted=0 moved=0 safe=0 noRule=2 errors=0 alreadyFiled=0 in 9.2s
+[2026-10-29T03:31:04.511688] [SCAN] [worker/android] exit success
+[2026-10-29T03:37:33.591815] [SCAN] [worker/android] start acct1***@example.com trigger=periodic
+[2026-10-29T03:37:33.591893] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T03:37:33.734139] [SCAN] [worker/android] account acct1***@example.com skipped: a completed scan started 398s ago (interval 10m; periodic)
+[2026-10-29T03:37:33.734150] [SCAN] [worker/android] exit success
+[2026-10-29T03:43:31.307301] [SCAN] [worker/android] start acct1***@example.com trigger=doze-alarm delay=0s
+[2026-10-29T03:43:31.307369] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T03:43:31.442050] [SCAN] [scan/background] acct1***@example.com start -- platform=aol folders=3 daysBack=1
+[2026-10-29T03:43:31.448472] [SCAN] [scan/background] acct1***@example.com claim -- granted, mode=safeSendersAndRules
+[2026-10-29T03:43:31.449630] [SCAN] [scan/background] acct1***@example.com connect -- begin (fFa)
+[2026-10-29T03:43:32.420461] [SCAN] [scan/background] acct1***@example.com connect -- done in 970ms
+[2026-10-29T03:43:32.421506] [SCAN] [scan/background] acct1***@example.com rules -- rules=2198 enabled=2198 safeSenders=530
+[2026-10-29T03:43:32.422394] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" begin
+[2026-10-29T03:43:34.621811] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Inbox" IMAP backlog re-scan from UID 234064
+[2026-10-29T03:43:36.540529] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" done: 1 emails in 4118ms
+[2026-10-29T03:43:36.541158] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" begin
+[2026-10-29T03:43:38.767313] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk" IMAP backlog re-scan from UID 204823
+[2026-10-29T03:43:40.452970] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" done: 2 emails in 3911ms
+[2026-10-29T03:43:40.453557] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" begin
+[2026-10-29T03:43:41.823801] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk Mail" IMAP full fetch daysBack=1 (no backlog cursor)
+[2026-10-29T03:43:42.435784] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" done: 0 emails in 1982ms
+[2026-10-29T03:43:42.437138] [SCAN] [scan/background] acct1***@example.com actions -- mode=safeSendersAndRules executeRules=true executeSafeSenders=true planned: delete=1 moveToJunk=0 safeSenderMove=0 safeSenderTarget="INBOX"
+[2026-10-29T03:43:43.838493] [SCAN] [scan/background] acct1***@example.com action-result -- mark as read: 1 succeeded, 0 failed
+[2026-10-29T03:43:45.713060] [SCAN] [scan/background] acct1***@example.com action-result -- delete: 1 succeeded, 0 failed
+[2026-10-29T03:43:45.781379] [SCAN] [scan/background] acct1***@example.com outcome -- completed found=3 processed=3 deleted=1 moved=0 safe=0 noRule=2 errors=0 alreadyFiled=0 in 14.3s
+[2026-10-29T03:43:46.346998] [SCAN] [worker/android] exit success
+[2026-10-29T03:52:33.811865] [SCAN] [worker/android] start acct1***@example.com trigger=periodic
+[2026-10-29T03:52:33.811928] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T03:52:33.928699] [SCAN] [scan/background] acct1***@example.com start -- platform=aol folders=3 daysBack=1
+[2026-10-29T03:52:33.932737] [SCAN] [scan/background] acct1***@example.com claim -- granted, mode=safeSendersAndRules
+[2026-10-29T03:52:33.933892] [SCAN] [scan/background] acct1***@example.com connect -- begin (fFa)
+[2026-10-29T03:52:35.138260] [SCAN] [scan/background] acct1***@example.com connect -- done in 1204ms
+[2026-10-29T03:52:35.139379] [SCAN] [scan/background] acct1***@example.com rules -- rules=2198 enabled=2198 safeSenders=530
+[2026-10-29T03:52:35.140184] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" begin
+[2026-10-29T03:52:37.659283] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Inbox" IMAP backlog re-scan from UID 234064
+[2026-10-29T03:52:39.263975] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" done: 1 emails in 4123ms
+[2026-10-29T03:52:39.264489] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" begin
+[2026-10-29T03:52:41.060605] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk" IMAP backlog re-scan from UID 204823
+[2026-10-29T03:52:42.987392] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" done: 2 emails in 3722ms
+[2026-10-29T03:52:42.987953] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" begin
+[2026-10-29T03:52:44.227703] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk Mail" IMAP full fetch daysBack=1 (no backlog cursor)
+[2026-10-29T03:52:44.953925] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" done: 0 emails in 1965ms
+[2026-10-29T03:52:44.955838] [SCAN] [scan/background] acct1***@example.com actions -- mode=safeSendersAndRules executeRules=true executeSafeSenders=true planned: delete=1 moveToJunk=0 safeSenderMove=0 safeSenderTarget="INBOX"
+[2026-10-29T03:52:46.796176] [SCAN] [scan/background] acct1***@example.com action-result -- mark as read: 1 succeeded, 0 failed
+[2026-10-29T03:52:49.048915] [SCAN] [scan/background] acct1***@example.com action-result -- delete: 1 succeeded, 0 failed
+[2026-10-29T03:52:49.117929] [SCAN] [scan/background] acct1***@example.com outcome -- completed found=3 processed=3 deleted=1 moved=0 safe=0 noRule=2 errors=0 alreadyFiled=0 in 15.2s
+[2026-10-29T03:52:49.677115] [SCAN] [worker/android] exit success
+[2026-10-29T04:01:01.313168] [SCAN] [worker/android] start acct1***@example.com trigger=doze-alarm delay=0s
+[2026-10-29T04:01:01.313239] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T04:01:01.440555] [SCAN] [scan/background] acct1***@example.com start -- platform=aol folders=3 daysBack=1
+[2026-10-29T04:01:01.446888] [SCAN] [scan/background] acct1***@example.com claim -- granted, mode=safeSendersAndRules
+[2026-10-29T04:01:01.447949] [SCAN] [scan/background] acct1***@example.com connect -- begin (fFa)
+[2026-10-29T04:01:02.414569] [SCAN] [scan/background] acct1***@example.com connect -- done in 966ms
+[2026-10-29T04:01:02.415161] [SCAN] [scan/background] acct1***@example.com rules -- rules=2198 enabled=2198 safeSenders=530
+[2026-10-29T04:01:02.415493] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" begin
+[2026-10-29T04:01:04.552757] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Inbox" IMAP backlog re-scan from UID 234064
+[2026-10-29T04:01:06.064389] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" done: 1 emails in 3648ms
+[2026-10-29T04:01:06.064999] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" begin
+[2026-10-29T04:01:07.534496] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk" IMAP backlog re-scan from UID 204823
+[2026-10-29T04:01:08.848156] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" done: 1 emails in 2783ms
+[2026-10-29T04:01:08.848659] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" begin
+[2026-10-29T04:01:10.193676] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk Mail" IMAP full fetch daysBack=1 (no backlog cursor)
+[2026-10-29T04:01:10.760595] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" done: 0 emails in 1911ms
+[2026-10-29T04:01:10.761160] [SCAN] [scan/background] acct1***@example.com actions -- mode=safeSendersAndRules executeRules=true executeSafeSenders=true planned: delete=0 moveToJunk=0 safeSenderMove=0 safeSenderTarget="INBOX"
+[2026-10-29T04:01:10.798654] [SCAN] [scan/background] acct1***@example.com outcome -- completed found=2 processed=2 deleted=0 moved=0 safe=0 noRule=2 errors=0 alreadyFiled=0 in 9.4s
+[2026-10-29T04:01:11.160766] [SCAN] [worker/android] exit success
+[2026-10-29T04:07:49.753792] [SCAN] [worker/android] start acct1***@example.com trigger=periodic
+[2026-10-29T04:07:49.753896] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T04:07:49.883928] [SCAN] [scan/background] acct1***@example.com start -- platform=aol folders=3 daysBack=1
+[2026-10-29T04:07:49.892930] [SCAN] [scan/background] acct1***@example.com claim -- granted, mode=safeSendersAndRules
+[2026-10-29T04:07:49.894614] [SCAN] [scan/background] acct1***@example.com connect -- begin (fFa)
+[2026-10-29T04:07:50.992373] [SCAN] [scan/background] acct1***@example.com connect -- done in 1097ms
+[2026-10-29T04:07:50.993448] [SCAN] [scan/background] acct1***@example.com rules -- rules=2198 enabled=2198 safeSenders=530
+[2026-10-29T04:07:50.993890] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" begin
+[2026-10-29T04:07:52.929861] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Inbox" IMAP backlog re-scan from UID 234064
+[2026-10-29T04:07:54.435049] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" done: 1 emails in 3441ms
+[2026-10-29T04:07:54.435532] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" begin
+[2026-10-29T04:07:55.808466] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk" IMAP backlog re-scan from UID 204823
+[2026-10-29T04:07:57.215019] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" done: 1 emails in 2779ms
+[2026-10-29T04:07:57.215457] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" begin
+[2026-10-29T04:07:58.363608] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk Mail" IMAP full fetch daysBack=1 (no backlog cursor)
+[2026-10-29T04:07:58.975963] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" done: 0 emails in 1760ms
+[2026-10-29T04:07:58.977514] [SCAN] [scan/background] acct1***@example.com actions -- mode=safeSendersAndRules executeRules=true executeSafeSenders=true planned: delete=0 moveToJunk=0 safeSenderMove=0 safeSenderTarget="INBOX"
+[2026-10-29T04:07:59.038965] [SCAN] [scan/background] acct1***@example.com outcome -- completed found=2 processed=2 deleted=0 moved=0 safe=0 noRule=2 errors=0 alreadyFiled=0 in 9.2s
+[2026-10-29T04:07:59.628162] [SCAN] [worker/android] exit success
+[2026-10-29T04:18:31.318775] [SCAN] [worker/android] start acct1***@example.com trigger=doze-alarm delay=0s
+[2026-10-29T04:18:31.318828] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T04:18:31.446313] [SCAN] [scan/background] acct1***@example.com start -- platform=aol folders=3 daysBack=1
+[2026-10-29T04:18:31.449789] [SCAN] [scan/background] acct1***@example.com claim -- granted, mode=safeSendersAndRules
+[2026-10-29T04:18:31.450511] [SCAN] [scan/background] acct1***@example.com connect -- begin (fFa)
+[2026-10-29T04:18:32.391692] [SCAN] [scan/background] acct1***@example.com connect -- done in 941ms
+[2026-10-29T04:18:32.392520] [SCAN] [scan/background] acct1***@example.com rules -- rules=2198 enabled=2198 safeSenders=530
+[2026-10-29T04:18:32.393631] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" begin
+[2026-10-29T04:18:34.675605] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Inbox" IMAP backlog re-scan from UID 234064
+[2026-10-29T04:18:36.497716] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" done: 1 emails in 4104ms
+[2026-10-29T04:18:36.498423] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" begin
+[2026-10-29T04:18:38.161765] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk" IMAP backlog re-scan from UID 204823
+[2026-10-29T04:18:39.615453] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" done: 1 emails in 3117ms
+[2026-10-29T04:18:39.616042] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" begin
+[2026-10-29T04:18:40.648581] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk Mail" IMAP full fetch daysBack=1 (no backlog cursor)
+[2026-10-29T04:18:41.229363] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" done: 0 emails in 1613ms
+[2026-10-29T04:18:41.231687] [SCAN] [scan/background] acct1***@example.com actions -- mode=safeSendersAndRules executeRules=true executeSafeSenders=true planned: delete=0 moveToJunk=0 safeSenderMove=0 safeSenderTarget="INBOX"
+[2026-10-29T04:18:41.288049] [SCAN] [scan/background] acct1***@example.com outcome -- completed found=2 processed=2 deleted=0 moved=0 safe=0 noRule=2 errors=0 alreadyFiled=0 in 9.8s
+[2026-10-29T04:18:41.857301] [SCAN] [worker/android] exit success
+[2026-10-29T04:22:59.729064] [SCAN] [worker/android] start acct1***@example.com trigger=periodic
+[2026-10-29T04:22:59.729143] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T04:22:59.858260] [SCAN] [worker/android] account acct1***@example.com skipped: a completed scan started 268s ago (interval 10m; periodic)
+[2026-10-29T04:22:59.858272] [SCAN] [worker/android] exit success
+[2026-10-29T04:35:44.147156] [SCAN] [worker/android] start acct1***@example.com trigger=doze-alarm delay=0s
+[2026-10-29T04:35:44.147244] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T04:35:44.265191] [SCAN] [scan/background] acct1***@example.com start -- platform=aol folders=3 daysBack=1
+[2026-10-29T04:35:44.268103] [SCAN] [scan/background] acct1***@example.com claim -- granted, mode=safeSendersAndRules
+[2026-10-29T04:35:44.268884] [SCAN] [scan/background] acct1***@example.com connect -- begin (fFa)
+[2026-10-29T04:35:45.451464] [SCAN] [scan/background] acct1***@example.com connect -- done in 1182ms
+[2026-10-29T04:35:45.452428] [SCAN] [scan/background] acct1***@example.com rules -- rules=2198 enabled=2198 safeSenders=530
+[2026-10-29T04:35:45.453477] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" begin
+[2026-10-29T04:35:48.042138] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Inbox" IMAP backlog re-scan from UID 234064
+[2026-10-29T04:35:49.600720] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" done: 2 emails in 4147ms
+[2026-10-29T04:35:49.601352] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" begin
+[2026-10-29T04:35:51.173098] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk" IMAP backlog re-scan from UID 204823
+[2026-10-29T04:35:52.606245] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" done: 1 emails in 3004ms
+[2026-10-29T04:35:52.606777] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" begin
+[2026-10-29T04:35:54.010156] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk Mail" IMAP full fetch daysBack=1 (no backlog cursor)
+[2026-10-29T04:35:54.651703] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" done: 0 emails in 2044ms
+[2026-10-29T04:35:54.653387] [SCAN] [scan/background] acct1***@example.com actions -- mode=safeSendersAndRules executeRules=true executeSafeSenders=true planned: delete=0 moveToJunk=0 safeSenderMove=0 safeSenderTarget="INBOX"
+[2026-10-29T04:35:54.711104] [SCAN] [scan/background] acct1***@example.com outcome -- completed found=3 processed=2 deleted=0 moved=0 safe=0 noRule=2 errors=0 alreadyFiled=1 in 10.4s
+[2026-10-29T04:35:55.298526] [SCAN] [worker/android] exit success
+[2026-10-29T04:37:59.941145] [SCAN] [worker/android] start acct1***@example.com trigger=periodic
+[2026-10-29T04:37:59.941228] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T04:38:00.085982] [SCAN] [worker/android] account acct1***@example.com skipped: a completed scan started 135s ago (interval 10m; periodic)
+[2026-10-29T04:38:00.085991] [SCAN] [worker/android] exit success
+[2026-10-29T04:46:01.518142] [SCAN] [worker/android] start acct1***@example.com trigger=doze-alarm delay=0s
+[2026-10-29T04:46:01.518227] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T04:46:01.641521] [SCAN] [scan/background] acct1***@example.com start -- platform=aol folders=3 daysBack=1
+[2026-10-29T04:46:01.647408] [SCAN] [scan/background] acct1***@example.com claim -- granted, mode=safeSendersAndRules
+[2026-10-29T04:46:01.648595] [SCAN] [scan/background] acct1***@example.com connect -- begin (fFa)
+[2026-10-29T04:46:02.705361] [SCAN] [scan/background] acct1***@example.com connect -- done in 1056ms
+[2026-10-29T04:46:02.706255] [SCAN] [scan/background] acct1***@example.com rules -- rules=2198 enabled=2198 safeSenders=530
+[2026-10-29T04:46:02.706743] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" begin
+[2026-10-29T04:46:04.755773] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Inbox" IMAP backlog re-scan from UID 234064
+[2026-10-29T04:46:06.679429] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" done: 2 emails in 3972ms
+[2026-10-29T04:46:06.680081] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" begin
+[2026-10-29T04:46:08.236288] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk" IMAP backlog re-scan from UID 204823
+[2026-10-29T04:46:09.988271] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" done: 3 emails in 3308ms
+[2026-10-29T04:46:09.988774] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" begin
+[2026-10-29T04:46:11.307688] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk Mail" IMAP full fetch daysBack=1 (no backlog cursor)
+[2026-10-29T04:46:12.124844] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" done: 0 emails in 2135ms
+[2026-10-29T04:46:12.127261] [SCAN] [scan/background] acct1***@example.com actions -- mode=safeSendersAndRules executeRules=true executeSafeSenders=true planned: delete=2 moveToJunk=0 safeSenderMove=0 safeSenderTarget="INBOX"
+[2026-10-29T04:46:13.575527] [SCAN] [scan/background] acct1***@example.com action-result -- mark as read: 2 succeeded, 0 failed
+[2026-10-29T04:46:15.404214] [SCAN] [scan/background] acct1***@example.com action-result -- delete: 2 succeeded, 0 failed
+[2026-10-29T04:46:15.461170] [SCAN] [scan/background] acct1***@example.com outcome -- completed found=5 processed=4 deleted=2 moved=0 safe=0 noRule=2 errors=0 alreadyFiled=1 in 13.8s
+[2026-10-29T04:46:16.031482] [SCAN] [worker/android] exit success
+[2026-10-29T04:53:00.163676] [SCAN] [worker/android] start acct1***@example.com trigger=periodic
+[2026-10-29T04:53:00.163753] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T04:53:00.288173] [SCAN] [scan/background] acct1***@example.com start -- platform=aol folders=3 daysBack=1
+[2026-10-29T04:53:00.292086] [SCAN] [scan/background] acct1***@example.com claim -- granted, mode=safeSendersAndRules
+[2026-10-29T04:53:00.293154] [SCAN] [scan/background] acct1***@example.com connect -- begin (fFa)
+[2026-10-29T04:53:01.124167] [SCAN] [scan/background] acct1***@example.com connect -- done in 831ms
+[2026-10-29T04:53:01.125039] [SCAN] [scan/background] acct1***@example.com rules -- rules=2198 enabled=2198 safeSenders=530
+[2026-10-29T04:53:01.125869] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" begin
+[2026-10-29T04:53:03.251907] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Inbox" IMAP backlog re-scan from UID 234064
+[2026-10-29T04:53:04.792410] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" done: 2 emails in 3666ms
+[2026-10-29T04:53:04.793036] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" begin
+[2026-10-29T04:53:06.335834] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk" IMAP backlog re-scan from UID 204823
+[2026-10-29T04:53:07.854593] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" done: 1 emails in 3061ms
+[2026-10-29T04:53:07.855164] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" begin
+[2026-10-29T04:53:09.098370] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk Mail" IMAP full fetch daysBack=1 (no backlog cursor)
+[2026-10-29T04:53:09.711189] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" done: 0 emails in 1855ms
+[2026-10-29T04:53:09.712063] [SCAN] [scan/background] acct1***@example.com actions -- mode=safeSendersAndRules executeRules=true executeSafeSenders=true planned: delete=0 moveToJunk=0 safeSenderMove=0 safeSenderTarget="INBOX"
+[2026-10-29T04:53:09.752144] [SCAN] [scan/background] acct1***@example.com outcome -- completed found=3 processed=2 deleted=0 moved=0 safe=0 noRule=2 errors=0 alreadyFiled=1 in 9.5s
+[2026-10-29T04:53:10.140489] [SCAN] [worker/android] exit success
+[2026-10-29T05:01:01.853496] [SCAN] [worker/android] start acct1***@example.com trigger=doze-alarm delay=0s
+[2026-10-29T05:01:01.853573] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T05:01:02.005315] [SCAN] [scan/background] acct1***@example.com start -- platform=aol folders=3 daysBack=1
+[2026-10-29T05:01:02.012129] [SCAN] [scan/background] acct1***@example.com claim -- granted, mode=safeSendersAndRules
+[2026-10-29T05:01:02.013006] [SCAN] [scan/background] acct1***@example.com connect -- begin (fFa)
+[2026-10-29T05:01:03.210954] [SCAN] [scan/background] acct1***@example.com connect -- done in 1197ms
+[2026-10-29T05:01:03.211336] [SCAN] [scan/background] acct1***@example.com rules -- rules=2198 enabled=2198 safeSenders=530
+[2026-10-29T05:01:03.211512] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" begin
+[2026-10-29T05:01:05.259425] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Inbox" IMAP backlog re-scan from UID 234064
+[2026-10-29T05:01:06.963502] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" done: 2 emails in 3751ms
+[2026-10-29T05:01:06.964381] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" begin
+[2026-10-29T05:01:08.535484] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk" IMAP backlog re-scan from UID 204823
+[2026-10-29T05:01:10.113393] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" done: 1 emails in 3149ms
+[2026-10-29T05:01:10.113943] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" begin
+[2026-10-29T05:01:11.265571] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk Mail" IMAP full fetch daysBack=1 (no backlog cursor)
+[2026-10-29T05:01:11.960767] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" done: 0 emails in 1846ms
+[2026-10-29T05:01:11.962611] [SCAN] [scan/background] acct1***@example.com actions -- mode=safeSendersAndRules executeRules=true executeSafeSenders=true planned: delete=0 moveToJunk=0 safeSenderMove=0 safeSenderTarget="INBOX"
+[2026-10-29T05:01:12.009532] [SCAN] [scan/background] acct1***@example.com outcome -- completed found=3 processed=2 deleted=0 moved=0 safe=0 noRule=2 errors=0 alreadyFiled=1 in 10.0s
+[2026-10-29T05:01:12.437571] [SCAN] [worker/android] exit success
+[2026-10-29T05:08:10.227595] [SCAN] [worker/android] start acct1***@example.com trigger=periodic
+[2026-10-29T05:08:10.227754] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T05:08:10.336679] [SCAN] [scan/background] acct1***@example.com start -- platform=aol folders=3 daysBack=1
+[2026-10-29T05:08:10.339824] [SCAN] [scan/background] acct1***@example.com claim -- granted, mode=safeSendersAndRules
+[2026-10-29T05:08:10.340678] [SCAN] [scan/background] acct1***@example.com connect -- begin (fFa)
+[2026-10-29T05:08:11.248403] [SCAN] [scan/background] acct1***@example.com connect -- done in 907ms
+[2026-10-29T05:08:11.249042] [SCAN] [scan/background] acct1***@example.com rules -- rules=2198 enabled=2198 safeSenders=530
+[2026-10-29T05:08:11.249748] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" begin
+[2026-10-29T05:08:13.223437] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Inbox" IMAP backlog re-scan from UID 234064
+[2026-10-29T05:08:14.650031] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" done: 2 emails in 3400ms
+[2026-10-29T05:08:14.650616] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" begin
+[2026-10-29T05:08:16.156468] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk" IMAP backlog re-scan from UID 204823
+[2026-10-29T05:08:17.540344] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" done: 1 emails in 2889ms
+[2026-10-29T05:08:17.540849] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" begin
+[2026-10-29T05:08:18.725304] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk Mail" IMAP full fetch daysBack=1 (no backlog cursor)
+[2026-10-29T05:08:19.335789] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" done: 0 emails in 1794ms
+[2026-10-29T05:08:19.337301] [SCAN] [scan/background] acct1***@example.com actions -- mode=safeSendersAndRules executeRules=true executeSafeSenders=true planned: delete=0 moveToJunk=0 safeSenderMove=0 safeSenderTarget="INBOX"
+[2026-10-29T05:08:19.388173] [SCAN] [scan/background] acct1***@example.com outcome -- completed found=3 processed=2 deleted=0 moved=0 safe=0 noRule=2 errors=0 alreadyFiled=1 in 9.1s
+[2026-10-29T05:08:19.881056] [SCAN] [worker/android] exit success
+[2026-10-29T05:16:02.228260] [SCAN] [worker/android] start acct1***@example.com trigger=doze-alarm delay=0s
+[2026-10-29T05:16:02.228339] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T05:16:02.345281] [SCAN] [scan/background] acct1***@example.com start -- platform=aol folders=3 daysBack=1
+[2026-10-29T05:16:02.351767] [SCAN] [scan/background] acct1***@example.com claim -- granted, mode=safeSendersAndRules
+[2026-10-29T05:16:02.353524] [SCAN] [scan/background] acct1***@example.com connect -- begin (fFa)
+[2026-10-29T05:16:03.310358] [SCAN] [scan/background] acct1***@example.com connect -- done in 956ms
+[2026-10-29T05:16:03.311284] [SCAN] [scan/background] acct1***@example.com rules -- rules=2198 enabled=2198 safeSenders=530
+[2026-10-29T05:16:03.312244] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" begin
+[2026-10-29T05:16:05.355997] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Inbox" IMAP backlog re-scan from UID 234064
+[2026-10-29T05:16:06.999691] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" done: 2 emails in 3687ms
+[2026-10-29T05:16:07.000278] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" begin
+[2026-10-29T05:16:08.427691] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk" IMAP backlog re-scan from UID 204823
+[2026-10-29T05:16:09.938039] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" done: 1 emails in 2937ms
+[2026-10-29T05:16:09.938608] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" begin
+[2026-10-29T05:16:11.294685] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk Mail" IMAP full fetch daysBack=1 (no backlog cursor)
+[2026-10-29T05:16:11.907890] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" done: 0 emails in 1969ms
+[2026-10-29T05:16:11.909016] [SCAN] [scan/background] acct1***@example.com actions -- mode=safeSendersAndRules executeRules=true executeSafeSenders=true planned: delete=0 moveToJunk=0 safeSenderMove=0 safeSenderTarget="INBOX"
+[2026-10-29T05:16:11.961096] [SCAN] [scan/background] acct1***@example.com outcome -- completed found=3 processed=2 deleted=0 moved=0 safe=0 noRule=2 errors=0 alreadyFiled=1 in 9.6s
+[2026-10-29T05:16:12.471963] [SCAN] [worker/android] exit success
+[2026-10-29T05:23:19.969184] [SCAN] [worker/android] start acct1***@example.com trigger=periodic
+[2026-10-29T05:23:19.969251] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T05:23:20.090291] [SCAN] [scan/background] acct1***@example.com start -- platform=aol folders=3 daysBack=1
+[2026-10-29T05:23:20.097584] [SCAN] [scan/background] acct1***@example.com claim -- granted, mode=safeSendersAndRules
+[2026-10-29T05:23:20.098641] [SCAN] [scan/background] acct1***@example.com connect -- begin (fFa)
+[2026-10-29T05:23:21.174373] [SCAN] [scan/background] acct1***@example.com connect -- done in 1075ms
+[2026-10-29T05:23:21.174746] [SCAN] [scan/background] acct1***@example.com rules -- rules=2198 enabled=2198 safeSenders=530
+[2026-10-29T05:23:21.174926] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" begin
+[2026-10-29T05:23:23.144878] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Inbox" IMAP backlog re-scan from UID 234064
+[2026-10-29T05:23:24.673930] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" done: 3 emails in 3498ms
+[2026-10-29T05:23:24.674493] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" begin
+[2026-10-29T05:23:26.084345] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk" IMAP backlog re-scan from UID 204823
+[2026-10-29T05:23:27.346270] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" done: 1 emails in 2671ms
+[2026-10-29T05:23:27.346904] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" begin
+[2026-10-29T05:23:28.459378] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk Mail" IMAP full fetch daysBack=1 (no backlog cursor)
+[2026-10-29T05:23:29.030948] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" done: 0 emails in 1683ms
+[2026-10-29T05:23:29.032074] [SCAN] [scan/background] acct1***@example.com actions -- mode=safeSendersAndRules executeRules=true executeSafeSenders=true planned: delete=0 moveToJunk=0 safeSenderMove=0 safeSenderTarget="INBOX"
+[2026-10-29T05:23:29.068301] [SCAN] [scan/background] acct1***@example.com outcome -- completed found=4 processed=2 deleted=0 moved=0 safe=0 noRule=2 errors=0 alreadyFiled=2 in 9.0s
+[2026-10-29T05:23:29.451558] [SCAN] [worker/android] exit success
+[2026-10-29T05:28:46.449647] [SCAN] [worker/android] start acct1***@example.com trigger=doze-alarm delay=0s
+[2026-10-29T05:28:46.449820] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T05:28:46.569187] [SCAN] [worker/android] account acct1***@example.com skipped: a scan started 326s ago (interval 10m; doze alarm)
+[2026-10-29T05:28:46.569193] [SCAN] [worker/android] exit success
+[2026-10-29T05:38:29.541666] [SCAN] [worker/android] start acct1***@example.com trigger=periodic
+[2026-10-29T05:38:29.541889] [APP] [app] background worker start (android) -- v0.21.0 env=prod platform=android
+[2026-10-29T05:38:29.672677] [SCAN] [scan/background] acct1***@example.com start -- platform=aol folders=3 daysBack=1
+[2026-10-29T05:38:29.677480] [SCAN] [scan/background] acct1***@example.com claim -- granted, mode=safeSendersAndRules
+[2026-10-29T05:38:29.678307] [SCAN] [scan/background] acct1***@example.com connect -- begin (fFa)
+[2026-10-29T05:38:30.531616] [SCAN] [scan/background] acct1***@example.com connect -- done in 853ms
+[2026-10-29T05:38:30.532260] [SCAN] [scan/background] acct1***@example.com rules -- rules=2198 enabled=2198 safeSenders=530
+[2026-10-29T05:38:30.532957] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" begin
+[2026-10-29T05:38:32.531442] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Inbox" IMAP backlog re-scan from UID 234064
+[2026-10-29T05:38:34.161039] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Inbox" done: 3 emails in 3628ms
+[2026-10-29T05:38:34.161679] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" begin
+[2026-10-29T05:38:35.602660] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk" IMAP backlog re-scan from UID 204823
+[2026-10-29T05:38:37.281934] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk" done: 2 emails in 3120ms
+[2026-10-29T05:38:37.282532] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" begin
+[2026-10-29T05:38:38.373643] [SCAN] [scan/background] acct1***@example.com fetch-path -- folder "Bulk Mail" IMAP full fetch daysBack=1 (no backlog cursor)
+[2026-10-29T05:38:38.945407] [SCAN] [scan/background] acct1***@example.com fetch -- folder "Bulk Mail" done: 0 emails in 1662ms
+[2026-10-29T05:38:38.946192] [SCAN] [scan/background] acct1***@example.com actions -- mode=safeSendersAndRules executeRules=true executeSafeSenders=true planned: delete=1 moveToJunk=0 safeSenderMove=0 safeSenderTarget="INBOX"
+[2026-10-29T05:38:40.928892] [SCAN] [scan/background] acct1***@example.com action-result -- mark as read: 1 succeeded, 0 failed
+[2026-10-29T05:38:42.771467] [SCAN] [scan/background] acct1***@example.com action-result -- delete: 1 succeeded, 0 failed
+[2026-10-29T05:38:42.832912] [SCAN] [scan/background] acct1***@example.com outcome -- completed found=5 processed=3 deleted=1 moved=0 safe=0 noRule=2 errors=0 alreadyFiled=2 in 13.2s

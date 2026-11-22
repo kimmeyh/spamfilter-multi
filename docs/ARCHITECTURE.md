@@ -164,7 +164,7 @@ Business logic and domain services.
 
 **Android build flavors (F94, Sprint 63; ADR-0035 / ADR-0042)**: `dev` / `prod`
 productFlavors mirror the Windows APP_ENV split -- `--flavor` and `--dart-define=APP_ENV` are
-passed in lockstep (`build-with-secrets.ps1 -Env dev|prod`, default `prod` = the registered
+passed in lockstep (`build-with-secrets.py --env dev|prod`, default `prod` = the registered
 package with working Google Sign-In). The applicationId split (`com.myemailspamfilter[.dev]`)
 is the DECLARED ADR-0042 platform exception: Android side-by-side install requires distinct
 OS-level identity, which Windows achieves with mutex + data-dir suffix alone. The dev flavor
@@ -363,7 +363,11 @@ message on the same dead connection, and each later command waited its own 2 min
 
 **SecureCredentialsStore** (ADR-0008):
 - Platform-native encrypted storage via `flutter_secure_storage`
-- Windows: Credential Manager, Android: Keystore, iOS: Keychain, Linux: libsecret
+- Windows: one DPAPI-encrypted file, `flutter_secure_storage.dat`, in the executable's support folder
+  (`flutter_secure_storage_windows` 4.1.0; not Credential Manager). DEV builds carry ProductName
+  `MyEmailSpamFilter_Dev`, so DEV and production keep separate files (F354, Sprint 85,
+  [ADR-0035](adr/0035-production-development-side-by-side.md) "Sprint 85 Update"). Android: Keystore, iOS: Keychain,
+  Linux: libsecret
 - Methods: `getCredentials()`, `saveCredentials()`, `deleteCredentials()`, `getSavedAccounts()`
 - Legacy migration: `migrateFromLegacyTokenStore()`
 
@@ -521,11 +525,14 @@ no account is selected AND the destination needs one (Settings > Account, Manual
 Live Scan). Settings > General, Review No Rule Items and Scan History are cross-account and never prompt.
 
 **Persistence**: the session selection is NOT persisted; it resets when the app closes (F135, Harold 2026-07-30).
-**Approved change, not yet built** ([ADR-0052](adr/0052-default-account-persisted.md), Harold 2026-11-07, card F352):
-an optional default account, stored once as `default_account_id` in `SettingsStore` and set or removed only on
-Select Account (Settings > Account shows a label). At startup the default seeds this provider once; the start screen
-does not change; picking another account changes only the session; deleting the default account clears the default;
-background scans do not read it.
+**One exception, implemented in Sprint 85** ([ADR-0052](adr/0052-default-account-persisted.md), card F352): an
+optional default account, stored once as `default_account_id` in `SettingsStore` and set or removed only on Select
+Account (each row has a star control and the default row is marked; Settings > Account shows a read-only "Default
+account" label). At startup `main()` calls `SelectedAccountProvider.createSeeded`, which copies the default into the
+provider once, before the first screen is built, only when that account still exists (a stale id is cleared). The
+start screen does not change; picking another account changes only the session; `DataDeletionService.deleteAccountData`
+clears the default in the same transaction that deletes the account; there is no automatic default for a single
+account; background scans do not read it. All platforms use the same shared code (ADR-0042; no platform exception).
 
 ---
 
@@ -927,7 +934,7 @@ mobile-app/
 
 #### Android release-build chain (Sprint 64: SEC-9, GP-2/ADR-0027, GP-9, SEC-4)
 
-Release builds are produced by `build-with-secrets.ps1 -BuildType release` (`-Output aab`
+Release builds are produced by `build-with-secrets.py --build-type release` (`--output aab`
 for the Play bundle) and differ from debug builds by four injected/enabled layers, all
 declared ADR-0042 platform exceptions (Android store/build infrastructure; the Windows
 analogue is the MSIX pipeline):
@@ -1028,7 +1035,7 @@ artifact (GP-8/GP-3 verifies, Sprint 64 chain validation).
 - **Failed-auth rate limit** (SEC-22): `AuthRateLimiter` blocks an account for 1h after 10 failed IMAP sign-ins in a rolling 1h window; state persists in the `auth_rate_limit` table so blocks survive app restart. UI surfaces a "Try again at HH:MM" message in place of the generic auth error.
 - **Certificate pinning** (SEC-8, corrected by SEC-8b Sprint 77, ADR-0046): `PinnedHttpClient` restricts Google OAuth endpoints to the Google Trust Services roots on every connection. Runtime kill switch in Settings > General > Privacy & Logging. Known IMAP providers use device validation only (no leaf pins); Custom IMAP servers use trust-on-first-use with a one-time "Trust this server?" confirmation (`ImapTlsConnector`).
 - **Auth logging suppression** (SEC-19): Settings toggle makes `Redact.logSafe` a no-op even in debug builds.
-- **Logging & Redaction invariant** (F102, narrowed by F110, Sprint 43): never log the **app user's own** account ids / configured-account email / tokens / email content in the clear -- use the `Redact` utility (`Redact.accountId/token`, and `Redact.senderForLog` for sender/recipient addresses). **F110 narrowing**: third-party sender/recipient email addresses ARE logged in the clear (they are the anti-phishing security signal); only the user's own configured-account addresses are masked. Account ids / tokens / secrets stay strict. Applies to `Logger`, the headless `_bgLog`, and generated artifacts (PowerShell scripts, Task Scheduler task names). Enforced by `mobile-app/scripts/check-log-redaction.ps1` + `test/policy/log_redaction_test.dart` (build-failing; post-F110 they flag account ids / tokens / secrets, NOT the email-address family) + a Phase 5 checklist grep. Policy: ADR-0030 §5 "Logging & Redaction".
+- **Logging & Redaction invariant** (F102, narrowed by F110, Sprint 43): never log the **app user's own** account ids / configured-account email / tokens / email content in the clear -- use the `Redact` utility (`Redact.accountId/token`, and `Redact.senderForLog` for sender/recipient addresses). **F110 narrowing**: third-party sender/recipient email addresses ARE logged in the clear (they are the anti-phishing security signal); only the user's own configured-account addresses are masked. Account ids / tokens / secrets stay strict. Applies to `Logger`, the headless `_bgLog`, and generated artifacts (PowerShell scripts, Task Scheduler task names). Enforced by `mobile-app/scripts/check-log-redaction.py` + `test/policy/log_redaction_test.dart` (build-failing; post-F110 they flag account ids / tokens / secrets, NOT the email-address family) + a Phase 5 checklist grep. Policy: ADR-0030 §5 "Logging & Redaction".
 - **Unmatched email retention** (SEC-14): rows pruned on startup + after each scan; body previews capped at 100 chars at insert.
 - **User data deletion** (F66): per-account wipe + full-app reset via `DataDeletionService`.
 - **DB-at-rest encryption infrastructure** (SEC-11, opt-in): `DatabaseEncryptionKeyService` ships (256-bit key in secure storage). The actual encrypting-driver swap is **SEC-11b, deferred to Post-MVP** -- cipher switched from SQLCipher to **SQLite3MultipleCiphers** (cross-platform: Windows + Android + iOS). The Settings "Encrypt database" toggle is hidden until SEC-11b ships (Sprint 43). See ALL_SPRINTS_MASTER_PLAN.md -> HOLD Items (Post-MVP) -> SEC-11b.
@@ -1080,7 +1087,7 @@ artifact (GP-8/GP-3 verifies, Sprint 64 chain validation).
 - **Method**: drives the real widget tree in the Dart VM by `Key`/`Finder` with `pumpAndSettle()` -- deterministic; immune to UIA-exposure / DPI / cursor / dialog-settle flakiness
 - **Scope**: create/delete lifecycle (rules + safe senders), folder picker, layout-bounds regression (the F76 goal WinWright's CLI could not deliver)
 - **DB isolation**: isolated temp DB per test via the `AppPaths.testOverrideBaseDir` test seam (null in production); never touches the dev DB. Modes: `bootDbOnly` (seeded temp DB) / `bootAppWithDevDbCopy` (copy dev DB, delete on teardown)
-- **Runner**: `mobile-app/scripts/run-integration-tests.ps1` -- **one `flutter test` process per file** (isolates process-wide singletons); within a file, multiple `testWidgets` share one process with no app shutdown between them
+- **Runner**: `mobile-app/scripts/run-integration-tests.py` -- **one `flutter test` process per file** (isolates process-wide singletons); within a file, multiple `testWidgets` share one process with no app shutdown between them
 - **Reference**: See TESTING_STRATEGY.md "Two E2E Harnesses" for which to use when, the per-file execution model, and the test seams
 
 **Target Coverage**: 95%+ for core business logic

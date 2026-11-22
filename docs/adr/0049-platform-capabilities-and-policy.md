@@ -58,6 +58,8 @@ Behavior is unchanged on Windows and Android for every site. "C" = capability, "
 - `main.dart:146` sqflite FFI init on desktop -- C `usesFfiSqlite` (Windows true, Android false, iOS false).
 - `main.dart:215` dev data seeding -- C `canBeMsixPackaged` (Windows true; it also governs the packaged desktop data layout) AND the existing dev check.
 - `main.dart:222` app identity migration; `app_identity_migration.dart:58` -- same getter.
+- `main.dart:158` DEV credential separation (F354, Sprint 85) -- C `sharesCredentialStoreAcrossEnvironments` (Windows true;
+  Android false, DEV has its own applicationId; iOS false, keychain per bundle ID). Declared Windows exception, ADR-0035 Sprint 85 update.
 - `main.dart:302` WorkManager dispatcher registration; `main.dart:321` Task Scheduler handoff drain;
   `background_scan_scheduler.dart:145-146` scheduler adapter choice; `main.dart:473` "can schedule" --
   C `backgroundScanMechanism` (`taskScheduler` / `workManager` / `none`). `main.dart:473` keeps its

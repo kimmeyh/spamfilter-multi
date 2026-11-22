@@ -357,7 +357,7 @@ void main() {
     });
 
     tearDown(() async {
-      DiagnosticLogger.debugSetDir(null);
+      await DiagnosticLogger.debugReset();
       DiagnosticLogger.debugSetEnabled(null);
       await logDir.delete(recursive: true);
     });

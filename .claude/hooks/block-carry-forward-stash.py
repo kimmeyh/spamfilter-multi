@@ -15,7 +15,7 @@ forward (Sprint 47 retro Proposal 3).
     PowerShell hook did.
   - An internal error ALLOWS the command and prints a note (hooklib.run).
 
-Tests: .claude/hooks/test-cases/stash-guard/ (run-test-cases.ps1) and .claude/hooks/tests/test_pylib.py.
+Tests: .claude/hooks/test-cases/stash-guard/ (run-test-cases.py) and .claude/hooks/tests/test_pylib.py.
 """
 import os
 import re

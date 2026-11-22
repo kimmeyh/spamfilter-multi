@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import '../providers/email_scan_provider.dart';
 import '../storage/settings_store.dart';
 import 'app_environment.dart';
+import '../../adapters/storage/app_paths.dart';
 import 'app_version.dart';
 import 'export_directories.dart';
 import 'scan_sheet_export.dart';
@@ -42,13 +43,14 @@ class LiveScanLogger {
   static Future<String> getLogDir() async {
     if (_cachedLogDir != null) return _cachedLogDir!;
     final appSupport = await getApplicationSupportDirectory();
-    final envSuffix = AppEnvironment.dataDirSuffix;
     // Use platform-correct separators (path.join). Live scans run on all
     // platforms (Windows desktop, Android, iOS, macOS, Linux), unlike
     // `BackgroundScanWindowsWorker` which is Windows-only and hard-codes
     // backslashes. Concatenating `\\logs` here on Android would create a
     // literal "files\logs" directory name on the Linux filesystem.
-    _cachedLogDir = path.join('${appSupport.path}$envSuffix', 'logs');
+    // F354: the `_Dev` suffix is applied once, by AppPaths.dataDirectoryPath.
+    _cachedLogDir =
+        path.join(AppPaths.dataDirectoryPath(appSupport.path), 'logs');
     return _cachedLogDir!;
   }
 

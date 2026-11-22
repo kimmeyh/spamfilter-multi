@@ -44,7 +44,7 @@ const _blockRules = [
   'Write tool',
   'STATUS: FINISHED',
   'MUTATION LOCK',
-  'Remove-MutationLock',
+  'mutation_lock.py remove',
   'NEVER repeat a release or store action',
   'Resumed:',
 ];

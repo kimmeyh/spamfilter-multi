@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"if ('$CLAUDE_FILE_PATH' -like '*rules*.yaml') { & scripts/validate-yaml-rules.ps1 -RulesFile '$CLAUDE_FILE_PATH' }\"",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"if ('$CLAUDE_FILE_PATH' -like '*rules*.yaml') { python scripts/validate-yaml-rules.py --rules-file '$CLAUDE_FILE_PATH' }\"",
             "timeout": 60
           }
         ]

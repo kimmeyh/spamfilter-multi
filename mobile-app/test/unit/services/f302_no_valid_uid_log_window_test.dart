@@ -13,6 +13,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_email_spam_filter/core/services/diagnostic_logger.dart';
 import 'package:my_email_spam_filter/core/services/imap_uid.dart';
+import '../../helpers/diagnostic_log_reader.dart';
 
 void main() {
   late Directory tempDir;
@@ -25,7 +26,7 @@ void main() {
   });
 
   tearDown(() async {
-    DiagnosticLogger.debugSetDir(null);
+    await DiagnosticLogger.debugReset();
     DiagnosticLogger.debugSetEnabled(null);
     debugResetNoValidImapUidLog();
     if (await tempDir.exists()) {
@@ -36,14 +37,9 @@ void main() {
   Future<int> linesWritten() async {
     // The helper logs unawaited; give the writes time to land.
     await Future<void>.delayed(const Duration(milliseconds: 300));
-    var count = 0;
-    await for (final entity in tempDir.list()) {
-      if (entity is File) {
-        count += 'no valid IMAP UID'
-            .allMatches(await entity.readAsString())
-            .length;
-      }
-    }
+    final count = 'no valid IMAP UID'
+        .allMatches(readDiagnosticLog(tempDir))
+        .length;
     return count;
   }
 
