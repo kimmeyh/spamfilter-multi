@@ -27,6 +27,27 @@ Partner Center before saying anything about the Store version.
 | **Last uploaded to Play (any track)** | 0.24.1 (versionCode 22) | 2026-11-10 | Updated 2026-11-10 (Sprint 85 Phase 3.7.0b, in the bump commit to 0.25.0+23) from Harold's report that 0.24.1 is submitted to Play ("store and play updates in process"). Previous: 0.24.0 (versionCode 21), updated 2026-11-06 (Sprint 84 Phase 3.7.0b, in the bump commit to 0.24.1+22) from Harold's report that 0.24.0 (versionCode 21) is uploaded to closed testing; the Fold screenshot of 2026-11-06 shows Version 0.24.0 installed. Previous: 0.23.0 (versionCode 20), updated 2026-11-05 from the 0.23.0 Fold screenshots. Previous update 2026-10-27 from Harold's 2026-10-24 report that 0.21.0 is installed from Play (an install proves the upload). The pubspec was already bumped to 0.22.0+19 at Sprint 81 3.7.0b, so this follows the bump, as required. 0.22.0 (versionCode 19) AAB built 2026-10-27, upload not yet reported. Closed testing (Alpha). Previous: 0.20.0 (versionCode 17). Sprint 76 retro IMP-2: Play refuses a versionCode it has already received on ANY track, so this row -- not the Live row -- is what the next build must exceed. UPDATE IT in the same commit that bumps `pubspec.yaml` after Harold reports an upload (never before the bump, or the suite goes red on the current build). Enforced by `dev_version_ahead_test` and by `build-with-secrets.py --output aab`. |
 | **Dev worktree** (authoritative -- mirrors `pubspec.yaml`) | 0.25.0+23 | 2026-11-10 | Bumped at Sprint 85 plan approval (Phase 3.7.0b). MINOR: F352 (default email account) is a `feat` (Harold Q1 = 1). versionCode 23. "Last uploaded to Play" moved to 0.24.1 (versionCode 22) in the same commit. Previous: 0.24.1+22 (Sprint 84). Gates: `version_consistency_test`, `dev_version_ahead_test`. |
 
+## 0.25.0 -- Sprint 85 cycle Phase 8.3 (2026-11-22)
+
+**BUILT + VERIFIED, NOT YET SUBMITTED.** Harold uploads both. "Last uploaded to Play" moves to 0.25.0 (versionCode
+23) in the same commit as the Sprint 86 version bump (Phase 3.7.0b), never before it.
+
+- **MSIX 0.25.0.0 -- BUILT + VERIFIED** (finished 15:37): prod worktree pulled (49 commits behind) to `main` 8f2e6f5c
+  (tag `v0.25.0`, annotated, pushed); release policy gates 27/27 (`msix_config_test`, `version_consistency_test`,
+  `dev_version_ahead_test`, `release_notes_test`); build log shows `flutter build windows --dart-define=APP_ENV=prod
+  --dart-define-from-file=secrets.prod.json`; `--release-self-test --expected-version=0.25.0` RESULT: PASS (6/6; the
+  run took about 2-3 minutes, cause not investigated); manifest Identity `Version="0.25.0.0"`; 17.9 MB.
+  `D:\Data\Harold\github\spamfilter-multi-prod\mobile-app\build\windows\x64\runner\Release\my_email_spam_filter.msix`.
+  Open: the Step 4.2 Gmail sign-in URL check on the installed Store build.
+- **AAB 0.25.0 (versionCode 23) -- BUILT + VERIFIED** (16:07): dev worktree on `feature/20261122_Sprint_86` at
+  d19fdb4d (`git diff origin/main HEAD -- mobile-app` empty, so the app code is identical to `main` 8f2e6f5c); the
+  script's IMP-2 check "versionCode 23 is above the last uploaded (22)"; F204 checks targetSdkVersion 36 and `AD_ID`
+  absent; read from the artifact: versionName 0.25.0, no `.dev` package, Gmail OAuth scheme present; 68.4 MB.
+  Replaces the Manual Validation bundle of the same version built from 42b56afc (never uploaded).
+  `D:\Data\Harold\github\spamfilter-multi\mobile-app\dist\android-0.25.0+23\app-prod-release.aab`.
+- Release notes: `docs/store-assets/RELEASE_NOTES_0.25.0_windows.md` and `_play.md` (both cover the changes after
+  0.24.1, the last version each store received); `release_notes_test.dart` passes in the gate run above.
+
 ## 0.24.1 -- Sprint 84 cycle Phase 8.3 (2026-11-08 / 2026-11-09)
 
 **SUBMITTED to both stores** (Harold's report, 2026-11-10: *"store and play updates in process"*). Not yet observed

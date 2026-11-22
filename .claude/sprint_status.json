@@ -1,13 +1,13 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-11-22T15:15:26-05:00",
+    "_last_updated": "2026-11-22T16:09:46-05:00",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 86,
         "branch": "feature/20261122_Sprint_86",
-        "status": "Phase 8.2 Backlog Refinement pass 1",
-        "status_detail": "Phase 8 Release Cycle for Sprint 85. 8.1 done: develop 328f6e29, main 8f2e6f5c (2026-11-22). Sprint 86 branch opened from the Sprint 85 branch (6.6). Pass 1 (completeness sweep) 2026-11-22: cards verified, docs triad present, CI run 2 and merges recorded, F362 added (Harold). Next: tag v0.25.0, 8.3 MSIX 0.25.0.0 then AAB 0.25.0+23 (serialized), then 8.4 pass 2. Open question q-S85-min in SPRINT_86_PLAN.md.",
+        "status": "Phase 8.3 Store Release",
+        "status_detail": "Phase 8 Release Cycle for Sprint 85. 8.1 done: develop 328f6e29, main 8f2e6f5c (2026-11-22), tag v0.25.0 pushed. 8.2 pass 1 done (d19fdb4d; F362 added). 8.3: MSIX 0.25.0.0 BUILT + VERIFIED 15:37 (prod worktree at 8f2e6f5c, self-test PASS 6/6, manifest 0.25.0.0, 17.9 MB); AAB 0.25.0+23 BUILT + VERIFIED 16:07 (dev worktree, app code equals main; versionCode 23 > 22; F204 OK; 68.4 MB). Waiting: Harold uploads both. Next: 8.4 pass 2 scope selection. Open question q-S85-min in SPRINT_86_PLAN.md.",
         "plan_approved": false,
         "pr_number": null,
         "version": "0.25.0+23 (Sprint 86 bump happens at 3.7.0b)"
@@ -49,18 +49,11 @@
         "ci": "CI run 1 44873531314 (workflow_dispatch): Flutter and builds green, 1 Linux-only Python test failed, fixed in b2780885; CI run 2 at 7.7.5"
     },
     "store_release": {
-        "status_0_15_3": "NOT SUBMITTED TO EITHER STORE. Harold, 2026-09-22: \"not pushing to either store this time\". Phase 8.3 explicitly N/A for this cycle.",
-        "live_windows": "0.15.2.0 -- Submission 28, certified 2026-09-21, installed-build verified.",
-        "live_play": "0.15.2 versionCode 5 -- closed testing, device-verified 2026-09-21 on the S24+.",
-        "consequence": "F219 AC-1 and F227 remain blocked: they need a Play-INSTALLED build, and 0.15.3 is not going out. They wait for the next release that ships.",
-        "status_0_16_0": "SUBMITTED / ROLLOUT IN PROCESS on BOTH stores (Harold, 2026-09-24, reported between 12:17am and 8:39am ET). NOT yet observed live on either. Built + verified 2026-09-24: MSIX 0.16.0.0 (prod worktree bf005f3, self-test 6/6 PASS, 17.5 MB) and AAB versionCode 7 / 0.16.0 (67.0 MB). Step 7 records (STORE_VERSION_STATUS.md live rows) wait for a direct console observation.",
-        "status_0_17_0": "LIVE 2026-10-04 ~11:20pm ET on BOTH stores (Harold). Microsoft Store: submitted ~10:40pm, installed build shows no [DEV] and Version 0.17.0; public API lagged. Google Play closed testing (Alpha): versionCode 8, device-verified on the Fold (Version 0.17.0). Open: Step 4.2 Gmail sign-in URL on the Store build; CHANGELOG has no release headings since 0.14.0 (not done this release either).",
-        "status_0_17_6": "SUBMITTED to BOTH stores 2026-10-06 (Harold screenshots), NOT yet live. Microsoft Store: Submission 31, \"Update in certification\", stage Pre-processing (last modified 10/07/2026); Store presence still Submission 30 (0.17.0). Google Play: Closed testing - Alpha, \"14 (0.17.6) Start full rollout\" in Changes in review, quick checks running (up to 12 min); managed publishing off. Artifacts: MSIX D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix (17.6 MB, self-test PASS); AAB D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app\\dist\\android-0.17.6+14\\app-prod-release.aab (67.3 MB). STORE_VERSION_STATUS Live rows unchanged until observed live; \"Last uploaded to Play\" -> 0.17.6 (14) is updated WITH the Sprint 77 pubspec bump (IMP-2).",
-        "status_0_18_0": "LIVE on BOTH (Harold, 2026-10-10). Fold device-verified (Version 0.18.0 screenshots, log env=prod v0.18.0). Windows: installed Store build shows Version 0.18.0, no [DEV]; Partner Center page not observed. STORE_VERSION_STATUS updated with the 0.19.0+16 bump.",
-        "status_0_20_0": "BUILT + VERIFIED 2026-10-18, SUBMITTED to BOTH stores, in process (Harold, 2026-10-18 ~11:39pm ET; consoles not observed by Claude; not seen live). MSIX 0.20.0.0 from the prod worktree at main ff58da3 (tag v0.20.0): D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix (17.7 MB, release self-test 6/6 PASS, manifest Identity 0.20.0.0). AAB 0.20.0 versionCode 17: D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app\\dist\\android-0.20.0+17\\app-prod-release.aab (67.8 MB, versionName 0.20.0, no .dev, OAuth scheme present, no AD_ID). Notes: docs/store-assets/RELEASE_NOTES_0.20.0_windows.md and _play.md (gate passed).",
-        "status_0_19_0": "MSIX 0.19.0.0 and AAB 0.19.0 (versionCode 16) SUBMITTED 2026-10-13, certification in process (Harold's report; not observed live). See docs/STORE_VERSION_STATUS.md.",
-        "status_0_21_0": "INSTALLED from both stores 2026-10-24 (Harold: prod Windows shows Version 0.21.0, no [DEV]; \"phone app updated to 0.21.0\"). Built + verified 2026-10-23. MSIX 0.21.0.0 (main 2d81264a, self-test 6/6, 17.8 MB) and AAB versionCode 18 (68.0 MB). See docs/STORE_VERSION_STATUS.md.",
-        "status_0_24_1": "BUILT + VERIFIED 2026-11-08/09, SUBMITTED to both stores, in process (Harold, 2026-11-10); not observed live. MSIX 0.24.1.0 from the prod worktree at main 962a1b25 (tag v0.24.1): self-test 6/6 PASS, manifest 0.24.1.0, 17.8 MB, D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix. AAB 0.24.1 versionCode 22 (68.4 MB, versionName 0.24.1, no .dev, OAuth scheme present, targetSdk 36, no AD_ID): D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app\\dist\\android-0.24.1+22\\app-prod-release.aab. Notes: docs/store-assets/RELEASE_NOTES_0.24.1_windows.md and _play.md."
+        "version": "0.25.0 (MSIX 0.25.0.0, AAB versionCode 23)",
+        "state": "BUILT + VERIFIED 2026-11-22, NOT YET SUBMITTED (Harold uploads)",
+        "msix": "D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix",
+        "aab": "D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app\\dist\\android-0.25.0+23\\app-prod-release.aab",
+        "notes": "docs/store-assets/RELEASE_NOTES_0.25.0_windows.md and _play.md; record in docs/STORE_VERSION_STATUS.md"
     },
     "environment_notes": [
         "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
@@ -69,9 +62,8 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "Tag v0.25.0 (annotated) on main 8f2e6f5c and push the tag.",
-        "8.3: pull the prod worktree to main, build and verify MSIX 0.25.0.0 (STORE_RELEASE_PROCESS.md), then the Play AAB 0.25.0+23 from main; never both builds at once. Harold uploads both.",
-        "8.4: Backlog Refinement pass 2, Harold selects Sprint 86 scope; then Phase 3 planning.",
+        "Harold: upload MSIX 0.25.0.0 to Partner Center and AAB 0.25.0 (versionCode 23) to Play closed testing; report when submitted.",
+        "8.4: Backlog Refinement pass 2, Harold selects Sprint 86 scope; then Phase 3 planning (version bump to 0.25.1+24 or 0.26.0+24 at 3.7.0b, and move 'Last uploaded to Play' to 23 in that commit).",
         "Open question q-S85-min (six Sprint 85 Executed-by lines with no minutes): full text in SPRINT_86_PLAN.md 'Open questions'."
     ],
     "next_sprint_targeted": {
