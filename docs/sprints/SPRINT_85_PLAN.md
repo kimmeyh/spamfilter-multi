@@ -309,7 +309,7 @@ Windows and iOS have no WorkManager stop event). R-2 is the shared pop-up at the
 **Definition of Done**: AC-1 and AC-2 only (no code).
 
 **Model**: main session (interactive with Harold) -- N/A.
-**Executed-by** (filled at completion): Opus main session; actual minutes not recorded, 0 min logged (time was not read at start or end; Sprint 85 retro i7).
+**Executed-by** (filled at completion): Opus main session; ~10 min, estimated from commit times (Harold, register q1 = 2, 2026-11-23): no commit names Task 1 alone; share of the 23:16-23:41 Manual Validation draft commit 1a1ec264 that wrote MV-4 and MV-5; Harold's Fold time excluded; low confidence.
 **Step-types**: MANUAL, DIAG. **Est-Effort**: 15-30m plus Harold's phone time.
 
 ## Task 2 -- F350: Risk-based test analysis: effective, and as efficient and quick as reasonably possible (Priority 10)
@@ -368,7 +368,7 @@ with no automated coverage for a high-risk path is listed as a gap.
 (`SPRINT_PLANNING.md:94-108`, "Research Spikes"). R-1 and the timings: Sonnet sub-agent -- *why not Haiku*: timing
 runs need judgment about noise (antivirus, concurrency) and the CI history.
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes (R-1 sub-agent)
-**Executed-by** (filled at completion): Opus main session plus Sonnet sub-agent; actual minutes not recorded, 0 min logged (time was not read at start or end; Sprint 85 retro i7). Its commits span 17:39-19:29 on 2026-11-10.
+**Executed-by** (filled at completion): Opus main session plus Sonnet sub-agent; ~110 min, estimated from commit times (Harold, register q1 = 2, 2026-11-23): first to last F350 commit, 17:39 (909b1e6a) to 19:29 (fcdb97c4) on 2026-11-10; work before 17:39 not counted. Its commits span 17:39-19:29 on 2026-11-10.
 **Step-types**: RESEARCH `[no-history]`, SCRIPT, TEST-UNIT, DOCS. **Est-Effort**: 150-210m.
 
 ## Task 3 -- F352: Default email account (Priority 12)
@@ -513,7 +513,7 @@ declared in the ADR-0049 table.
 **Model**: Opus (main session) -- *why not Sonnet*: credential storage, a Class-1 decision, and a migration where a
 mistake loses production sign-ins.
 **Delegation checklist included in the sub-agent prompt** (when delegated): N/A (main session).
-**Executed-by** (filled at completion): actual minutes not recorded, 0 min logged (time was not read at start or end; Sprint 85 retro i7). Opus main session as assigned, 2026-11-10, interleaved with agent reviews
+**Executed-by** (filled at completion): ~23 min, estimated from commit times (Harold, register q1 = 2, 2026-11-23): 17:45 (24abca64) to the F354 code commit 18:06 (7fea8327), plus 23:14-23:16 for the ARCHITECTURE.md commit 33f9d420. Opus main session as assigned, 2026-11-10, interleaved with agent reviews
 (active time not recorded). Code: `Runner.rc` ProductName from `SPAMFILTER_IS_DEV` (CMake sets it when the env is not
 prod); `AppPaths.dataDirectoryPath` the one place the `_Dev` suffix is applied (5 callers moved to it);
 `DevCredentialSeparation` before any credential read; `AppIdentityMigration` production-only;
@@ -609,7 +609,7 @@ enable path (Settings > Background) runs on all three platforms; a cause found t
 **Model**: Opus (main session) -- *why not Sonnet*: native-thread deep debugging across the plugin and the engine, and
 it needs the emulator and the Fold interactively.
 **Delegation checklist included in the sub-agent prompt** (when delegated): N/A (main session).
-**Executed-by** (filled at completion): actual minutes not recorded, 0 min logged (time was not read at start or end; Sprint 85 retro i7). Opus main session as assigned. PARTIAL: R-1 and R-5 done; R-2 (Fold) waits for
+**Executed-by** (filled at completion): ~20 min, estimated from commit times (Harold, register q1 = 2, 2026-11-23): 22:37 (8011e99b) to 22:52, when Task 7 check 6 started, plus about half of the 23:00-23:11 results commit b2cf4de2. Opus main session as assigned. PARTIAL: R-1 and R-5 done; R-2 (Fold) waits for
 Manual Validation.
 **Result (Phase 5) -- R-1, emulator `pixel34_updated` (Android 14, 2 GB RAM, 1.5 GB swap), 2026-11-10**: 9 tries, 0 ANR
 (no "isn't responding" dialog in a uiautomator dump 20 s after each tap; 0 `ANR in` / `Input dispatching timed out` /
@@ -704,7 +704,7 @@ difference found is recorded as a parity gap or a declared exception.
 **Definition of Done**: AC-1 and AC-2 only (no code).
 
 **Model**: main session (interactive with Harold) -- N/A.
-**Executed-by** (filled at completion): Opus main session; actual minutes not recorded, 0 min logged (time was not read at start or end; Sprint 85 retro i7).
+**Executed-by** (filled at completion): Opus main session; ~17 min, estimated from commit times (Harold, register q1 = 2, 2026-11-23): check 6 22:52-23:00 (recorded in the plan), about half of 23:00-23:11 (b2cf4de2), and 23:11-23:14 (1243a5d4).
 **Result (Phase 5) -- R-1 check 6, Android emulator** (`pixel34_updated`, release 0.25.0 fresh install, 2026-11-10
 22:52-23:00): a Custom IMAP account for the local GreenMail test server (`10.0.2.2:3993`, user `tester`; certificate
 trusted through the app's own dialog; "[OK] Connection successful!") was saved and NOT scanned; app force-stopped and
@@ -780,7 +780,7 @@ Sprint 85.
   Validation (asked late, per the approval). Removal work is ready to run in one agent pass once decided.
 **Model**: Haiku -- the cheapest tier fits a removal with a written coverage check and the analyzer and suite as oracles.
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
-**Executed-by** (filled at completion): Haiku sub-agent (R-1 audit only; removal moved to Sprint 86 by Harold, q1); actual minutes not recorded, 0 min logged (time was not read at start or end; Sprint 85 retro i7).
+**Executed-by** (filled at completion): Haiku sub-agent (R-1 audit only; removal moved to Sprint 86 by Harold, q1); ~8 min, estimated from commit times (Harold, register q1 = 2, 2026-11-23): main-session check and record only, 18:06-18:14 (b4956bb8); the Haiku agent's run time cannot be read from commits.
 **Step-types**: UI-REMOVE `[no-history]`, TEST-WIDGET. **Est-Effort**: 45-75m.
 
 ## Task 9 -- F329: Python batch H4: the hook test tooling, then retire the PowerShell copies (Priority 36)

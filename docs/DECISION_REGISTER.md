@@ -20,11 +20,13 @@ here and not in `SPRINT_N_PLAN.md`. Source: Harold, 2026-11-22 and 2026-11-23 (d
 
 ### Open
 
-- q1. Sprint 85: how to record six task rows that have no minutes (asked 2026-11-21)
-- q2. F363: may the task-clock gates add new hook matchers to `.claude/settings.json` (asked 2026-11-23)
+- None.
 
 ### Closed
 
+- q1. Sprint 85: how to record six task rows that have no minutes -- answered 2 (Harold, 2026-11-23)
+- q2. F363: may the task-clock gates add new hook matchers to `.claude/settings.json` -- answered 1 (Harold, 2026-11-23)
+- d3. Backlog refinement shows ALL open items with details for all (Harold, 2026-11-23)
 - d1. Questions, decisions and improvements live in this register with short ids (Harold, 2026-11-23)
 - d2. F363 (task clock: minutes recorded for every task) is in Sprint 86 (Harold, 2026-11-23)
 
@@ -33,7 +35,13 @@ here and not in `SPRINT_N_PLAN.md`. Source: Harold, 2026-11-22 and 2026-11-23 (d
 ### q1. Sprint 85: how to record six task rows that have no minutes
 
 - **Asked**: 2026-11-21 04:15 at Phase 7.7.5 (Sprint 85). Old label: q-S85-min.
-- **Status**: OPEN.
+- **Status**: CLOSED.
+- **Answer (Harold, 2026-11-23)**: "q1 2".
+- **Done (2026-11-23 14:01)**: the six `**Executed-by**` lines in `docs/sprints/SPRINT_85_PLAN.md` and the six
+  Sprint 85 rows in `docs/CODING_VELOCITY.md` now carry estimated minutes, each marked "estimated from commit
+  times (Harold, register q1 = 2)" with its method: Task 1 ~10 (low confidence, no commit names it), Task 2 ~110,
+  Task 4 ~23, Task 5 ~20, Task 7 ~17, Task 8 ~8 (main-session part only; the Haiku agent's time cannot be read
+  from commits).
 - **What it decides**: Sprint 85 Tasks 1, 2, 4, 5, 7 and 8 never had their minutes recorded. Their
   `**Executed-by**` lines in `docs/sprints/SPRINT_85_PLAN.md` say "actual minutes not recorded, 0 min logged ...
   (Sprint 85 retro i7)", and close-out check 3d-3 accepted that text. How should these six rows be recorded?
@@ -49,7 +57,9 @@ here and not in `SPRINT_N_PLAN.md`. Source: Harold, 2026-11-22 and 2026-11-23 (d
 ### q2. F363: may the task-clock gates add new hook matchers to `.claude/settings.json`
 
 - **Asked**: 2026-11-23 13:49 (Sprint 85 cycle, Phase 8.3).
-- **Status**: OPEN.
+- **Status**: CLOSED.
+- **Answer (Harold, 2026-11-23)**: "q2 1". F363 adds all three gates (Agent, Edit|Write|NotebookEdit, commit);
+  recorded on the F363 card.
 - **What it decides**: F363 needs hooks that run on tools no hook watches today. `.claude/settings.json` now
   registers hooks only for `Bash|PowerShell` (PreToolUse) and Stop. F363 adds:
   - **Agent** (PreToolUse and PostToolUse): records a sub-agent task's start at handoff and its end at handback,
@@ -85,6 +95,16 @@ here and not in `SPRINT_N_PLAN.md`. Source: Harold, 2026-11-22 and 2026-11-23 (d
   details 20+ sprints and it should never fail for even one task."
 - **Done**: card F363 in `docs/ALL_SPRINTS_MASTER_PLAN.md` (Priority 32); listed in `docs/sprints/SPRINT_86_PLAN.md`
   "Start of sprint". The rest of Sprint 86 scope is still selected at Phase 8.4.
+
+### d3. Backlog refinement shows ALL open items with details for all
+
+- **Harold, 2026-11-23 (verbatim)**: "Need to tweek the backlog_refinement.md display for this and all future
+  sprints - can you have it include all open backlog items in priority order, group by non-on hold the by on hold,
+  then for details, include details for all of the items listed in the first part."
+- **Done**: `docs/BACKLOG_REFINEMENT.md` "Backlog Presentation Format" (version 1.6), the backlog-refinement skill,
+  `SPRINT_CHECKLIST.md` 1.2 and Phase 1, and `SPRINT_EXECUTION_WORKFLOW.md` Phase 1.2. The index lists every open
+  active item, then every HOLD item; details follow for all of them in the same order ("Details", then "ON HOLD
+  Details"). Replaces the F293 limit of 20.
 
 ## Improvements
 

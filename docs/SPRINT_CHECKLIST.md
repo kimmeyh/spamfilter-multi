@@ -27,7 +27,7 @@ These documents MUST be created/updated during each sprint:
 
 ## Phase 1: Backlog Refinement (MANDATORY -- every sprint, no PO request needed)
 
-- [ ] **1.2 FORMAT GATE (Sprint 50)**: READ `BACKLOG_REFINEMENT.md` section "Backlog Presentation Format" in the SAME TURN before presenting candidates; mirror the template exactly (`**<ID>. <Title> (~effort) Priority <N>**` + Phase/Platform bullets; the NEXT 20 in one priority order in the index and the details, NO phase-group headers, HOLD items one line each in the index (F293); real F#/WS/GP ids only)
+- [ ] **1.2 FORMAT GATE (Sprint 50)**: READ `BACKLOG_REFINEMENT.md` section "Backlog Presentation Format" in the SAME TURN before presenting candidates; mirror the template exactly (`**<ID>. <Title> (~effort) Priority <N>**` + Phase/Platform bullets; ALL open items: every active item in one priority order, then every HOLD item one line each, and details for every item in both lists in the same order, NO phase-group headers (F293; all items, Harold 2026-11-23); real F#/WS/GP ids only)
 
 **Sprint 36 policy change (2026-04-20)**: Phase 1 is MANDATORY on every sprint. Do NOT ask the user "should we do backlog refinement?" -- just run it. Skipping or asking is a process violation.
 
@@ -37,7 +37,7 @@ These documents MUST be created/updated during each sprint:
 - [ ] Update estimates with velocity from recent sprints
 - [ ] Capture newly identified work items
 - [ ] Remove obsolete items
-- [ ] **[CRITICAL -- Sprint 45 retro IMP-1] Read `BACKLOG_REFINEMENT.md` "Backlog Presentation Format" section RIGHT BEFORE presenting candidates -- do not paraphrase from memory.** Required format verbatim: `**<ID>. <Title> (~<effort>) Priority <N>**` with `- Phase:` / `- Platform:` / bullet details per item, the next 20 active candidates in ONE priority order (index and details in the same order, no phase-group headers -- F293, Sprint 79), HOLD items one line each in the index, NOT grid tables, no invented separators/editorializing. Sprint 45 lost a round-trip generating this from memory instead of reading the doc first.
+- [ ] **[CRITICAL -- Sprint 45 retro IMP-1] Read `BACKLOG_REFINEMENT.md` "Backlog Presentation Format" section RIGHT BEFORE presenting candidates -- do not paraphrase from memory.** Required format verbatim: `**<ID>. <Title> (~<effort>) Priority <N>**` with `- Phase:` / `- Platform:` / bullet details per item, ALL open active items in ONE priority order, then ALL HOLD items one line each, with details for every item in both lists in the same order (no phase-group headers -- F293, Sprint 79; all items, Harold 2026-11-23), NOT grid tables, no invented separators/editorializing. Sprint 45 lost a round-trip generating this from memory instead of reading the doc first.
 - [ ] User selects items for Sprint N; record selection for Phase 3 plan doc
 - [ ] Commit refinement changes if ALL_SPRINTS_MASTER_PLAN.md was updated: `git commit -m "docs: Backlog refinement - [date] - [summary]"`
 

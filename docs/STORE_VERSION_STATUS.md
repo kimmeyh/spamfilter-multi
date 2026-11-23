@@ -29,8 +29,10 @@ Partner Center before saying anything about the Store version.
 
 ## 0.25.0 -- Sprint 85 cycle Phase 8.3 (2026-11-22)
 
-**BUILT + VERIFIED, NOT YET SUBMITTED.** Harold uploads both. "Last uploaded to Play" moves to 0.25.0 (versionCode
-23) in the same commit as the Sprint 86 version bump (Phase 3.7.0b), never before it.
+**SUBMITTED, IN ROLLOUT (Harold, 2026-11-23: "store and play are in rollout").** Both the MSIX 0.25.0.0 (Partner
+Center) and the AAB 0.25.0 versionCode 23 (Play closed testing) are submitted. Not yet confirmed live or installed.
+"Last uploaded to Play" moves to 0.25.0 (versionCode 23) in the same commit as the Sprint 86 version bump (Phase
+3.7.0b), never before it.
 
 - **MSIX 0.25.0.0 -- BUILT + VERIFIED** (finished 15:37): prod worktree pulled (49 commits behind) to `main` 8f2e6f5c
   (tag `v0.25.0`, annotated, pushed); release policy gates 27/27 (`msix_config_test`, `version_consistency_test`,

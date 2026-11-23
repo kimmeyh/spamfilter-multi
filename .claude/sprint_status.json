@@ -1,13 +1,13 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-11-23 13:52",
+    "_last_updated": "2026-11-23 14:02",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 86,
         "branch": "feature/20261122_Sprint_86",
-        "status": "Phase 8.3 Store Release",
-        "status_detail": "Phase 8 Release Cycle for Sprint 85. 8.1 done: develop 328f6e29, main 8f2e6f5c (2026-11-22), tag v0.25.0 pushed. 8.2 pass 1 done (d19fdb4d; F362 added). 8.3: MSIX 0.25.0.0 BUILT + VERIFIED 15:37 (prod worktree at 8f2e6f5c, self-test PASS 6/6, manifest 0.25.0.0, 17.9 MB); AAB 0.25.0+23 BUILT + VERIFIED 16:07 (dev worktree, app code equals main; versionCode 23 > 22; F204 OK; 68.4 MB). Waiting: Harold uploads both. Next: 8.4 pass 2 scope selection. Open questions q1 and q2 in docs/DECISION_REGISTER.md (2026-11-23). F363 task clock added to Sprint 86 by Harold (register d2).",
+        "status": "Phase 8.4 Backlog Refinement Pass 2",
+        "status_detail": "Phase 8 Release Cycle for Sprint 85. 8.1 done (develop 328f6e29, main 8f2e6f5c, tag v0.25.0). 8.2 pass 1 done. 8.3 done: MSIX 0.25.0.0 and AAB 0.25.0+23 submitted, in rollout (Harold 2026-11-23). 8.4: pass 2 slate presented in the new all-items format (register d3); Sprint 86 already holds F363 (d2), F362 and F307 by Harold; waiting for Harold's scope selection. Register q1 = 2 and q2 = 1 recorded.",
         "plan_approved": false,
         "pr_number": null,
         "version": "0.25.0+23 (Sprint 86 bump happens at 3.7.0b)"
@@ -50,7 +50,7 @@
     },
     "store_release": {
         "version": "0.25.0 (MSIX 0.25.0.0, AAB versionCode 23)",
-        "state": "BUILT + VERIFIED 2026-11-22, NOT YET SUBMITTED (Harold uploads)",
+        "state": "SUBMITTED, IN ROLLOUT 2026-11-23 (Harold); not yet confirmed live",
         "msix": "D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix",
         "aab": "D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app\\dist\\android-0.25.0+23\\app-prod-release.aab",
         "notes": "docs/store-assets/RELEASE_NOTES_0.25.0_windows.md and _play.md; record in docs/STORE_VERSION_STATUS.md"
@@ -62,9 +62,9 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "Harold: upload MSIX 0.25.0.0 to Partner Center and AAB 0.25.0 (versionCode 23) to Play closed testing; report when submitted.",
-        "8.4: Backlog Refinement pass 2, Harold selects Sprint 86 scope; then Phase 3 planning (version bump to 0.25.1+24 or 0.26.0+24 at 3.7.0b, and move 'Last uploaded to Play' to 23 in that commit).",
-        "Open questions q1 (six Sprint 85 rows with no minutes) and q2 (F363 hook matchers): full text in docs/DECISION_REGISTER.md; re-present both in full until answered."
+        "8.4: Harold selects the rest of Sprint 86 scope from the all-items slate (F363, F362, F307 already in).",
+        "Phase 3 planning; at 3.7.0b bump the version and move 'Last uploaded to Play' to 0.25.0 (versionCode 23) in that commit.",
+        "Register docs/DECISION_REGISTER.md: no open items as of 2026-11-23."
     ],
     "next_sprint_targeted": {
         "number": 86,

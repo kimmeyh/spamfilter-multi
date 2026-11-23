@@ -263,8 +263,8 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Effort for test time (F361 style, estimate, to be measured): about 12-15 new hook cases and unittests, +3-6 s to
   `python .claude/hooks/run-test-cases.py` locally and +3-6 s to the CI hook unittest step; +0 to `flutter test`.
   Runtime cost: one extra hook per Edit/Write in Phases 4-5, target under 100 ms.
-- Decision needed before planning: q2 in `docs/DECISION_REGISTER.md` (new hook matchers in `.claude/settings.json`
-  for Agent and Edit|Write|NotebookEdit).
+- Decided: register q2 = 1 (Harold, 2026-11-23): add all three gates -- new `.claude/settings.json` matchers for
+  Agent (PreToolUse and PostToolUse) and Edit|Write|NotebookEdit (PreToolUse), and the commit gate on Bash|PowerShell.
 - Depends on: F362 (the register that holds `d<n>` exceptions). Pairs with F362 (Priority 34).
 
 **F362. Store every question, decision and improvement in full, and re-ask an open one in full (~45-60m) Priority 34 -- NEW 2026-11-22 (Harold: "Add to backlog for next sprint")**

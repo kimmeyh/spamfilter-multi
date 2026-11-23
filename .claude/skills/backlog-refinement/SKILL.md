@@ -44,11 +44,13 @@ If you cannot tell which pass you are in, read `.claude/sprint_status.json`
    Sprint 50 violation).
 
 4. **Present in the EXACT template** -- opening with the REQUIRED Summary Index
-   ("## Candidates at a glance": the header line only of the NEXT 20 active
-   candidates in priority order), then a SEPARATE list "## ON HOLD Candidates"
-   with each HOLD item one line in full `<ID>. <Title> (~<effort>) Priority HOLD`
-   form (Harold, 2026-10-23), then the details of THE SAME
-   20 IN THE SAME ORDER (F293, Sprint 79). Per item:
+   ("## Candidates at a glance": the header line only of EVERY open active
+   item in priority order, no cutoff), then a SEPARATE list "## ON HOLD Candidates"
+   with EVERY HOLD item one line in full `<ID>. <Title> (~<effort>) Priority HOLD`
+   form (Harold, 2026-10-23), then the details of EVERY ITEM IN BOTH LISTS IN
+   THE SAME ORDER: "## Details" (active), then "## ON HOLD Details" (F293,
+   Sprint 79; all items, Harold 2026-11-23). Before sending, check that index
+   lines = detail cards = open items in the master plan, per group. Per item:
 
    ```markdown
    **<ID>. <Title> (~<effort>) Priority <N>**
@@ -62,8 +64,8 @@ If you cannot tell which pass you are in, read `.claude/sprint_status.json`
      keeps its `- Phase:` bullet (the master plan's storage stays grouped by
      phase, Sprint 79 Q5 = 1)
    - Priorities NUMERIC: increments of 10; sprint-together items increments of 2
-   - HOLD items: `Priority HOLD`, one line each in the index only; their details
-     stay in the master plan
+   - HOLD items: `Priority HOLD`, one line each in the index, and their full
+     cards under "## ON HOLD Details"
    - NO grid tables, NO selection-numbering prefixes, NO ad-hoc groupings
    - Include observations / alternative sprint compositions AFTER the formatted
      list, not woven into it
