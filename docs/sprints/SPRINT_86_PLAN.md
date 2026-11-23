@@ -11,6 +11,12 @@ Phase 3; this stub only records what Sprint 85 carried in.
   HEAD of `main` after the merge. Serialize the Windows and Android builds.
 - **F307 removal (Harold, Sprint 85 q1)** -- remove the "Create rule" page (RuleQuickAddScreen). Sprint 85 Task 8
   (#568) did the R-1 coverage audit only; #568 stays open for this sprint. Master plan Priority 36.
+- **F363 task clock (Harold, 2026-11-23, register d2)** -- every task's start and finish recorded by a script and
+  enforced by gates, so no task closes with no minutes. Build it first, so the other Sprint 86 tasks use it. Master
+  plan Priority 32. Needs register q2 (new hook matchers) answered before planning.
+- **F362 question register (Harold, 2026-11-22: "Add to backlog for next sprint")** -- the register file
+  `docs/DECISION_REGISTER.md` was started 2026-11-23 (register d1); the card finishes the process changes. Master
+  plan Priority 34.
 
 ## Manual Validation carried from Sprint 85
 
@@ -42,12 +48,7 @@ improvement Effort states its full-suite and CI test time (Priority 38, Harold: 
 store every question, decision and improvement in full and re-ask an open one in full (Priority 34, Harold
 2026-11-22: "Add to backlog for next sprint").
 
-## Open questions (carried from the Sprint 85 cycle, in full)
+## Open questions
 
-- **q-S85-min (asked 2026-11-21 04:15 at 7.7.5, not yet answered)**: Sprint 85 Tasks 1, 2, 4, 5, 7 and 8 never had
-  their minutes recorded. Their `**Executed-by**` lines in `SPRINT_85_PLAN.md` say "actual minutes not recorded, 0
-  min logged ... (Sprint 85 retro i7)", and close-out check 3d-3 accepts that. How should they be recorded?
-  1. Keep "actual minutes not recorded, 0 min logged" (Recommendation: it does not invent numbers; i7 now records
-     a start time so this does not happen again). Con: the velocity table has six rows with no time.
-  2. Write estimated minutes from the commit times, each marked "estimated". Pro: the velocity table has a number.
-     Con: commit gaps include review, builds and idle time, so the number can be wrong by a large amount.
+Moved 2026-11-23 to `docs/DECISION_REGISTER.md` (Harold, register d1): questions, decisions and improvements live
+there in full, not in a sprint plan. The former q-S85-min is register q1. Open: q1, q2.

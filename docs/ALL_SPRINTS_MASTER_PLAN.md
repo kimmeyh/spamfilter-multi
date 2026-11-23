@@ -212,6 +212,61 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 
 ### Backlog from the Sprint 85 Phase 8 cycle (Harold, 2026-11-22)
 
+**F363. Task clock: every task's start and finish are recorded by a script and enforced by gates, so no task ever ends with no minutes (~180-270m) Priority 32 -- NEW 2026-11-23, SPRINT 86 (Harold, register d2: "add to this sprint ... it should never fail for even one task")**
+- Phase: Process
+- Platform: development process (hooks and scripts; no app code)
+- Trigger: six of the sixteen Sprint 85 task cards (Tasks 1, 2, 4, 5, 7, 8) closed with "actual minutes not
+  recorded, 0 min logged". Open question q1 in `docs/DECISION_REGISTER.md` covers those six rows; this card stops
+  the miss from happening again.
+- Root causes (evidence read 2026-11-23):
+  - RC-1: close-out check 3d-3 accepted the text of the miss. `EXECUTED_BY_MINUTES`
+    (`.claude/hooks/verify-closeout-complete.py:74`) matches any `\d+ min`, so "0 min logged" passed.
+  - RC-2: nothing blocks at the time. `warn-commit-without-velocity.py` always exits 0 (warn only), and Sprint 85
+    retro i7 ("add the velocity row with `Started <date HH:MM>` when the task starts") is a document line with no gate.
+  - RC-3: a close-out check can only detect. By then the clock reading is gone and cannot be recovered.
+  - RC-4: the misses are main-session work. Five of the six involve the main session (Task 8 was a Haiku sub-agent
+    whose launch and handback times were not written down). The ten recorded rows are mostly sub-agent tasks, whose
+    launch and handback give a start and an end. A task with no commit (Task 7, decisions only) had no event at all.
+- R-1: `scripts/task-clock.py` with `start <task>`, `stop <task>` (end of one work segment, for interleaved tasks),
+  and `finish <task>`. The script reads the clock itself; Claude never types a time. It writes a per-sprint ledger
+  `docs/sprints/SPRINT_<N>_TASK_CLOCK.json` (committed), and at `finish` it writes the CODING_VELOCITY row (Started,
+  Finished, minutes) and the plan's `**Executed-by**` minutes from the ledger total.
+- R-2 handoff and handback (sub-agent tasks): a PreToolUse hook on the Agent tool records the task's start when
+  the prompt names `Task <N>` of the current sprint and no start exists. A PostToolUse hook records the handback
+  time for a foreground agent. For a background agent, the end comes from `finish` at handback; verify first
+  whether Claude Code's SubagentStop hook event carries enough to name the task (unverified 2026-11-23; read the
+  hooks reference before building).
+- R-3 main-session start: during Phases 4-5 (read from `sprint_status.json`), a PreToolUse hook on
+  Edit|Write|NotebookEdit BLOCKS an edit to a tracked file when no task clock is open. Exempt list: the sprint plan,
+  the ledger, `docs/CODING_VELOCITY.md`, `docs/DECISION_REGISTER.md`, `.claude/sprint_status.json`. The block text
+  gives the one command to run. This is the gate that would have caught Sprint 85 Tasks 1, 2, 4 and 5.
+- R-4 finish: a `git commit` whose message has `Closes #<card>` is BLOCKED unless that task's ledger has `finish`.
+  A commit naming `Task <N>` is BLOCKED unless that task has a start. The warn-only velocity hook is replaced by
+  this gate (or kept only for commits the gate does not cover).
+- R-5 end-of-task checklist: `finish` prints and checks the task's close lines: ledger start and finish present,
+  CODING_VELOCITY row complete, Executed-by line names the model and the ledger minutes, `sprint_status.json` task
+  status updated. A line that fails is printed as FAIL and the script exits non-zero.
+- R-6 close-out 3d-3 hardened: every task card needs a ledger entry with start and finish, and its Executed-by
+  minutes must equal the ledger total. "0 min" and "not recorded" are rejected. The only exception is a line that
+  names a register decision `d<n>` in which Harold accepted the gap.
+- R-7 fail closed: every gate that cannot read the ledger or `sprint_status.json` BLOCKS and says "the check did
+  not run", never passes in silence. Outside Phases 4-5 the gates do nothing (Phase 8 and refinement are free).
+- R-8 a task with no commit and no edit (a decisions-only task such as Sprint 85 Task 7) is covered by R-6: it
+  cannot close out without `start` and `finish`.
+- AC-1: a fixture plan with the exact Sprint 85 line "actual minutes not recorded, 0 min logged" BLOCKS 3d-3.
+- AC-2: an Edit to `mobile-app/lib/` in Phase 4 with no open task BLOCKS; the same edit after `start` passes.
+- AC-3: an Agent call naming `Task 3` writes a start to the ledger; a commit with `Closes #<card>` before `finish`
+  BLOCKS.
+- AC-4: an unreadable ledger BLOCKS with "the check did not run".
+- AC-5: Sprint 86 itself closes out with every task clocked by this mechanism (the card is built first in the
+  sprint, so the other Sprint 86 tasks are its first real use).
+- Effort for test time (F361 style, estimate, to be measured): about 12-15 new hook cases and unittests, +3-6 s to
+  `python .claude/hooks/run-test-cases.py` locally and +3-6 s to the CI hook unittest step; +0 to `flutter test`.
+  Runtime cost: one extra hook per Edit/Write in Phases 4-5, target under 100 ms.
+- Decision needed before planning: q2 in `docs/DECISION_REGISTER.md` (new hook matchers in `.claude/settings.json`
+  for Agent and Edit|Write|NotebookEdit).
+- Depends on: F362 (the register that holds `d<n>` exceptions). Pairs with F362 (Priority 34).
+
 **F362. Store every question, decision and improvement in full, and re-ask an open one in full (~45-60m) Priority 34 -- NEW 2026-11-22 (Harold: "Add to backlog for next sprint")**
 - Phase: Process
 - Platform: N/A
@@ -219,12 +274,18 @@ All incomplete items in relative priority order. Priority in increments of 10; i
   to one and it has scrolled off the screen, always re-ask with the full contents every time (it is to hard to
   scroll back to find them)."* Trigger: the 7.7.5 announcement asked how to record six Executed-by lines with no
   minutes; the question was in the terminal only, not in any file.
-- R-1: every question, decision and improvement put to Harold is written to the sprint plan IN FULL at the time it
-  is asked: the id (q<n>, i<n>, d<n>), what it decides, every option with its pros and cons, the recommendation, and
-  later Harold's verbatim answer and the date. A one-line summary or a reference to the chat is not enough.
-- R-2: the plan keeps an "Open questions" section. A question leaves it only when Harold answers or withdraws it.
-- R-3: a message that needs an answer to an open question copies the FULL entry from the plan, never a reference to
+- Harold, 2026-11-23 (register d1): the items live in a repository file OUTSIDE the sprint plan, because they cross
+  sprints and some are not plan items; easy to find by search or index; short ids (i1, q1, d1). Started
+  2026-11-23: `docs/DECISION_REGISTER.md` exists with an index, q1, q2, d1 and d2.
+- R-1: every question, decision and improvement put to Harold is written to `docs/DECISION_REGISTER.md` IN FULL at
+  the time it is asked: the id (q<n>, i<n>, d<n>; counters run across sprints, never reused), what it decides,
+  every option with its pros and cons, the recommendation, and later Harold's verbatim answer and the date. A
+  one-line summary or a reference to the chat is not enough.
+- R-2: the register's Index lists every open item. An item leaves Open only when Harold answers or withdraws it.
+- R-3: a message that needs an answer to an open item copies the FULL entry from the register, never a reference to
   it (extends the existing "re-present, do not reference" rule in CLAUDE.md with a stored source to copy from).
+- R-5: CLAUDE.md, `SPRINT_EXECUTION_WORKFLOW.md` 7.3 STEP 5 and the retrospective template name the register as the
+  place improvements and questions are written.
 - R-4: decide with Harold whether a close-out check blocks on an "Open questions" entry with no answer (prevention by
   gate, like check 3d-4) or whether the rule stays documentation only.
 - Effort for test time (F361): a close-out check adds about 3-4 hook cases, under 2 s locally and in CI; documentation
