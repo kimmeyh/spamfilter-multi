@@ -461,6 +461,12 @@ the items listed in the first part."* This replaces the F293 limit of 20.
 - Completeness check before sending: the count of index lines equals the count of detail cards, for each group, and
   equals the count of open items in the master plan (active and HOLD). A mismatch is fixed before the presentation
   is sent.
+- **When the presentation is too long for one message (Harold, 2026-11-23, register q3 = 2)**: send it as several
+  chat messages in a row, all in the same turn. Message 1 holds both index lists in full. The details follow in
+  order, split only between cards, and each message starts with `Part <n> of <m>: <first id> to <last id>`. Nothing
+  is summarized or left out.
+- **The generated presentation is committed (register q5 = 1)** as `docs/sprints/SPRINT_<N>_BACKLOG_SLATE.md`, the
+  record of what pass 2 showed. The master plan stays the source; the file is not edited after the selection.
 
 **Summary Index (REQUIRED at the top of every presentation -- Harold, Sprint 50)**: before the detailed cards, list the header line only (no bullets) of every open active item, in presentation order, then every HOLD item, so the Product Owner can scan the slate at a glance:
 
@@ -627,6 +633,7 @@ Request refinement if:
 **Status**: Active
 
 **Updates**:
+- 1.7 (2026-11-23): A presentation too long for one message is split across consecutive messages (index first, details split between cards, "Part n of m"); the generated slate is committed as `SPRINT_<N>_BACKLOG_SLATE.md` -- Harold, register q3 = 2 and q5 = 1
 - 1.6 (2026-11-23): The presentation shows ALL open items, not the next 20: every active item in priority order, then every HOLD item; details for every item in both lists, in the same order (`## Details`, then `## ON HOLD Details`) -- Harold, for this and all future sprints
 - 1.5 (2026-10-13): The presentation shows the NEXT 20 active candidates in one priority order, index and details in the same order, no phase-group headers; HOLD items in the index only; the master plan's storage stays grouped by phase (F293, Harold; Sprint 79 Q5 = 1)
 - 1.4 (2026-08-17): HOLD items in the Summary Index display one line each in full `<ID>. <Title> (~<effort>) Priority HOLD` form, never a bare id list -- Harold

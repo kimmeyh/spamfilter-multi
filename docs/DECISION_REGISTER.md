@@ -20,9 +20,12 @@ here and not in `SPRINT_N_PLAN.md`. Source: Harold, 2026-11-22 and 2026-11-23 (d
 
 ### Open
 
+None.
 
 ### Closed
 
+- q3. Where the all-items backlog details are shown when they are too long for one message -- answered 2 (Harold, 2026-11-23)
+- q5. Commit the generated backlog slate file -- answered 1 (Harold, 2026-11-23)
 - q4. Which EU status was declared in Play Console -- answered 2, non-trader (Harold, 2026-11-23)
 - q1. Sprint 85: how to record six task rows that have no minutes -- answered 2 (Harold, 2026-11-23)
 - q2. F363: may the task-clock gates add new hook matchers to `.claude/settings.json` -- answered 1 (Harold, 2026-11-23)
@@ -76,6 +79,29 @@ here and not in `SPRINT_N_PLAN.md`. Source: Harold, 2026-11-22 and 2026-11-23 (d
      clock until its first commit, which is the Sprint 85 failure.
   3. Script and documentation only, no new gates. Pro: no settings change. Con: it relies on Claude remembering,
      which is what failed in Sprint 85.
+
+### q3. Where the all-items backlog details are shown when they are too long for one message
+
+- **Asked**: 2026-11-23 (Sprint 85 cycle, Phase 8.4); in full at 19:33.
+- **Status**: CLOSED.
+- **Answer (Harold, 2026-11-23)**: "q3. 2".
+- **Done**: `docs/BACKLOG_REFINEMENT.md` "Presentation order" (version 1.7): several consecutive chat messages,
+  index first, details split between cards, "Part n of m".
+- **What it decides**: the d3 presentation (all items, details for all) was 50 active and 29 HOLD items, 1,059 lines,
+  about 115,000 characters, far more than one message.
+- **Options**: 1. Repo file plus the full index in chat (Recommendation). Pro: complete, searchable, in git. Con:
+  details read in VS Code. 2. Several chat messages in a row. Pro: all in chat. Con: scrolling; hard to find an item
+  later. 3. A private web page with expandable details. Pro: readable, linkable. Con: outside the repo; drifts.
+
+### q5. Commit the generated backlog slate file
+
+- **Asked**: 2026-11-23 19:33 (Sprint 85 cycle, Phase 8.4).
+- **Status**: CLOSED.
+- **Answer (Harold, 2026-11-23)**: "q5. 1".
+- **Done**: `docs/sprints/SPRINT_86_BACKLOG_SLATE.md` committed; rule in `docs/BACKLOG_REFINEMENT.md` 1.7.
+- **What it decides**: whether the script-generated slate is kept in git as the pass 2 record.
+- **Options**: 1. Commit it (Recommendation). Pro: a fixed record of what was chosen from. Con: a second copy that
+  ages. 2. Do not commit; regenerate when needed. Pro: no duplicate. Con: no record.
 
 ### q4. Which EU status was declared in Play Console
 
