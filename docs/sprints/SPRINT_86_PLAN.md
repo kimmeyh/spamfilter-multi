@@ -104,6 +104,15 @@ end per the Sprint 49 note). Phase 3.2.2.1 findings below changed none of them.
 
 ## Tasks
 
+### Task 0 -- Version bump 0.26.0+24 and its release notes (3.7.0b) (#578)
+
+**Result**: version bump done in 64bfeb07 (2026-11-24, before the task clock existed). The per-store release notes
+that Sprint 85 wrote WITH its bump (7c899997) were missed; found at Phase 5 by `release_notes_test` ("missing
+RELEASE_NOTES_0.26.0_windows.md") and written then: `docs/store-assets/RELEASE_NOTES_0.26.0_windows.md` and
+`_play.md`, derived per STORE_RELEASE_PROCESS.md Step 1b. The minutes below cover the notes only.
+**Executed-by**: Opus main session -- 3 min (task clock 2026-11-24 06:56 to 2026-11-24 06:58, 1 segment(s)); the bump itself (64bfeb07) was done before the task clock existed; these minutes are the release notes only
+**Est-Effort**: 10-20m
+
 ### Task 1 -- F362: Store every question, decision and improvement in full, and re-ask an open one in full (Priority 34)
 
 **Value**: This prevents a question or decision from existing only in the terminal, where it scrolls away.
