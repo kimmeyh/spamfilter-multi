@@ -315,6 +315,17 @@ returns).
 **Value**: This names which device state stopped a background scan, so the 3 unexplained AOL stops
 (`reason=deviceState raw=4`) can be diagnosed.
 
+**Result**: R-2 changed by evidence: the battery channel lives in `MainActivity.configureFlutterEngine`
+(`MainActivity.kt:120`), but the stop handler runs in the WorkManager background engine, which the plugin creates
+itself (`BackgroundWorker.kt:132`, workmanager_android 0.10.9) and which never sees MainActivity. So the read goes
+through a new LOCAL plugin `mobile-app/packages/spamfilter_device_state/` (no pub.dev dependency), registered on every
+engine. The stop line ends `powerSave=<v> deviceIdle=<v> thermal=<v>` (`unknown` per unreadable value, 500 ms bound,
+never throws). VERIFIED on the emulator by Task 7: compiled first time; live stop line `... reason=cancelledByApp
+raw=1 ((all accounts) trigger=test) powerSave=false deviceIdle=false thermal=none`, and mutant "plugin returns
+notImplemented" KILLED by that assertion. iPhone: `workmanager_apple` 0.9.11 never calls `onTaskStopped`, so there is
+no stop event (declared ADR-0042 exception). 5 host tests, 4 host mutants KILLED. Real-phone values (a real
+power-save or Doze stop) are confirmed only by the next Fold log.
+
 **Requirements**:
 - R-1: at `onWorkerStopped` (`android_background_scan_worker.dart:107`), write one diagnostic line with power-save
   mode, device-idle mode and thermal status (Android `PowerManager`).
@@ -350,7 +361,7 @@ stop event; no change. iPhone: R-3.
 **Model**: Sonnet -- *why not Haiku*: a method channel from a background isolate (the Sprint 79 wrong-thread
 `onStopped` history).
 **Delegation checklist included in the sub-agent prompt**: yes
-**Executed-by**: (at completion)
+**Executed-by**: Sonnet sub-agent (as assigned), plus Opus main session integration; device verification done inside Task 7's emulator run (not counted here) -- 139 min (task clock 2026-11-24 01:46 to 2026-11-24 06:40, 3 segment(s)); agent run per harness 136 min (8178065 ms)
 **Step-types**: SVC-EDIT, NATIVE-ANDROID, TEST-UNIT
 **Est-Effort**: 30m (likely 30-60m if the background isolate needs its own channel)
 
@@ -444,9 +455,27 @@ host widget test already covers Windows.
 **Definition of Done**: default DoD; emulator left running. Effort for test time (F361): local +2-4 min per emulator
 run (not in the default suite); CI +0 (no emulator job).
 
+**Result**: `integration_test/android_phone_paths_test.dart`, 4 cases, all PASS on emulator-5554 (pixel34_updated),
+3 of 3 consecutive runs: two isolates appending leave only whole lines; a second isolate waits for the first's lock;
+real WorkManager start then stop with a real device-state stop line (Task 5 verified); the shared enable path asks for
+notification permission, then schedules. "Enable dialog" read as the shared `BackgroundScanEnabler.schedule` path: the
+only dialog is the OS permission prompt, which Flutter finders cannot see. Runner:
+`python mobile-app/scripts/run-integration-tests.py --android-emulator` (flutter called directly: a debug `flutter test`
+needs no secrets, and `build-with-secrets.py` has no test mode); 7 runner unittests incl. a real failing command (AC-2).
+Mutants (AC-1, on the emulator): lock `exclusive: false`, `onTaskStopped` unwired, plugin `notImplemented`, permission
+request removed -- all KILLED. R-3: `ios.yml` loops over `integration_test/*_test.dart`, so the file joins the iOS
+Simulator gate unchanged; off Android the lock cases use `Directory.systemTemp` and the Android cases skip (iOS run
+unverified, no Mac). Caveat: the stop case cancels in a window of about 2 s after rule seeding (3 of 3 passed).
+Test time (F361): about 1.5-2 min per emulator run (14 min for a cold first build); not in the default suite; CI +0
+on Android, iOS gate +1 file.
+**Product findings (backlog candidates, unverified on a phone)**: (1) after a reinstall, MediaProvider denies the new
+install the old install's `Documents/.../dev_diag_*.log`, so the worker writes no diagnostic lines (the test points
+the log at the app's own folder); (2) a worker stopped inside the fresh-install rule-seeding transaction leaves the
+stop handler unable to read its settings, and other isolates' DB writes hung over 5 s.
+
 **Model**: Sonnet -- *why not Haiku*: a new emulator harness and isolate-level lock test.
 **Delegation checklist included in the sub-agent prompt**: yes
-**Executed-by**: (at completion)
+**Executed-by**: Sonnet sub-agent (as assigned) -- 83 min (task clock 2026-11-24 05:17 to 2026-11-24 06:40, 1 segment(s)); agent run per harness 82 min (4930170 ms)
 **Step-types**: TEST-INTEGRATION
 **Est-Effort**: 120-180m
 
