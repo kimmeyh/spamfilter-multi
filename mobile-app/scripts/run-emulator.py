@@ -120,6 +120,14 @@ def install_and_start(adb: str, serial: str, apk: Path, package: str) -> int:
     return 0
 
 
+def flutter_run_argv(flutter: str, serial: str) -> list[str]:
+    """`flutter run` for the DEV flavor. android/app/build.gradle.kts defines flavors dev and prod and pubspec.yaml has no
+    default-flavor, so a run without --flavor has no variant to pick (C1-3, Sprint 86 5.1.2). The flag pair mirrors
+    run-integration-tests.py and build-with-secrets.py flavor_args. No secrets are injected (as in run-integration-tests.py):
+    the app has no ANDROID_GMAIL_CLIENT_ID, so Gmail sign-in is off; use build-with-secrets.py --run for a credentialed run."""
+    return [flutter, "run", "--no-pub", "-d", serial, "--flavor", "dev", "--dart-define=APP_ENV=dev"]
+
+
 def main(argv: list[str] | None = None) -> int:
     sup.common.configure_stdio()
     args = parse_args(argv)
@@ -138,7 +146,7 @@ def main(argv: list[str] | None = None) -> int:
     sup.say("[emulator] Boot complete.")
     sup.say(f"Project: {project}")
 
-    flutter_run = [str(Path(sup.common.find_tool("flutter") or "flutter")), "run", "--no-pub", "-d", serial]
+    flutter_run = flutter_run_argv(str(Path(sup.common.find_tool("flutter") or "flutter")), serial)
     if args.install_release_apk:
         apk = Path(args.apk) if args.apk else project / DEFAULT_APK
         if apk.is_file():

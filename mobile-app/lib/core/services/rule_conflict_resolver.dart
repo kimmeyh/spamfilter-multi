@@ -2,8 +2,9 @@
 ///
 /// When adding a block rule, checks for and removes conflicting safe senders.
 /// When adding a safe sender, checks for and removes conflicting block rules.
-/// Used by ResultsDisplayScreen (inline), the No Rule Review pop-up's quick
-/// actions, and SafeSenderQuickAddScreen to ensure consistent behavior.
+/// Used by SafeSendersManagementScreen and RuleQuickActionService (which the
+/// No Rule Review pop-up's quick actions go through). SafeSenderQuickAddScreen
+/// does NOT use it: it has its own private _removeConflictingRules.
 library;
 
 import 'package:logger/logger.dart';

@@ -416,6 +416,7 @@ void main() {
     await probe.close(); // nothing listens: connect fails at once
     final lines = <String>[];
     ImapConnectDiagnostics.resetForTest();
+    ImapConnectDiagnostics.logEnabled = () async => true;
     ImapConnectDiagnostics.sink = (d) async => lines.add(d);
     ImapConnectDiagnostics.networkTypeReader = () async => 'ethernet';
     addTearDown(ImapConnectDiagnostics.resetForTest);
@@ -426,6 +427,7 @@ void main() {
       throwsA(isA<ConnectionException>().having((e) => e.toString(), 'message',
           contains('Network connection failed: SocketException'))),
     );
+    await ImapConnectDiagnostics.settleForTest(); // the report is background
     expect(lines, hasLength(1));
     expect(lines.single, contains('phase=tcp+tls'));
     expect(lines.single, contains('network=ethernet'));

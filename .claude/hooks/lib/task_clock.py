@@ -133,20 +133,51 @@ def load(root: Path, sprint: int) -> dict:
     for key, task in data["tasks"].items():
         if not isinstance(task, dict) or not isinstance(task.get("segments"), list):
             raise LedgerError(f"{path.name} task {key} has no 'segments' list")
+        for index, segment in enumerate(task["segments"]):
+            _check_segment(path.name, key, index, segment)
+        if task.get("finished") is not None:
+            _check_time(path.name, f"task {key} finished", task["finished"])
     return data
+
+
+def _check_time(name: str, where: str, value) -> None:
+    """Raise LedgerError unless `value` is a time string in TIME_FORMAT (R-7: a malformed ledger must block the
+    gates, never raise a bare ValueError that hooklib turns into an allow)."""
+    try:
+        if not isinstance(value, str):
+            raise ValueError("not a string")
+        datetime.strptime(value, TIME_FORMAT)
+    except ValueError as exc:
+        raise LedgerError(f"{name} {where} is not a {TIME_FORMAT} time ({value!r})") from exc
+
+
+def _check_segment(name: str, key: str, index: int, segment) -> None:
+    where = f"task {key} segment {index}"
+    if not isinstance(segment, dict):
+        raise LedgerError(f"{name} {where} is not an object")
+    _check_time(name, f"{where} start", segment.get("start"))
+    if segment.get("end") is not None:
+        _check_time(name, f"{where} end", segment["end"])
 
 
 def save(root: Path, sprint: int, ledger: dict) -> None:
     """Write the ledger atomically (temp file + replace), so a crash never leaves half a file."""
     path = ledger_path(root, sprint)
-    path.parent.mkdir(parents=True, exist_ok=True)
     text = json.dumps(ledger, indent=2, sort_keys=True) + "\n"
+    tmp = None
     try:
+        path.parent.mkdir(parents=True, exist_ok=True)
         fd, tmp = tempfile.mkstemp(dir=str(path.parent), prefix=path.name, suffix=".tmp")
         with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as handle:
             handle.write(text)
         os.replace(tmp, path)
     except OSError as exc:
+        if tmp is not None:
+            # A stray *.tmp would be swept into a commit by `git add -A`.
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
         raise LedgerError(f"{path.name} could not be written ({exc})") from exc
 
 

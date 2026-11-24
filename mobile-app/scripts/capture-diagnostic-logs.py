@@ -29,7 +29,8 @@ Defects found in the PowerShell original, and what the port does:
   - A hardcoded account name in the next-steps text: DROPPED (use whichever account you test).
 
 Exit codes: 0 done; 1 adb or an online emulator is missing, logcat could not start or exited at once, there is no capture to
-stop, or a log file is missing; 2 a usage error (argparse).
+stop, a log file is missing or empty (0 bytes), the log holds no diagnostic marker at all, a capture id file already exists
+at start, or the capture process cannot be stopped (PermissionError); 2 a usage error (argparse).
 
 What this does NOT catch: a recycled process id (the stop kills whatever process now has the saved id; the id file lives
 only while a capture runs, and the stop warns when the id is gone), logcat lines lost to the ring buffer size when a scan is
@@ -53,8 +54,15 @@ import android_support as sup  # noqa: E402
 PID_FILE = ".logcat_pid"
 LOG_GLOB = "diagnostic_bulk_mail_*.log"
 DIAG_MARK = "=== SCAN DIAGNOSTICS ==="
-MATCHED = re.compile("✓ Email.*matched rule")
-NOT_MATCHED = re.compile("✗ Email.*did not match")
+# The lines the app logs (rule_evaluator.dart, AppLogger.eval -> "[EVAL] ..." at debug level, so a debug build):
+#   Email from <from> matched rule "<name>" (pattern: ...)
+#   Email "<subject>" from <from> did not match any of <n> enabled rules or safe senders
+# (C3-3, Sprint 86 5.1.2: the old check marks "✓ Email" / "✗ Email" are no longer printed anywhere in lib.)
+# MATCHED_LITERAL / NOT_MATCHED_LITERAL are the fixed text the unit test finds in mobile-app/lib.
+MATCHED_LITERAL = "matched rule"
+NOT_MATCHED_LITERAL = "did not match any of"
+MATCHED = re.compile(r"\[EVAL\] Email from .* " + MATCHED_LITERAL + r" \"")
+NOT_MATCHED = re.compile(r"\[EVAL\] Email \".*\" from .* " + NOT_MATCHED_LITERAL + r" \d+ enabled rules")
 ERRORS = re.compile(r"(ERROR|Exception|EXCEPTION|failed)")
 MIGRATION = re.compile(r"(migration|Migration|YAML|Imported)")
 RULES_LOADED = re.compile(r"Rules loaded: (\d+)")
@@ -100,6 +108,11 @@ def do_start(log_dir: Path, log_file: Path | None) -> int:
     status(f"Using emulator {serial}" + (f" (first of {len(serials)})" if len(serials) > 1 else ""))
 
     log_dir.mkdir(parents=True, exist_ok=True)
+    pid_path = log_dir / PID_FILE
+    if pid_path.exists():
+        status(f"ERROR: a capture may still be running ({pid_path} exists). Run --action stop first, or delete the file "
+               "after you confirm no logcat process of this script is running.")
+        return 1
     target = log_file or log_dir / f"diagnostic_bulk_mail_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
     code, out = sup.run_capture([adb, "-s", serial, "logcat", "-c"], timeout=60)
     if code != 0:
@@ -127,12 +140,44 @@ def do_start(log_dir: Path, log_file: Path | None) -> int:
     return 0
 
 
+def windows_pid_alive(pid: int) -> bool:
+    """True when a Windows process with this id exists and has not exited. Access denied on open counts as alive."""
+    import ctypes
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.OpenProcess.restype = ctypes.c_void_p
+    handle = kernel32.OpenProcess(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
+    if not handle:
+        return ctypes.get_last_error() != 87  # 87 = no such process id
+    try:
+        code = ctypes.c_ulong()
+        if not kernel32.GetExitCodeProcess(ctypes.c_void_p(handle), ctypes.byref(code)):
+            return True
+        return code.value == 259  # STILL_ACTIVE
+    finally:
+        kernel32.CloseHandle(ctypes.c_void_p(handle))
+
+
 def stop_process(pid: int) -> bool:
-    """True when a process was stopped; False when it was already gone."""
+    """True when a process was stopped; False when it was already gone (no such process).
+
+    Any OTHER failure (PermissionError: the process exists and cannot be stopped) is raised, so do_stop reports it instead
+    of calling a live capture "already gone" (C6-5, Sprint 86 5.1.2). A missing pid is ProcessLookupError on POSIX and
+    OSError with winerror 87 (invalid parameter) on Windows.
+    """
     try:
         os.kill(pid, signal.SIGTERM)
-    except OSError:
+    except ProcessLookupError:
         return False
+    except PermissionError:
+        # Windows also reports an EXITED process whose handle is still open elsewhere as access denied (WinError 5),
+        # so ask the OS whether the process is alive before calling this a refusal.
+        if os.name == "nt" and not windows_pid_alive(pid):
+            return False
+        raise
+    except OSError as exc:
+        if getattr(exc, "winerror", None) == 87:
+            return False
+        raise
     return True
 
 
@@ -153,7 +198,12 @@ def do_stop(log_dir: Path, log_file: Path | None) -> int:
     except (OSError, ValueError, KeyError, TypeError) as exc:
         status(f"ERROR: the capture id file {pid_path} is unreadable: {exc}")
         return 1
-    if stop_process(pid):
+    try:
+        stopped = stop_process(pid)
+    except OSError as exc:
+        status(f"ERROR: could not stop process {pid}: {exc}. The id file is kept; stop it by hand, then delete {pid_path}.")
+        return 1
+    if stopped:
         status(f"Log capture stopped (process id {pid}).")
     else:
         status(f"WARNING: process {pid} was already gone.")
@@ -179,6 +229,9 @@ def read_lines(path: Path) -> list[str]:
 def analyze(path: Path, brief: bool) -> int:
     if not path.is_file():
         status(f"ERROR: log file not found: {path}")
+        return 1
+    if path.stat().st_size == 0:
+        status(f"ERROR: the log file is empty (0 bytes): {path}. Nothing was captured (no scan ran, or logcat was cleared).")
         return 1
     lines = read_lines(path)
     section(f"Analyzing Log File: {path}")
@@ -254,6 +307,10 @@ def analyze(path: Path, brief: bool) -> int:
     else:
         sup.say("  (no 'Safe senders loaded:' line found)")
     sup.say("")
+    if not (marks or matched or unmatched or any(RULES_LOADED.search(line) for line in lines)):
+        status("ERROR: no diagnostic marker found (no SCAN DIAGNOSTICS block, no rule match or no-match line, no 'Rules "
+               "loaded:' line). The scan may not have run, or the build is not a debug build ([EVAL] lines are debug level).")
+        return 1
     return 0
 
 

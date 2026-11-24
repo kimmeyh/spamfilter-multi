@@ -15,4 +15,4 @@ everything after the live Store version (`STORE_VERSION_STATUS.md`).
 
 Review No Rule Items no longer shows a Create rule button. Tap an email to open its rule pop-up, where you can block the sender, the domain or the subject.
 
-When the diagnostic log is turned on (Settings, Write a diagnostic log) and an email server connection fails or times out, the log now names the step that did not finish and the type of network in use.
+When the diagnostic log is turned on (Settings, Write a diagnostic log) and an email server connection fails with a network error or times out, the log now records the type of network in use and, where the app can tell, the connection step that did not finish.

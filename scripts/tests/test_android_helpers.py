@@ -384,8 +384,8 @@ class SetupOauthTests(Sandbox):
 
     def write_secrets(self, **extra) -> Path:
         path = Path(self.tmp.name) / "secrets.dev.json"
-        data = {"GMAIL_DESKTOP_CLIENT_ID": "id123.apps.googleusercontent.com", "GMAIL_OAUTH_CLIENT_SECRET": "REPLACE_WITH",
-                "OTHER_KEY": "keep-me", **extra}
+        data = {"WINDOWS_GMAIL_DESKTOP_CLIENT_ID": "id123.apps.googleusercontent.com",
+                "WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET": "REPLACE_WITH", "OTHER_KEY": "keep-me", **extra}
         path.write_text(json.dumps(data), encoding="utf-8")
         return path
 
@@ -401,7 +401,8 @@ class SetupOauthTests(Sandbox):
         code, out = self.run_wizard("--secrets-file", str(path), "--no-build")
         self.assertEqual(code, 0, out)
         saved = json.loads(path.read_text(encoding="utf-8"))
-        self.assertEqual(saved["GMAIL_OAUTH_CLIENT_SECRET"], self.SECRET)
+        self.assertEqual(saved["WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET"], self.SECRET)
+        self.assertNotIn("GMAIL_OAUTH_CLIENT_SECRET", saved, "the dead legacy key must not be written")
         self.assertEqual(saved["OTHER_KEY"], "keep-me")
         self.assertNotIn(self.SECRET, out)
         self.assertNotIn(self.SECRET[:6], out)
@@ -409,7 +410,7 @@ class SetupOauthTests(Sandbox):
         self.assertEqual([p.name for p in path.parent.glob("*.tmp")], [], "no temporary file left behind")
 
     def test_existing_secret_is_never_printed(self):
-        path = self.write_secrets(GMAIL_OAUTH_CLIENT_SECRET="EXISTING-VALUE-XYZ")
+        path = self.write_secrets(WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET="EXISTING-VALUE-XYZ")
         code, out = self.run_wizard("--secrets-file", str(path), "--no-build")
         self.assertNotIn("EXISTING-VALUE", out)
         self.assertIn("Desktop client secret: set", out)
@@ -442,6 +443,30 @@ class SetupOauthTests(Sandbox):
         self.assertIn("not ignored by git", out)
         self.assertEqual(path.read_bytes(), before)
 
+    def test_legacy_secret_key_is_flagged_not_trusted(self):
+        path = self.write_secrets(WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET="", GMAIL_OAUTH_CLIENT_SECRET="LEGACY-VALUE-ABC")
+        code, out = self.run_wizard("--secrets-file", str(path), "--no-build")
+        self.assertIn("no build reads it", out)
+        self.assertNotIn("LEGACY-VALUE", out)
+        self.assertIn("Desktop client secret: NOT SET", out.split("STEP 2")[0])
+
+    def test_is_git_ignored_only_exit_0_counts(self):  # C6-4: 128, 1 and a missing git are all "not proven ignored"
+        path = Path(self.tmp.name) / "s.json"
+        for code, want in ((0, True), (1, False), (128, False), (127, False)):
+            with mock.patch.object(setup_oauth.sup.common, "git", return_value=(code, "")):
+                self.assertEqual(setup_oauth.is_git_ignored(path), want, f"git exit {code}")
+
+    def test_wizard_refuses_to_write_when_git_cannot_tell(self):  # C6-4 end to end, not a repository (exit 128)
+        path = self.write_secrets()
+        before = path.read_bytes()
+        with mock.patch.object(sys.stdin, "isatty", return_value=True), mock.patch("builtins.input", return_value=""), \
+                mock.patch.object(setup_oauth.sup.common, "git", return_value=(128, "fatal: not a git repository")), \
+                mock.patch.object(setup_oauth.getpass, "getpass", return_value=self.SECRET):
+            code, out = self.run_main(setup_oauth, "--secrets-file", str(path), "--no-build")
+        self.assertEqual(code, 1)
+        self.assertIn("not ignored by git", out)
+        self.assertEqual(path.read_bytes(), before)
+
     def test_is_git_ignored_against_the_real_repository(self):  # REAL git
         self.assertFalse(setup_oauth.is_git_ignored(REPO / "README.md"))
         self.assertTrue(setup_oauth.is_git_ignored(REPO / "mobile-app" / "secrets.dev.json"))
@@ -465,8 +490,8 @@ class SetupOauthTests(Sandbox):
 class ExportTokensTests(Sandbox):
     def secrets(self) -> Path:
         path = Path(self.tmp.name) / "secrets.dev.json"
-        path.write_text(json.dumps({"GMAIL_DESKTOP_CLIENT_ID": "id9", "GMAIL_REDIRECT_URI": "http://localhost:8080/cb",
-                                    "GMAIL_OAUTH_CLIENT_SECRET": "TOPSECRETVALUE"}), encoding="utf-8")
+        path.write_text(json.dumps({"WINDOWS_GMAIL_DESKTOP_CLIENT_ID": "id9", "GMAIL_REDIRECT_URI": "http://localhost:8080/cb",
+                                    "WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET": "TOPSECRETVALUE"}), encoding="utf-8")
         return path
 
     def setUp(self) -> None:
@@ -559,7 +584,7 @@ class CaptureLogsTests(Sandbox):
         log_dir = self.log_dir()
         log_dir.mkdir()
         log = log_dir / "diagnostic_bulk_mail_1.log"
-        log.write_text("x\n", encoding="utf-8")
+        log.write_text("Rules loaded: 50\n", encoding="utf-8")
         victim = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(120)"])
         self.addCleanup(victim.kill)
         (log_dir / ".logcat_pid").write_text(json.dumps({"pid": victim.pid, "log": str(log)}), encoding="utf-8")
@@ -578,12 +603,88 @@ class CaptureLogsTests(Sandbox):
         log_dir = self.log_dir()
         log_dir.mkdir()
         log = log_dir / "diagnostic_bulk_mail_1.log"
-        log.write_text("x\n", encoding="utf-8")
+        log.write_text("Rules loaded: 50\n", encoding="utf-8")
         (log_dir / ".logcat_pid").write_text(json.dumps({"pid": 1, "log": str(log)}), encoding="utf-8")
         with mock.patch.object(capture, "stop_process", return_value=False):
             code, out = self.run_main(capture, "--action", "stop", "--log-dir", str(log_dir))
         self.assertEqual(code, 0, out)
         self.assertIn("already gone", out)
+
+    def test_stop_permission_error_is_not_reported_as_gone(self):  # C6-5
+        log_dir = self.log_dir()
+        log_dir.mkdir()
+        (log_dir / ".logcat_pid").write_text(json.dumps({"pid": 4242, "log": "x"}), encoding="utf-8")
+        with mock.patch.object(capture.os, "kill", side_effect=PermissionError(13, "Access is denied")), \
+                mock.patch.object(capture, "windows_pid_alive", return_value=True):
+            code, out = self.run_main(capture, "--action", "stop", "--log-dir", str(log_dir))
+        self.assertEqual(code, 1)
+        self.assertNotIn("already gone", out)
+        self.assertIn("could not stop", out)
+        self.assertTrue((log_dir / ".logcat_pid").exists(), "the id file stays so the capture is not forgotten")
+
+    def test_stop_process_distinguishes_gone_from_denied(self):  # C6-5
+        with mock.patch.object(capture.os, "kill", side_effect=ProcessLookupError()):
+            self.assertFalse(capture.stop_process(1))
+        gone = OSError(22, "The parameter is incorrect")
+        gone.winerror = 87
+        with mock.patch.object(capture.os, "kill", side_effect=gone):
+            self.assertFalse(capture.stop_process(1))
+        with mock.patch.object(capture.os, "kill", side_effect=PermissionError(13, "denied")), \
+                mock.patch.object(capture, "windows_pid_alive", return_value=True), \
+                self.assertRaises(PermissionError):
+            capture.stop_process(1)
+        if os.name == "nt":  # Windows reports an exited process as access denied: not alive means gone
+            with mock.patch.object(capture.os, "kill", side_effect=PermissionError(13, "denied")), \
+                    mock.patch.object(capture, "windows_pid_alive", return_value=False):
+                self.assertFalse(capture.stop_process(1))
+        with mock.patch.object(capture.os, "kill", return_value=None):
+            self.assertTrue(capture.stop_process(1))
+
+    def test_stop_process_real_nonexistent_pid_is_gone(self):  # REAL os.kill on a pid that just exited
+        done = subprocess.Popen([sys.executable, "-c", "pass"])
+        done.wait(timeout=60)
+        self.assertFalse(capture.stop_process(done.pid))
+
+    def test_start_refuses_while_a_pid_file_exists(self):  # C6-5: the old logcat would be orphaned
+        log_dir = self.log_dir()
+        log_dir.mkdir()
+        pid_file = log_dir / ".logcat_pid"
+        pid_file.write_text(json.dumps({"pid": 99, "log": "old"}), encoding="utf-8")
+        self.mem({"adb": {"out": EMULATOR_ONLINE}})
+        code, out = self.run_main(capture, "--action", "start", "--log-dir", str(log_dir))
+        self.assertEqual(code, 1)
+        self.assertIn("--action stop first", out)
+        self.assertEqual(json.loads(pid_file.read_text(encoding="utf-8"))["pid"], 99, "the old id is not overwritten")
+        self.assertFalse([c for c in self.calls("adb") if "logcat" in c["argv"]], "no logcat -c, no new capture")
+
+    def test_analyze_empty_log_is_exit_1(self):  # C6-5
+        log = Path(self.tmp.name) / "empty.log"
+        log.write_bytes(b"")
+        code, out = self.run_main(capture, "--action", "analyze", "--log-file", str(log))
+        self.assertEqual(code, 1)
+        self.assertIn("empty", out)
+
+    def test_analyze_log_without_any_marker_is_exit_1_and_says_so(self):  # C6-5
+        log = Path(self.tmp.name) / "nomark.log"
+        log.write_text("I/flutter: nothing relevant\n", encoding="utf-8")
+        code, out = self.run_main(capture, "--action", "analyze", "--log-file", str(log))
+        self.assertEqual(code, 1)
+        self.assertIn("no diagnostic marker found", out)
+
+    def test_patterns_match_the_real_app_log_lines(self):  # C3-3
+        self.assertTrue(capture.MATCHED.search('I/flutter: [EVAL] Email from a@x.com matched rule "R" (pattern: p)'))
+        self.assertTrue(capture.NOT_MATCHED.search(
+            'I/flutter: [EVAL] Email "subj" from a@x.com did not match any of 3 enabled rules or safe senders [header-only pass]'))
+        self.assertFalse(capture.MATCHED.search('[EVAL] Email "s" from a@x.com matched exception in rule "R", skipping'))
+        self.assertFalse(capture.MATCHED.search("✓ Email 1 matched rule A"), "the old mark text is not an app line")
+
+    def test_pattern_literals_and_markers_appear_in_the_app_source(self):  # C3-3: a pattern the app never prints is dead
+        text = "\n".join(p.read_text(encoding="utf-8", errors="replace")
+                         for p in (REPO / "mobile-app" / "lib").rglob("*.dart"))
+        for literal in (capture.MATCHED_LITERAL, capture.NOT_MATCHED_LITERAL, capture.DIAG_MARK, "Rules loaded:",
+                        "Safe senders loaded:", "[EVAL]"):
+            self.assertIn(literal, text, f"capture-diagnostic-logs.py looks for {literal!r}, which lib/ never prints")
+        self.assertIn("matched rule \"${rule.name}\"", text)
 
     def test_unreadable_pid_file_is_exit_1(self):
         log_dir = self.log_dir()
@@ -596,7 +697,11 @@ class CaptureLogsTests(Sandbox):
     def test_analyze_counts_and_flags_a_low_rule_count(self):
         log = Path(self.tmp.name) / "a.log"
         log.write_text("=== SCAN DIAGNOSTICS ===\nline1\n"
-                       "\u2713 Email 1 matched rule A\n\u2713 Email 2 matched rule B\n\u2717 Email 3 did not match\n"
+                       '[EVAL] Email from a@x.com matched rule "A" (pattern: x, type: header, subject: "s")\n'
+                       '[EVAL] Email from b@x.com matched rule "B" (pattern: y, type: header, subject: "t")\n'
+                       '[EVAL] Email "hello" from c@x.com did not match any of 40 enabled rules or safe senders\n'
+                       '[EVAL] Email from d@x.com matched safe sender (pattern: z)\n'
+                       '[EVAL] Email "s" from e@x.com matched exception in rule "R", skipping\n'
                        "Rules loaded: 12\nSafe senders loaded: 5\nsome ERROR here\n", encoding="utf-8")
         code, out = self.run_main(capture, "--action", "analyze", "--log-file", str(log))
         self.assertEqual(code, 0)
@@ -618,6 +723,120 @@ class CaptureLogsTests(Sandbox):
         with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as caught:
             capture.main(["--action", "bogus"])
         self.assertEqual(caught.exception.code, 2)
+
+
+class SecretsKeyNameTests(unittest.TestCase):
+    """C1-1: every secrets-file key a helper script writes or reads is a name the app compiles in."""
+
+    def lib_text(self) -> str:
+        return "\n".join(p.read_text(encoding="utf-8", errors="replace")
+                         for p in (REPO / "mobile-app" / "lib").rglob("*.dart"))
+
+    def test_every_key_the_scripts_use_is_read_by_the_app(self):
+        text = self.lib_text()
+        for key in sup.SECRETS_KEYS_USED:
+            self.assertRegex(text, r"fromEnvironment\(\s*'" + key + "'",
+                             f"{key} is not a String.fromEnvironment name in mobile-app/lib")
+
+    def test_every_gmail_key_in_the_secrets_templates_is_read_by_the_app(self):
+        # Sprint 86 5.1.2 C1-1 sibling: the dev template and example still named the pre-Sprint 36 keys, so a new
+        # developer got an empty Windows Gmail secret. What this does NOT catch: a non-Gmail key nothing reads.
+        import json
+        text = self.lib_text()
+        for name in ("secrets.dev.json.template", "secrets.dev.example.json", "secrets.prod.json.template"):
+            path = REPO / "mobile-app" / name
+            if not path.exists():
+                continue
+            for key in json.loads(path.read_text(encoding="utf-8")):
+                if "GMAIL" in key:
+                    self.assertRegex(text, r"fromEnvironment\(\s*'" + key + "'",
+                                     f"{name} names {key}, which no String.fromEnvironment in mobile-app/lib reads")
+
+    def test_the_dead_key_is_not_one_the_app_reads(self):
+        self.assertNotRegex(self.lib_text(), r"fromEnvironment\(\s*'" + sup.DEAD_SECRET_KEY + "'")
+
+    def test_scripts_take_their_key_names_from_android_support(self):
+        self.assertEqual(setup_oauth.SECRET_KEY, sup.WINDOWS_CLIENT_SECRET_KEY)
+        self.assertEqual(setup_oauth.CLIENT_ID_KEY, sup.WINDOWS_CLIENT_ID_KEY)
+        self.assertEqual(setup_oauth.ANDROID_ID_KEY, sup.ANDROID_CLIENT_ID_KEY)
+        for name in ("setup-android-oauth.py", "export-tokens-for-android.py"):
+            source = (SCRIPTS / name).read_text(encoding="utf-8")
+            for key in sup.SECRETS_KEYS_USED:
+                self.assertNotIn(f'"{key}"', source, f"{name} hardcodes {key}; use android_support")
+            self.assertNotIn(f'"{sup.DEAD_SECRET_KEY}"', source)
+
+    def test_android_define_key_matches_the_build_script(self):
+        build = load("bws_keys", "build-with-secrets.py")
+        self.assertEqual(build.ANDROID_DART_DEFINE_KEYS, (sup.ANDROID_CLIENT_ID_KEY,))
+
+
+class BuildScriptSharesEmulatorHelpersTests(Sandbox):
+    """C1-2: build-with-secrets.py calls android_support for the emulator helpers instead of keeping a copy."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.build = load("bws_shared", "build-with-secrets.py")
+
+    def test_online_emulator_uses_the_shared_parser(self):
+        self.mem({"adb": {"out": "List of devices attached\nR5CT12345XY\tdevice\nemulator-5556\toffline\nemulator-5554\tdevice\n"}})
+        self.assertEqual(self.build.Adb(sup.find_adb()).online_emulator(), "emulator-5554")
+        self.mem({"adb": {"out": PHONE_ONLY}})
+        self.assertIsNone(self.build.Adb(sup.find_adb()).online_emulator())
+
+    def test_list_avds_failure_is_a_warning_and_an_empty_list(self):  # deliberate: the build then ends in "No AVDs found"
+        with mock.patch.object(sup, "list_avds", return_value=([], "emulator -list-avds failed (exit 1)")):
+            buffer = io.StringIO()
+            with contextlib.redirect_stdout(buffer):
+                names = self.build.list_avds("emulator")
+        self.assertEqual(names, [])
+        self.assertIn("[WARNING] Could not list AVDs", buffer.getvalue())
+
+    def test_list_avds_returns_the_shared_filtered_names(self):
+        with mock.patch.object(sup, "list_avds", return_value=(["pixel34_updated"], None)):
+            self.assertEqual(self.build.list_avds("emulator"), ["pixel34_updated"])
+
+    def test_launch_emulator_goes_through_the_shared_launcher_minimized(self):
+        with mock.patch.object(sup, "launch_emulator") as launch:
+            self.build.launch_emulator("emu", "avd1")
+        launch.assert_called_once_with("emu", "avd1", minimized=True)
+
+    def test_no_private_copy_of_the_helpers_remains(self):
+        source = (SCRIPTS / "build-with-secrets.py").read_text(encoding="utf-8")
+        self.assertNotIn('"-list-avds"', source)
+        self.assertNotIn('startswith("emulator-")', source)
+
+
+class RunEmulatorFlutterArgvTests(unittest.TestCase):
+    """C1-3: flutter run names the dev flavor (no default-flavor in pubspec.yaml; gradle defines dev and prod)."""
+
+    def test_argv_names_the_dev_flavor_and_app_env(self):
+        argv = run_emulator.flutter_run_argv("flutter", "emulator-5554")
+        self.assertEqual(argv[:2], ["flutter", "run"])
+        self.assertEqual(argv[argv.index("-d") + 1], "emulator-5554")
+        self.assertEqual(argv[argv.index("--flavor") + 1], "dev")
+        self.assertIn("--dart-define=APP_ENV=dev", argv)
+
+    def test_matches_the_flavor_pair_build_with_secrets_uses(self):
+        build = load("bws_flavor", "build-with-secrets.py")
+        argv = run_emulator.flutter_run_argv("flutter", "emulator-5554")
+        for part in build.flavor_args("dev"):
+            self.assertIn(part, argv)
+
+    def test_pubspec_has_no_default_flavor_and_gradle_has_a_dev_flavor(self):
+        pubspec = (REPO / "mobile-app" / "pubspec.yaml").read_text(encoding="utf-8")
+        self.assertNotIn("default-flavor", pubspec, "if a default flavor is added, --flavor here may become redundant")
+        gradle = (REPO / "mobile-app" / "android" / "app" / "build.gradle.kts").read_text(encoding="utf-8")
+        self.assertIn('create("dev")', gradle)
+
+    def test_main_uses_the_flavored_argv(self):
+        captured = {}
+        with mock.patch.object(run_emulator, "ensure_emulator", return_value="emulator-5554"), \
+                mock.patch.object(sup, "find_adb", return_value="adb"), \
+                mock.patch.object(sup, "wait_for_boot", return_value=True), \
+                mock.patch.object(sup, "run_inherit", side_effect=lambda argv, cwd=None, env=None: captured.update(argv=argv) or 0), \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(run_emulator.main([]), 0)
+        self.assertIn("--flavor", captured["argv"])
 
 
 class ScreenReaderTests(unittest.TestCase):

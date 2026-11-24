@@ -27,6 +27,10 @@ Defects found in the PowerShell original, and what the port does:
   - The Android build no longer reads the Desktop client secret at all (issue #575: only ANDROID_GMAIL_CLIENT_ID reaches an
     APK, because Google documents that an installed app cannot keep a secret). The wizard therefore also reports whether
     ANDROID_GMAIL_CLIENT_ID is set. The secret step is KEPT because the same file feeds the Windows build.
+  - The original wrote GMAIL_OAUTH_CLIENT_SECRET, a key NO build reads (the app reads WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET,
+    gmail_windows_oauth_handler.dart), so the "kept for the Windows build" claim was false and the wizard reported success
+    for a no-op (C1-1, Sprint 86 5.1.2). FIXED: the key names come from android_support.py, and a test checks each against
+    String.fromEnvironment in mobile-app/lib. A leftover GMAIL_OAUTH_CLIENT_SECRET in the file is flagged, not deleted.
   - Emoji and box-drawing characters in the output: dropped (repository rule: no emoji).
 
 Exit codes: 0 done; 1 no terminal, a missing or unreadable secrets file, an empty secret, a file git does not ignore, a
@@ -49,9 +53,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import android_support as sup  # noqa: E402
 
-CLIENT_ID_KEY = "GMAIL_DESKTOP_CLIENT_ID"
-SECRET_KEY = "GMAIL_OAUTH_CLIENT_SECRET"
-ANDROID_ID_KEY = "ANDROID_GMAIL_CLIENT_ID"
+CLIENT_ID_KEY = sup.WINDOWS_CLIENT_ID_KEY
+LEGACY_CLIENT_ID_KEY = sup.LEGACY_CLIENT_ID_KEY
+SECRET_KEY = sup.WINDOWS_CLIENT_SECRET_KEY
+ANDROID_ID_KEY = sup.ANDROID_CLIENT_ID_KEY
 PLACEHOLDER_PREFIXES = ("YOUR-", "REPLACE_")
 BUILD_SCRIPT = sup.SCRIPTS / "build-with-secrets.py"
 GUIDE = sup.REPO / "docs" / "OAUTH_SETUP.md"
@@ -80,13 +85,11 @@ def load_secrets(path: Path) -> dict:
 
 
 def is_git_ignored(path: Path) -> bool:
-    """True when git says the file is ignored. A repository-less folder (a test) counts as ignored: nothing can commit it."""
+    """True ONLY when git exits 0 (the file is ignored). Exit 1 (not ignored), 128 (not a repository, or git cannot tell),
+    or a missing git all mean "not proven ignored", so the wizard refuses to write a secret (C6-4, Sprint 86 5.1.2).
+    Tests that use a temporary folder patch this function."""
     code, _ = sup.common.git("check-ignore", "-q", str(path), cwd=path.parent)
-    if code == 0:
-        return True
-    if code == 1:
-        return False
-    return True  # 128 (not a repository) or git missing: nothing to commit into
+    return code == 0
 
 
 def save_secrets(path: Path, data: dict) -> None:
@@ -140,7 +143,10 @@ def main(argv: list[str] | None = None) -> int:
         banner("STEP 1: Get the client secret")
         secrets = load_secrets(secrets_path)
         sup.say("Current configuration:")
-        sup.say(f"  Desktop client ID: {str(secrets.get(CLIENT_ID_KEY, '(not set)'))}")
+        client_id = secrets.get(CLIENT_ID_KEY) or secrets.get(LEGACY_CLIENT_ID_KEY) or "(not set)"
+        sup.say(f"  Desktop client ID: {client_id}")
+        if sup.DEAD_SECRET_KEY in secrets:
+            sup.say(f"  [WARNING] {sup.DEAD_SECRET_KEY} is in the file but no build reads it; the wizard saves {SECRET_KEY}.")
         sup.say(f"  Desktop client secret: {'set' if is_set(secrets.get(SECRET_KEY)) else 'NOT SET'}")
         sup.say(f"  Android client ID ({ANDROID_ID_KEY}): {'set' if is_set(secrets.get(ANDROID_ID_KEY)) else 'NOT SET'}")
         sup.say("")
@@ -158,7 +164,7 @@ def main(argv: list[str] | None = None) -> int:
             raise SetupRefused(f"{secrets_path} is not ignored by git. Refusing to write a secret into a trackable file.")
         secrets[SECRET_KEY] = secret
         save_secrets(secrets_path, secrets)
-        sup.say(f"[OK] Updated {secrets_path.name} (the secret is not shown).")
+        sup.say(f"[OK] Saved {SECRET_KEY} in {secrets_path.name} (the secret is not shown).")
 
         banner("STEP 3: Verify the OAuth configuration")
         sup.say("Check in Google Cloud Console that the Desktop app has these authorized redirect URIs:")

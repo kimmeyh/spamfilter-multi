@@ -33,6 +33,20 @@ NOT_FOUND = 127
 
 AVD_NAME = re.compile(r"^[A-Za-z0-9._-]+$")
 
+# Secrets-file key names the helper scripts read or write. ONE source (C1-1, Sprint 86 5.1.2): each must appear as a
+# String.fromEnvironment('<name>' in mobile-app/lib, which test_android_helpers.SecretsKeyNameTests enforces. The app
+# reads the WINDOWS_* names (gmail_windows_oauth_handler.dart); GMAIL_DESKTOP_CLIENT_ID is its legacy client-id fallback.
+WINDOWS_CLIENT_ID_KEY = "WINDOWS_GMAIL_DESKTOP_CLIENT_ID"
+LEGACY_CLIENT_ID_KEY = "GMAIL_DESKTOP_CLIENT_ID"
+WINDOWS_CLIENT_SECRET_KEY = "WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET"
+REDIRECT_URI_KEY = "GMAIL_REDIRECT_URI"
+ANDROID_CLIENT_ID_KEY = "ANDROID_GMAIL_CLIENT_ID"
+# A key older templates carried; no build reads it, so a value kept only there never reaches the app.
+DEAD_SECRET_KEY = "GMAIL_OAUTH_CLIENT_SECRET"
+SECRETS_KEYS_USED = (WINDOWS_CLIENT_ID_KEY, LEGACY_CLIENT_ID_KEY, WINDOWS_CLIENT_SECRET_KEY, REDIRECT_URI_KEY,
+                     ANDROID_CLIENT_ID_KEY)
+"""Every key a helper script touches that the app must read; the test checks each against mobile-app/lib."""
+
 
 def say(text: str = "") -> None:
     print(text, flush=True)
@@ -141,12 +155,22 @@ def emulator_env(sdk_root: str | None = None) -> dict[str, str]:
     return env
 
 
-def launch_emulator(emulator: str, avd: str, cold_boot: bool = False, sdk_root: str | None = None):
-    """Start the emulator detached and return the Popen. Raises OSError when it cannot start."""
+def launch_emulator(emulator: str, avd: str, cold_boot: bool = False, sdk_root: str | None = None,
+                    minimized: bool = False):
+    """Start the emulator detached and return the Popen. Raises OSError when it cannot start.
+
+    minimized: open the window minimized (Windows only; build-with-secrets.py uses it).
+    """
     argv = [emulator, "-avd", avd]
     if cold_boot:
         argv.append("-no-snapshot-load")
-    return subprocess.Popen(argv, env=emulator_env(sdk_root), **detached_kwargs())
+    kwargs = detached_kwargs()
+    if minimized and os.name == "nt":
+        info = subprocess.STARTUPINFO()
+        info.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        info.wShowWindow = 6  # SW_MINIMIZE
+        kwargs["startupinfo"] = info
+    return subprocess.Popen(argv, env=emulator_env(sdk_root), **kwargs)
 
 
 def wait_for_boot(adb: str, serial: str, seconds: int = 360, interval: float = 2.0) -> bool:

@@ -9,10 +9,12 @@
 /// - the elapsed milliseconds of each step that DID finish;
 /// - the network type at that moment (`connectivity_plus`).
 ///
-/// It never changes the failure: the original exception object is rethrown, so
-/// the type and message the adapter maps (`generic_imap_adapter.dart`, the
-/// `Network connection failed: ...` branch) are exactly what they were
-/// (R-3). It writes no credential and no email address; the host name is
+/// It never changes the failure or its timing: the original exception object
+/// is rethrown at once (the report runs in the background and is never
+/// awaited), so the type, message and arrival time the adapter sees
+/// (`generic_imap_adapter.dart`, the `Network connection failed: ...` branch)
+/// are what they were (R-3). When the diagnostic log is off the report does
+/// no lookup and no connectivity read. It writes no credential and no email address; the host name is
 /// logged, the exception TYPE only (not its message).
 ///
 /// Two connect paths use it:
@@ -30,8 +32,10 @@
 /// DNS: the connect resolves the name itself and the library hides when. So
 /// the lookup is checked AFTER a failure, and only when the connect had not
 /// got past TCP: one `InternetAddress.lookup(host)`, bounded by [dnsTimeout].
-/// A lookup that fails or times out makes the phase `dns`; the line labels it
-/// `dns-recheck` because it ran after the failure, not during the connect.
+/// A lookup that FAILS makes the phase `dns`; one that TIMES OUT is "could not
+/// check", so the phase stays the in-flight one and the line adds
+/// `dns-recheck=timeout`. The line labels it `dns-recheck` because it ran
+/// after the failure, not during the connect.
 /// A connect that reached TLS or the greeting got past DNS (`dns=passed`).
 /// No lookup runs on a successful connect (an earlier design ran one beside
 /// every connect; the Custom IMAP integration tests then hung, and the
@@ -45,6 +49,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:logger/logger.dart';
 
 import '../services/diagnostic_logger.dart';
 
@@ -125,6 +130,7 @@ class ImapConnectDiagnostics {
     networkReadTimeout = const Duration(seconds: 1);
     dnsLookup = (host) => InternetAddress.lookup(host);
     networkTypeReader = _readNetworkType;
+    logEnabled = DiagnosticLogger.isEnabled;
     sink = (detail) => DiagnosticLogger.log(
           kind: DiagnosticLogger.kindNotConnected,
           context: 'IMAP/connect',
@@ -169,21 +175,65 @@ class ImapConnectDiagnostics {
     }
   }
 
-  /// Write the diagnostic line for a failed connect. Never throws. Public so
-  /// a connector that converts the failure itself (the STARTTLS exchange)
-  /// can log before it converts.
+  /// Report launched but not yet finished. A caller never waits on these.
+  static final Set<Future<void>> _pending = {};
+
+  /// Test seam: complete when every launched report has finished.
+  static Future<void> settleForTest() async {
+    while (_pending.isNotEmpty) {
+      await Future.wait(_pending.toList());
+    }
+  }
+
+  /// Test seam: whether the diagnostic log is on. Default asks
+  /// [DiagnosticLogger.isEnabled] (the check [DiagnosticLogger.log] uses).
+  static Future<bool> Function() logEnabled = DiagnosticLogger.isEnabled;
+
+  /// Launch the diagnostic line for a failed connect and return AT ONCE.
+  /// Never throws. Public so a connector that converts the failure itself
+  /// (the STARTTLS exchange) can log before it converts.
+  ///
+  /// What holds: the returned future is already complete, so the caller's
+  /// rethrow is not delayed by the DNS recheck (up to [dnsTimeout]) or the
+  /// network read (up to [networkReadTimeout]). The report runs in the
+  /// background; when the diagnostic log is off it does nothing at all (no
+  /// lookup, no connectivity read). The trace is read when the report starts,
+  /// which is before the caller's next await.
   static Future<void> reportFailure(
-      ImapConnectTrace trace, String exceptionType) async {
+      ImapConnectTrace trace, String exceptionType) {
+    final inFlight = trace._current; // did not finish
+    final finishedSnapshot = List<MapEntry<String, int>>.of(trace._finished);
+    final totalMs = trace._total.elapsedMilliseconds;
+    final report =
+        _report(trace, inFlight, finishedSnapshot, totalMs, exceptionType);
+    _pending.add(report);
+    report.whenComplete(() => _pending.remove(report));
+    return Future<void>.value();
+  }
+
+  static final Logger _logger = Logger();
+
+  static Future<void> _report(
+    ImapConnectTrace trace,
+    String? inFlight,
+    List<MapEntry<String, int>> finishedSteps,
+    int totalMs,
+    String exceptionType,
+  ) async {
     try {
-      final inFlight = trace._current; // did not finish
+      if (!await logEnabled()) return;
       // Only a connect that had not got past TCP can have failed in DNS.
       final mayBeDns =
           inFlight == null || inFlight == 'tcp' || inFlight == 'tcp+tls';
       final dns = mayBeDns ? await _recheckDns(trace.host) : null;
       final dnsFailed = dns != null && dns.failure != null;
+      // A recheck that timed out is "could not check", not a cause: the
+      // phase stays the in-flight one. Only a lookup that FAILED is `dns`.
+      final dnsTimedOut = dnsFailed && dns.failure == 'timeout';
+      final dnsBlamed = dnsFailed && !dnsTimedOut;
 
       final String phase;
-      if (dnsFailed) {
+      if (dnsBlamed) {
         phase = 'dns';
       } else if (inFlight != null) {
         phase = inFlight;
@@ -192,7 +242,7 @@ class ImapConnectDiagnostics {
       }
 
       final finished = <String>[];
-      for (final step in trace._finished) {
+      for (final step in finishedSteps) {
         finished.add('${step.key}=${step.value}ms');
       }
 
@@ -200,7 +250,9 @@ class ImapConnectDiagnostics {
           ? 'dns=passed'
           : !dnsFailed
               ? 'dns-recheck=ok(${dns.elapsedMs}ms)'
-              : 'dns-recheck=${dns.failure}(${dns.elapsedMs}ms)';
+              : dnsTimedOut
+                  ? 'dns-recheck=timeout(${dns.elapsedMs}ms)'
+                  : 'dns-recheck=${dns.failure}(${dns.elapsedMs}ms)';
       final inferred = phase == 'tcp+tls'
           ? ' phase-inferred (one call covers the TCP connect and the TLS '
               'handshake)'
@@ -210,10 +262,13 @@ class ImapConnectDiagnostics {
         'connect did not finish: host=${trace.host}:${trace.port} '
         'phase=$phase$inferred finished=[${finished.join(', ')}] $dnsNote '
         'network=$network error=$exceptionType '
-        'elapsed=${trace._total.elapsedMilliseconds}ms',
+        'elapsed=${totalMs}ms',
       );
-    } catch (_) {
+    } catch (e) {
       // Diagnostics must never replace the connect failure the caller maps.
+      // Log the error TYPE only (no message, host or account).
+      _logger.w('IMAP connect diagnostic line was not written: '
+          '${e.runtimeType}');
     }
   }
 

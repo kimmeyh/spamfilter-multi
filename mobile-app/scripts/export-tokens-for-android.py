@@ -28,6 +28,12 @@ Defects found in the PowerShell original, and what the port does:
 Exit codes: 0 done; 1 cmdkey failed or the secrets file is missing or unreadable; 2 a usage error (argparse; the PowerShell
 script prompted for a missing -Email instead).
 
+KNOWN LIMIT (Sprint 86 5.1.2, unverified against a live machine): the app stores tokens through flutter_secure_storage
+4.1.0 (pubspec.lock) on Windows, which writes a DPAPI-encrypted file `flutter_secure_storage.dat` in the application
+support folder (flutter_secure_storage_windows-4.1.0/lib/src/flutter_secure_storage_windows_ffi.dart lines 234-258 and
+388-404), keyed `token_<accountId>_access` (secure_credentials_store.dart). It does not use Credential Manager, so the
+cmdkey lookup above most likely never finds a token. The script still prints the two real options and the secrets-file state.
+
 What this does NOT catch: whether a found credential still holds a valid token (cmdkey does not show values), and a credential
 stored under a target name the app does not use today (the four names are the ones the original looked for).
 """
@@ -71,9 +77,12 @@ def show_secrets(path: Path) -> bool:
     except (OSError, ValueError) as exc:
         sup.say(f"  [WARNING] Could not read {path}: {exc}")
         return False
-    secret = data.get("GMAIL_OAUTH_CLIENT_SECRET")
-    sup.say(f"  Client ID: {data.get('GMAIL_DESKTOP_CLIENT_ID', '(not set)')}")
-    sup.say(f"  Redirect URI: {data.get('GMAIL_REDIRECT_URI', '(not set)')}")
+    secret = data.get(sup.WINDOWS_CLIENT_SECRET_KEY)
+    client_id = data.get(sup.WINDOWS_CLIENT_ID_KEY) or data.get(sup.LEGACY_CLIENT_ID_KEY) or "(not set)"
+    sup.say(f"  Client ID: {client_id}")
+    sup.say(f"  Redirect URI: {data.get(sup.REDIRECT_URI_KEY, '(not set)')}")
+    if sup.DEAD_SECRET_KEY in data:
+        sup.say(f"  [WARNING] {sup.DEAD_SECRET_KEY} is in the file but no build reads it; use {sup.WINDOWS_CLIENT_SECRET_KEY}.")
     is_set = bool(secret) and secret != PLACEHOLDER and not str(secret).upper().startswith("YOUR-")
     sup.say(f"  Client Secret: {'set' if is_set else 'NOT SET - update the secrets file'}")
     return True

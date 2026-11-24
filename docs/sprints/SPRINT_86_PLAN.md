@@ -616,6 +616,18 @@ decision is register q11; both are asked at Manual Validation.
 _**Risk & rollback**_: the 30-day window from 2026-10-29 may already have ended (about 2026-11-28; counting
 unverified). Run it first among the analysis tasks.
 
+### Task 12 -- Phase 5.1.2 F-PRECHECK fixes (no card; Phase 5 review work)
+
+Fixes for the 5.1.2 findings (2026-11-24 report), made without asking under the 7.7.1 rule (none needs 4+ code
+files or 600+ lines). Groups: A imap diagnostics (C6-1, C6-2, C6-3, C7-2, C7-3); B comments and the F359 order test
+(C3-1, C3-2, C7-1); C Android helper scripts (C1-1, C1-2, C1-3, C3-3, C6-4, C6-5); D task clock (C6-6, C6-7, C6-8,
+`-F -`); lead: CHANGELOG and release-notes text (C3-4, "thermal status"). A finding that needs a backlog or retire
+decision becomes a register question at the MV handover.
+**Model**: Opus main session plus Sonnet sub-agents per group -- *why not Haiku*: each fix needs a failing test
+first and a mutation check.
+**Executed-by**: Opus main session + 4 Sonnet sub-agents (groups A-D) + Opus 5.1.2 reviewer -- 41 min (task clock 2026-11-24 07:18 to 2026-11-24 07:58, 5 segment(s))
+**Est-Effort**: 60-120m
+
 ## Execution order
 
 1. Task 10 F363 (if kept), so every later task is clocked.
@@ -626,6 +638,22 @@ unverified). Run it first among the analysis tasks.
 Windows and Android builds are never run at the same time.
 
 ## Manual Validation (Phase 5.3) -- drafted, rehearsed at 5.1.9
+
+- **5.1.2 F-PRECHECK**: run 2026-11-24 by an Opus reviewer over `git diff origin/develop...HEAD` (145 files), all
+  seven classes with their listed actions (multi-language catch search: 96 hits answered; CHANGELOG and Help claims
+  traced to file:line). Found 4 MEDIUM (C1-1 dead secret key written by `setup-android-oauth.py`; C3-3
+  `capture-diagnostic-logs.py` counted lines the app no longer prints; C6-1 a failed IMAP connect waited up to ~6 s
+  on the F347 diagnostic even with the log off; C7-1 the F359 "asks then schedules" test did not check the order),
+  1 PLAUSIBLE MEDIUM (C1-3 `run-emulator.py` had no `--flavor`, confirmed: no `default-flavor`) and 15 LOW. All
+  fixed in Task 12, prevention first: shared key-name constants plus a test that every Gmail key in the scripts and
+  the secrets templates is read by `lib/` (sibling: both dev templates still named the pre-Sprint 36 keys, fixed);
+  the diagnostic report now runs after the unchanged rethrow and does nothing with the log off; ledger shape
+  validated at load; `register d<n>` excuses only the 0-min branch. Mutation: C6-1 log-off test KILLED, C7-1 order
+  mutant KILLED on the emulator, template guard KILLED, task clock 9/9 KILLED. Claims narrowed: CHANGELOG F347 and
+  F346 lines, both 0.26.0 release notes, ARCHITECTURE F347 paragraph added.
+- **5.1.2 open findings**: none fixed-or-open beyond register q13 (retire `setup-android-oauth.py` and
+  `export-tokens-for-android.py`, a backlog decision; evidence: the app stores tokens in a DPAPI file, not
+  Credential Manager).
 
 - Windows DEV: Review No Rule Items has no "Create rule" action; the rule popup opens (Task 2).
 - Android (Fold, closed-test build after release or a DEV build): after the next background stop, the diagnostic log

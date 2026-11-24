@@ -59,6 +59,10 @@ def resolve(root_arg: str | None) -> tuple[Path, int, dict]:
 
 def cmd_start(root: Path, sprint: int, task: str, now=None) -> int:
     ledger = tc.load(root, sprint)
+    if tc.card_section(tc.plan_path(root, sprint).read_text(encoding="utf-8"), task) is None:
+        print(f"FAIL no '### Task {task} --' card in {tc.plan_path(root, sprint).name}; a clock is only started "
+              "for a planned task (check the number).")
+        return 1
     if ledger["tasks"].get(task, {}).get("finished"):
         print(f"Task {task} is already finished ({tc.show(ledger['tasks'][task]['finished'])}); not reopened.")
         return 1
@@ -169,6 +173,10 @@ def cmd_finish(root: Path, sprint: int, task: str, model: str, note: str | None,
     if not EXECUTED_BY_LINE.search(plan_text[span[0]:span[1]]):
         # Checked BEFORE the ledger is touched, so a refused finish leaves no half-written state.
         print(f"FAIL Task {task} card has no '**Executed-by**' line; add one, then run finish again")
+        return 1
+    if VELOCITY_HEADER not in (root / VELOCITY).read_text(encoding="utf-8").split("\n"):
+        # Also checked BEFORE any write: write_velocity_row would fail after the ledger and plan were written.
+        print(f"FAIL {VELOCITY} has no Coverage Ledger header; restore it, then run finish again")
         return 1
     stamp = tc.now_text(now)
     for _key, segment in tc.open_segments(ledger, task):

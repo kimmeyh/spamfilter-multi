@@ -224,6 +224,11 @@ class DiagnosticLogger {
     }
   }
 
+  /// Whether diagnostic logging is on. Same answer, and same cache, that
+  /// [log] uses; callers that would do extra work only to build a line (a DNS
+  /// lookup, a plugin read) check this first. Never throws; off on any failure.
+  static Future<bool> isEnabled() => _enabled();
+
   static Future<bool> _enabled() async {
     if (_cachedEnabled != null) return _cachedEnabled!;
     try {

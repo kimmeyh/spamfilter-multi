@@ -17,7 +17,7 @@ Paste the en-US block below into the Play Console release-notes field, tags incl
 <en-US>
 Review No Rule Items no longer shows a Create rule button. Tap an email to open its rule pop-up.
 
-With the diagnostic log turned on, a failed or timed-out email server connection now records the step that did not finish and the network type.
+With the diagnostic log turned on, a failed or timed-out email server connection now records the network type and, where the app can tell, the connection step that did not finish.
 
-With the diagnostic log turned on, a background scan that Android stops early now records the phone's power-save, idle and temperature state.
+With the diagnostic log turned on, a background scan that Android stops early now records the phone's power-save, idle and thermal status.
 </en-US>

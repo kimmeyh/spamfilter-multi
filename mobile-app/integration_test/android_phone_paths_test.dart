@@ -307,6 +307,8 @@ void main() {
         final order = <String>[];
         BackgroundScanEnabler.permissionRequestOverride = () async {
           order.add('permission');
+          // Schedule-first code would already hold the work here.
+          if (await scheduler.isScheduled(accountId)) order.add('schedule');
         };
 
         final result = await BackgroundScanEnabler.schedule(
@@ -319,6 +321,9 @@ void main() {
         addTearDown(() => scheduler.cancel(accountId, caller: 'f359 test'));
 
         expect(result, BackgroundEnableResult.scheduled);
+        // ['permission'] only: the request ran once AND the work was not yet
+        // scheduled when it ran. ['permission', 'schedule'] means the work
+        // was scheduled before the permission request.
         expect(order, ['permission'],
             reason: 'the permission request must run once, before scheduling');
         expect(await scheduler.isScheduled(accountId), isTrue,

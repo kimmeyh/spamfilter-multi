@@ -16,6 +16,7 @@ void main() {
   setUp(() {
     lines = [];
     ImapConnectDiagnostics.resetForTest();
+    ImapConnectDiagnostics.logEnabled = () async => true;
     ImapConnectDiagnostics.sink = (d) async => lines.add(d);
     ImapConnectDiagnostics.networkTypeReader = () async => 'wifi';
     ImapConnectDiagnostics.dnsLookup =
@@ -35,6 +36,8 @@ void main() {
         timeout: const Duration(milliseconds: 300),
       );
     } catch (e) {
+      // The report runs in the background; wait for it before the test reads.
+      await ImapConnectDiagnostics.settleForTest();
       return e;
     }
     fail('connect should not succeed');
@@ -65,6 +68,7 @@ void main() {
         error = e;
       }
 
+      await ImapConnectDiagnostics.settleForTest();
       // R-3: same type, same message shape as before the diagnostic.
       expect(error, isA<TimeoutException>());
       expect(error.toString(), contains('Future not completed'));
@@ -105,6 +109,7 @@ void main() {
         ),
         throwsA(isA<TimeoutException>()),
       );
+      await ImapConnectDiagnostics.settleForTest();
       expect(lines.single, contains('phase=tls'));
       expect(lines.single, contains('tcp='));
       expect(lines.single, contains('starttls='));
@@ -123,7 +128,8 @@ void main() {
     // and whether the machine routes 10.255.255.1 at all (either failure type
     // counts as the tcp phase here).
 
-    test('DNS failure: names phase=dns; the exception is unchanged', () async {
+    test('DNS failure: names phase=dns; the exception is a network type',
+        () async {
       ImapConnectDiagnostics.dnsLookup =
           (h) async => throw const SocketException('no such host');
       final error = await tcpFailure();
@@ -131,17 +137,76 @@ void main() {
       expect(lines.single, contains('phase=dns'));
       expect(lines.single, contains('dns-recheck=SocketException'));
     }); // What this does NOT catch: a lookup failure where the real connect
-    // then succeeds (no line is written, by design).
+    // then succeeds (no line is written, by design); exception identity (the
+    // identity test below covers it).
 
-    test('DNS that never answers: phase=dns after dnsTimeout', () async {
+    test('DNS that never answers: phase stays in-flight, dns-recheck=timeout',
+        () async {
       ImapConnectDiagnostics.dnsTimeout = const Duration(milliseconds: 50);
       ImapConnectDiagnostics.dnsLookup =
           (h) => Completer<List<InternetAddress>>().future;
       await tcpFailure();
-      expect(lines.single, contains('phase=dns'));
+      expect(lines.single, contains('phase=tcp+tls'));
+      expect(lines.single, isNot(contains('phase=dns')));
       expect(lines.single, contains('dns-recheck=timeout'));
     }); // What this does NOT catch: a lookup slower than dnsTimeout that would
     // still have finished before the connect timeout.
+
+    test('log OFF: no lookup, no connectivity read, no line; error arrives '
+        'at once', () async {
+      var lookups = 0;
+      var reads = 0;
+      ImapConnectDiagnostics.logEnabled = () async => false;
+      ImapConnectDiagnostics.dnsLookup = (h) async {
+        lookups++;
+        return [InternetAddress.loopbackIPv4];
+      };
+      ImapConnectDiagnostics.networkTypeReader = () async {
+        reads++;
+        return 'wifi';
+      };
+      final original = TimeoutException('connect');
+      final sw = Stopwatch()..start();
+      await expectLater(
+        ImapConnectDiagnostics.traceConnect<void>(
+          host: 'h',
+          port: 993,
+          providerPath: true,
+          body: (_) async => throw original,
+        ),
+        throwsA(same(original)),
+      );
+      expect(sw.elapsedMilliseconds, lessThan(500));
+      await ImapConnectDiagnostics.settleForTest();
+      expect(lookups, 0);
+      expect(reads, 0);
+      expect(lines, isEmpty);
+    }); // What this does NOT catch: the real DiagnosticLogger.isEnabled reading
+    // the database (replaced by the seam here).
+
+    test('log ON with a slow lookup: the caller error is not delayed',
+        () async {
+      ImapConnectDiagnostics.dnsTimeout = const Duration(seconds: 5);
+      final gate = Completer<List<InternetAddress>>();
+      ImapConnectDiagnostics.dnsLookup = (h) => gate.future;
+      final original = TimeoutException('connect');
+      final sw = Stopwatch()..start();
+      await expectLater(
+        ImapConnectDiagnostics.traceConnect<void>(
+          host: 'h',
+          port: 993,
+          providerPath: true,
+          body: (_) async => throw original,
+        ),
+        throwsA(same(original)),
+      );
+      expect(sw.elapsedMilliseconds, lessThan(500));
+      expect(lines, isEmpty); // the report is still waiting on the lookup
+      gate.complete([InternetAddress.loopbackIPv4]);
+      await ImapConnectDiagnostics.settleForTest();
+      expect(lines.single, contains('dns-recheck=ok'));
+    }); // What this does NOT catch: a platform where the 500 ms bound is too
+    // tight under heavy load (the lookup itself is a never-completing fake).
 
     test('a lookup that fails fast with a refused connect is still phase=dns',
         () async {
@@ -166,6 +231,7 @@ void main() {
       } on TimeoutException {
         // the same failure when the refusal is slower than the limit
       }
+      await ImapConnectDiagnostics.settleForTest();
       expect(lines.single, contains('phase=dns'));
       expect(lines.single, contains('dns-recheck=SocketException'));
     }); // What this does NOT catch: a lookup slower than dnsTimeout.
@@ -200,6 +266,7 @@ void main() {
         ),
         throwsA(isA<TimeoutException>()),
       );
+      await ImapConnectDiagnostics.settleForTest();
       expect(lines.single, contains('phase=tls'));
       expect(lines.single, contains('tcp='));
       expect(lines.single, contains('dns=passed'));
@@ -225,6 +292,7 @@ void main() {
         ),
         throwsA(isA<UserFacingConnectionException>()),
       );
+      await ImapConnectDiagnostics.settleForTest();
       expect(lines.single, contains('phase=starttls'));
       expect(lines.single, contains('tcp='));
       expect(lines.single, contains('error=TimeoutException'));
@@ -274,6 +342,7 @@ void main() {
       } catch (e) {
         error = e;
       }
+      await ImapConnectDiagnostics.settleForTest();
       expect(error, isA<TimeoutException>());
       expect(lines.single, contains('phase=tcp+tls'));
       expect(lines.single, contains('phase-inferred'));
@@ -306,6 +375,7 @@ void main() {
         ),
         throwsA(same(original)),
       );
+      await ImapConnectDiagnostics.settleForTest();
       expect(lines.single, contains('error=SocketException'));
       expect(lines.single, isNot(contains('Connection refused')));
     }); // What this does NOT catch: the adapter's own mapping to
@@ -315,7 +385,11 @@ void main() {
   test('the adapter source routes the provider connect through the trace', () {
     final src = File('lib/adapters/email_providers/generic_imap_adapter.dart')
         .readAsStringSync();
-    expect(src, contains('ImapConnectDiagnostics.traceConnect'));
-    expect(src, contains('client.connectToServer(_imapHost, _imapPort'));
+    expect(
+      src,
+      matches(RegExp(
+          r'ImapConnectDiagnostics\.traceConnect[\s\S]{0,400}?'
+          r'client\.connectToServer\(_imapHost, _imapPort')),
+    );
   }); // What this does NOT catch: a call that is present but unreachable.
 }

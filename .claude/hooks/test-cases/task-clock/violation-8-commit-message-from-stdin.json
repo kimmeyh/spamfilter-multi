@@ -1,0 +1,9 @@
+{
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Bash",
+  "cwd": "D:/Data/Harold/github/spamfilter-multi/.claude/hooks/test-cases/fixtures/taskclock-phase4-task1-open",
+  "tool_input": {
+    "command": "git commit -F - < msg.txt"
+  },
+  "session_id": "task-clock-violation-8-commit-message-from-stdin"
+}

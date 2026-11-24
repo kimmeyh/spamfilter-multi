@@ -22,6 +22,7 @@ here and not in `SPRINT_N_PLAN.md`. Source: Harold, 2026-11-22 and 2026-11-23 (d
 
 - q11. Play trader status: keep NON-TRADER with an LLC as developer name? (asked at Sprint 86 Manual Validation)
 - q12. Which F364 proposed cards (F365-F368) join the backlog (asked at Sprint 86 Manual Validation)
+- q13. Retire the Android helper scripts setup-android-oauth.py and export-tokens-for-android.py? (asked at Sprint 86 Manual Validation)
 
 ### Closed
 
@@ -217,6 +218,25 @@ here and not in `SPRINT_N_PLAN.md`. Source: Harold, 2026-11-22 and 2026-11-23 (d
   3. Add F365 only. Pro: smallest. Con: the memory UNKNOWN stays open past its February 2027 date.
   4. Add F365, F366 and F367; drop F368. Pro: all dated and prevention items. Con: no record of the targetSdk 37 LAN
      change until it bites.
+
+### q13. Retire the Android helper scripts setup-android-oauth.py and export-tokens-for-android.py?
+
+- **Asked**: Sprint 86 Manual Validation (written 2026-11-24 from the 5.1.2 review of Task 3, F336). **Status**: OPEN.
+- **What it decides**: whether two of the seven Android helper scripts ported this sprint stay in
+  `mobile-app/scripts/` or are deleted with their tests and references (a backlog card, not this sprint).
+- **Evidence**: `export-tokens-for-android.py` looks for Gmail tokens in Windows Credential Manager (`cmdkey`), but
+  the app stores tokens in a DPAPI-encrypted file: `flutter_secure_storage_windows` 4.1.0 (the version
+  `pubspec.lock` resolves), `flutter_secure_storage_windows_ffi.dart:234` (`flutter_secure_storage.dat`) and
+  `:388-404` (`CryptProtectData`). So its lookup cannot find a token; only its printed guidance is useful.
+  `setup-android-oauth.py` wrote a key no build read (`GMAIL_OAUTH_CLIENT_SECRET`); 5.1.2 fixed it to write
+  `WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET`, but that secret serves the Windows build only, and its Android premise is
+  mostly stale since #575 (the Android OAuth client is set in Google Cloud Console, not by the script).
+- **Options**:
+  1. Retire both through a backlog card (Recommendation). Pro: removes two scripts that cannot do their main job;
+     less to maintain and port. Con: about 15-30 min of a later sprint; the printed guidance moves to a doc.
+  2. Retire `export-tokens-for-android.py` only; keep the fixed `setup-android-oauth.py`. Pro: keeps a working
+     secrets-file writer. Con: a Windows-secret writer named "android" stays misleading.
+  3. Keep both as they are now. Pro: no work. Con: one script that cannot work stays in the repo.
 
 ### q10. Sprint 86 version: 0.25.1 or 0.26.0
 

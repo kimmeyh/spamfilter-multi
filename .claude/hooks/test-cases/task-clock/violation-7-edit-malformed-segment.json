@@ -1,0 +1,11 @@
+{
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Edit",
+  "cwd": "D:/Data/Harold/github/spamfilter-multi/.claude/hooks/test-cases/fixtures/taskclock-phase4-malformed-segment",
+  "tool_input": {
+    "file_path": "D:/Data/Harold/github/spamfilter-multi/.claude/hooks/test-cases/fixtures/taskclock-phase4-malformed-segment/mobile-app/lib/a.dart",
+    "old_string": "a",
+    "new_string": "b"
+  },
+  "session_id": "task-clock-violation-7-edit-malformed-segment"
+}

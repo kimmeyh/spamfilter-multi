@@ -50,7 +50,7 @@ import task_clock as tc  # noqa: E402
 EDIT_TOOLS = {"edit", "write", "notebookedit", "multiedit"}
 SHELL_TOOLS = {"bash", "powershell"}
 GIT_COMMIT = re.compile(r"\bgit\b[^\n;&|]*\bcommit\b", re.I)
-MESSAGE_FILE = re.compile(r"\bgit\b[^\n;&|]*?\bcommit\b[^\n;&|]*?\s-F\s+(\"([^\"]+)\"|'([^']+)'|(\S+))")
+MESSAGE_FILE = re.compile(r"\bgit\b[^\n;&|]*?\bcommit\b[^\n;&|]*?\s(?:-F\s+|--file(?:=|\s+))(\"([^\"]+)\"|'([^']+)'|(\S+))")
 ASSIGNMENT = re.compile(r"(?:^|[\s;&])(?:\$)?([A-Za-z_]\w*)\s*=\s*(\"([^\"]*)\"|'([^']*)'|([^\s;&|]+))")
 VARIABLE = re.compile(r"\$\{?([A-Za-z_]\w*)\}?")
 GIT_BASH_PATH = re.compile(r"^/([A-Za-z])/(.*)$")
@@ -145,6 +145,10 @@ def _message(cmd: str, cwd: str) -> str:
     if not match:
         return cmd
     path = next(g for g in (match.group(2), match.group(3), match.group(4)) if g)
+    if path == "-":
+        # Same fail-closed rule as an unreadable file: the hook cannot see what git will read from stdin.
+        raise ValueError("the message is read from stdin (-F -), which this hook cannot read; write the message "
+                         "to a file and use -F <file>")
     values = {m.group(1): next(g for g in (m.group(3), m.group(4), m.group(5)) if g is not None)
               for m in ASSIGNMENT.finditer(cmd)}
     unknown = [name for name in VARIABLE.findall(path) if name not in values]

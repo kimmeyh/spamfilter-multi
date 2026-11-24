@@ -342,6 +342,17 @@ EXPUNGE; UID SEARCH and UID FETCH get the limit per call through `GenericIMAPAda
 `GenericIMAPAdapter._uidMove` applies `kImapResponseTimeout` as a Dart `.timeout` on the call (7.7.1 Q1). A failure
 in the full-fetch path reaches the scanner's per-folder handler, which counts it as a folder error (7.7.1 H-1).
 
+**Sprint 86 F347 connect-failure line**: both connect paths go through `ImapConnectDiagnostics.traceConnect`
+(`lib/core/security/imap_connect_diagnostics.dart`): the provider path wraps `connectToServer`
+(`generic_imap_adapter.dart`, one 20 s enough_mail timer, so its step is the combined `tcp+tls`), and the Custom
+IMAP path (`ImapTlsConnector`) marks `tcp`, `tls`, `starttls` and `greeting` separately. On a network error or
+timeout it writes one diagnostic-log line with the in-flight step, the network type (`connectivity_plus`) and a DNS
+recheck of the host; `phase=dns` only when that recheck fails, `dns-recheck=timeout` when it could not finish. The
+report runs in the background AFTER the original exception is rethrown unchanged, so the caller's error and its
+timing do not depend on the diagnostic; with the diagnostic log off (`DiagnosticLogger.isEnabled()`) nothing is
+looked up. A process that dies right after the failure can lose the line. A TLS handshake failure on the provider
+path and a greeting hang that ends in the provider's own timer are not split from `tcp+tls`.
+
 **One timeout ends the session** (7.7.1 Q2 and Q1, Harold): every command with a limit (SELECT, UID SEARCH, UID
 FETCH, UID STORE, LIST, UID MOVE) goes through `GenericIMAPAdapter._endSessionOnTimeout`. A response timeout (`ImapException('timeout')`)
 or a write timeout (`TimeoutException`) discards the client (`_discardClient`, socket close bounded at 10 s) and

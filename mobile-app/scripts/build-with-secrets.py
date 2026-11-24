@@ -53,6 +53,8 @@ MOBILE_APP = SCRIPTS.parent
 REPO = MOBILE_APP.parent
 sys.path.insert(0, str(REPO / ".claude" / "hooks" / "lib"))
 import common  # noqa: E402  (find_tool, configure_stdio: the shared ADR-0051 layer)
+sys.path.insert(0, str(SCRIPTS))
+import android_support as sup  # noqa: E402  (C1-2: the one copy of the emulator helpers)
 
 SIGNING_KEYS = ("keystorePath", "keystorePassword", "keyAlias", "keyPassword")
 SIGNING_ENV = {
@@ -454,12 +456,8 @@ class Adb:
 
     def online_emulator(self) -> str | None:
         """First emulator in state 'device' (offline and unauthorized ones are skipped)."""
-        _, out = run_capture([self.exe, "devices"], timeout=30)
-        for line in out.splitlines():
-            parts = line.strip().split()
-            if len(parts) >= 2 and parts[0].startswith("emulator-") and parts[1] == "device":
-                return parts[0]
-        return None
+        serials, _ = sup.online_emulators(self.exe)  # an adb failure reads as "none yet": callers retry or refuse
+        return serials[0] if serials else None
 
 
 def ensure_adb_running(adb: Adb) -> bool:
@@ -480,25 +478,17 @@ def ensure_adb_running(adb: Adb) -> bool:
 
 
 def list_avds(emulator_exe: str) -> list[str]:
-    """stdout only, and only lines shaped like an AVD name (PR #490 7.7.1: a warning line is not an AVD)."""
-    try:
-        done = subprocess.run([emulator_exe, "-list-avds"], stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-                              stderr=subprocess.DEVNULL, timeout=60)
-    except (OSError, subprocess.TimeoutExpired):
-        say("[WARNING] Could not list AVDs. Check ANDROID_HOME.")
-        return []
-    names = [line.strip() for line in done.stdout.decode("utf-8", errors="replace").splitlines()]
-    return [name for name in names if re.match(r"^[A-Za-z0-9._-]+$", name)]
+    """android_support.list_avds, with this script's error semantics: a failure is a WARNING and an empty list, and
+    choose_avd then ends in "No AVDs found" (BuildRefused), so the build still stops with a clear message. The
+    helper scripts (run-emulator.py) treat the same failure as an immediate error because they have nothing else to do."""
+    names, error = sup.list_avds(emulator_exe)
+    if error:
+        say(f"[WARNING] Could not list AVDs: {error}. Check ANDROID_HOME.")
+    return names
 
 
 def launch_emulator(emulator_exe: str, name: str) -> None:
-    kwargs = detached_kwargs()
-    if os.name == "nt":
-        info = subprocess.STARTUPINFO()
-        info.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-        info.wShowWindow = 6  # SW_MINIMIZE
-        kwargs["startupinfo"] = info
-    subprocess.Popen([emulator_exe, "-avd", name], **kwargs)
+    sup.launch_emulator(emulator_exe, name, minimized=True)
 
 
 def choose_avd(emulator_exe: str, requested: str) -> str | None:

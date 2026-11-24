@@ -133,6 +133,63 @@ class LibTests(unittest.TestCase):
         self.assertIsNone(tc.active_sprint(base))
 
 
+class MalformedLedgerTests(RepoCase):
+    """C6-6: a ledger that parses as JSON but holds a bad segment must raise LedgerError in `load`, so every
+    reader (edit gate, commit gate, close-out check) blocks instead of crashing into an allow.
+    What these do NOT catch: a bad `agents` map value (only its type is checked)."""
+
+    BAD_LEDGERS = {
+        "non-dict segment": {"1": {"segments": ["x"], "finished": None}},
+        "missing start": {"1": {"segments": [{"end": None}], "finished": None}},
+        "bad start text": {"1": {"segments": [{"start": "yesterday", "end": None}], "finished": None}},
+        "bad end text": {"1": {"segments": [{"start": "2026-11-24T01:00:00", "end": "soon"}], "finished": None}},
+        "bad finished text": {"1": {"segments": [], "finished": "done"}},
+        "non-string start": {"1": {"segments": [{"start": 5, "end": None}], "finished": None}},
+    }
+
+    def write(self, tasks):
+        tc.ledger_path(self.root, 86).write_text(json.dumps({"sprint": 86, "tasks": tasks, "agents": {}}),
+                                                 encoding="utf-8")
+
+    def test_load_rejects_each_malformed_shape(self):
+        for name, tasks in self.BAD_LEDGERS.items():
+            with self.subTest(name):
+                self.write(tasks)
+                with self.assertRaises(tc.LedgerError):
+                    tc.load(self.root, 86)
+
+    def test_edit_gate_blocks_on_malformed_segment(self):
+        self.write(self.BAD_LEDGERS["non-dict segment"])
+        verdict = gate.decide(edit_payload(self.root))
+        self.assertEqual(verdict.code, 2)
+        self.assertIn("did not run", verdict.stderr)
+
+    def test_valid_ledger_still_loads(self):
+        self.write({"1": {"segments": [{"start": "2026-11-24T01:00:00", "end": None, "by": "main",
+                                        "agent_id": None}], "finished": None}})
+        self.assertEqual(len(tc.load(self.root, 86)["tasks"]["1"]["segments"]), 1)
+
+    def test_save_failure_leaves_no_temp_file_and_raises_ledger_error(self):
+        import os
+        from unittest import mock
+        with mock.patch.object(os, "replace", side_effect=OSError("boom")):
+            with self.assertRaises(tc.LedgerError):
+                tc.save(self.root, 86, tc.empty_ledger(86))
+        self.assertEqual(list(tc.ledger_path(self.root, 86).parent.glob("*.tmp")), [])
+
+    def test_save_mkdir_failure_is_ledger_error(self):
+        blocker = self.root / "docs2"
+        blocker.write_text("file", encoding="utf-8")
+        with mock_ledger_dir(blocker / "sub"):
+            with self.assertRaises(tc.LedgerError):
+                tc.save(self.root, 86, tc.empty_ledger(86))
+
+
+def mock_ledger_dir(directory: Path):
+    from unittest import mock
+    return mock.patch.object(tc, "ledger_path", lambda root, sprint: directory / "L.json")
+
+
 class EditGateTests(RepoCase):
     def test_blocks_with_no_open_task(self):
         verdict = gate.decide(edit_payload(self.root))
@@ -199,6 +256,34 @@ class CommitGateTests(RepoCase):
 
     def test_task_never_started_blocks(self):
         self.assertEqual(self.commit(inline="Sprint 86 Task 2: progress").code, 2)
+
+    def run_cmd(self, cmd):
+        return gate.decide({"hook_event_name": "PreToolUse", "tool_name": "Bash", "cwd": str(self.root),
+                            "tool_input": {"command": cmd}})
+
+    def test_long_file_forms_are_read(self):
+        # Before the fix only `-F <file>` was read, so a Closes in a --file message was never seen (allowed).
+        (self.root / "msg.txt").write_text("feat: x\n\nCloses #579\n", encoding="utf-8")
+        run_cli("start", "1", "--root", str(self.root))
+        for cmd in ("git commit --file=msg.txt", "git commit --file msg.txt", "git commit -F msg.txt"):
+            with self.subTest(cmd):
+                verdict = self.run_cmd(cmd)
+                self.assertEqual(verdict.code, 2)
+                self.assertIn("finish 1", verdict.stderr)
+
+    def test_flag_like_words_in_message_text_are_not_message_files(self):
+        # A message that mentions -Force, -File or -First must not be read as `-F <file>` (false block).
+        for cmd in ('git commit -m "docs: use Remove-Item -Force -Recurse"', 'git commit -m "x -Filter y"',
+                    'git commit -m "x -First 3"'):
+            with self.subTest(cmd):
+                self.assertEqual(self.run_cmd(cmd).code, 0)
+
+    def test_message_from_stdin_blocks_with_file_hint(self):
+        for cmd in ("git commit -F - < msg.txt", "git commit --file=- < msg.txt"):
+            with self.subTest(cmd):
+                verdict = self.run_cmd(cmd)
+                self.assertEqual(verdict.code, 2)
+                self.assertIn("stdin", verdict.stderr)
 
     def test_other_card_and_other_sprint_allowed(self):
         self.assertEqual(self.commit("docs: Closes #12345; see Sprint 85 Task 2\n").code, 0)
@@ -314,6 +399,25 @@ class CliTests(RepoCase):
         run_cli("finish", "1", "--model", "x", "--root", str(self.root))
         self.assertEqual(run_cli("start", "1", "--root", str(self.root))[0], 1)
 
+    def test_start_of_task_with_no_card_refused(self):
+        code, out = run_cli("start", "99", "--root", str(self.root))
+        self.assertEqual(code, 1)
+        self.assertIn("no '### Task 99 --' card", out)
+        self.assertFalse(tc.ledger_path(self.root, 86).exists())
+
+    def test_finish_with_missing_velocity_header_writes_nothing(self):
+        # C6-7: the refusal comes BEFORE the ledger, plan or status are touched.
+        (self.root / "docs" / "CODING_VELOCITY.md").write_text("# Velocity\n", encoding="utf-8")
+        run_cli("start", "1", "--root", str(self.root))
+        plan_before = tc.plan_path(self.root, 86).read_text(encoding="utf-8")
+        status_before = (self.root / ".claude" / "sprint_status.json").read_text(encoding="utf-8")
+        code, out = run_cli("finish", "1", "--model", "x", "--root", str(self.root))
+        self.assertEqual(code, 1)
+        self.assertIn("Coverage Ledger header", out)
+        self.assertIsNone(self.ledger()["tasks"]["1"]["finished"])
+        self.assertEqual(tc.plan_path(self.root, 86).read_text(encoding="utf-8"), plan_before)
+        self.assertEqual((self.root / ".claude" / "sprint_status.json").read_text(encoding="utf-8"), status_before)
+
     def test_unreadable_ledger_exit_2(self):
         tc.ledger_path(self.root, 86).write_text("[", encoding="utf-8")
         self.assertEqual(run_cli("status", "--root", str(self.root))[0], 2)
@@ -362,11 +466,35 @@ class CloseoutTests(RepoCase):
                     str(self.root))
         self.assertTrue(any("not recorded" in v for v in self.violations()))
 
+    def clocked_with(self, executed_by_for_task_1: str):
+        for task in ("1", "2"):
+            run_cli("start", task, "--root", str(self.root))
+            run_cli("finish", task, "--model", "Haiku agent", "--root", str(self.root))
+        plan = tc.plan_path(self.root, 86)
+        text = plan.read_text(encoding="utf-8")
+        start = text.index("**Executed-by**:", text.index("### Task 1"))
+        end = text.index("\n", start)
+        plan.write_text(text[:start] + "**Executed-by**: " + executed_by_for_task_1 + text[end:], encoding="utf-8")
+
     def test_register_decision_excuses_gap(self):
+        self.clocked_with("not recorded, accepted in register d9")
+        self.assertEqual(self.violations(), [])
+
+    def test_bare_d_number_does_not_excuse_gap(self):
+        # C6-8: "d9" without "register" is not the explicit form.
+        self.clocked_with("not recorded, see d9")
+        self.assertTrue(any("Task 1" in v and "not recorded" in v for v in self.violations()))
+
+    def test_register_decision_does_not_skip_start_finish_checks(self):
+        # C6-8: the register form excuses only the 0 min / not recorded text; an unclocked card still fails.
         plan = tc.plan_path(self.root, 86)
         plan.write_text(PLAN.replace("**Executed-by**: (at completion)",
                                      "**Executed-by**: not recorded, accepted in register d9"), encoding="utf-8")
-        self.assertEqual(self.violations(), [])
+        self.assertTrue(any("no start in the ledger" in v for v in self.violations()))
+
+    def test_register_decision_does_not_excuse_wrong_minutes(self):
+        self.clocked_with("Haiku agent -- 999 min, register d9")
+        self.assertTrue(any("ledger total" in v for v in self.violations()))
 
     def test_unreadable_ledger_is_violation(self):
         tc.ledger_path(self.root, 86).write_text("{", encoding="utf-8")
