@@ -17,9 +17,9 @@
 - **EU declaration (Harold, 2026-11-23, verbatim)**: "I have a EU declared development account." Recorded from
   Harold's statement with a Play Console home screenshot (Kimmey Consulting LLC, Personal account, Account ID as
   above, MyEmailSpamFilter in Closed testing, 5 monthly active devices). The screenshot does not show the EU
-  declaration itself, so which status was declared (for example trader or non-trader under the EU Digital Services
-  Act) is not recorded here yet. Context: Google's 2026-10-29 policy announcement says "Starting in November 2026,
-  you must declare your trader status in Play Console". Card F364 R-5 confirms the declared status.
+  declaration itself. **Declared status: NON-TRADER** (Harold, 2026-11-23, register q4 = 2). Context: Google's
+  2026-10-29 policy announcement says "Starting in November 2026, you must declare your trader status in Play
+  Console". Card F364 checks what a non-trader declaration means for this account (source required).
 - **Legal name and address (held by Google, NOT shown on Play)**: Harold's personal name and
   home address. A Personal account does not publish these. An Organization account WOULD
   publish the legal address plus a phone number on every listing -- one of the costs weighed

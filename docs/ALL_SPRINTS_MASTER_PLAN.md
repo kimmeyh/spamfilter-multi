@@ -237,7 +237,8 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - R-4: write the result to `docs/GOOGLE_PLAY_POLICY_2026-10-29_ANALYSIS.md` and propose one backlog card per gap
   (F-number, effort, priority, deadline), presented to Harold as register items for a decision.
 - R-5: record the EU / trader-status position in `docs/GOOGLE_PLAY_ACCOUNT_SETUP.md` (Harold, 2026-11-23: "I have a
-  EU declared development account") and confirm with Harold which status was declared, if the Console shows it.
+  EU declared development account"). Declared status: non-trader (Harold, 2026-11-23, register q4 = 2). Check, with
+  a source, what a non-trader declaration requires or limits for this account.
 - AC-1: every topic on the page has a classification and a source link. AC-2: every "applies" topic has a proposed
   card or a recorded reason none is needed. AC-3: no claim about a Google rule without a same-session source.
 - Depends on: none. Deadline pressure: the 30-day window from 2026-10-29 ends about 2026-11-28 (unverified how

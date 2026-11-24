@@ -23,6 +23,7 @@ here and not in `SPRINT_N_PLAN.md`. Source: Harold, 2026-11-22 and 2026-11-23 (d
 
 ### Closed
 
+- q4. Which EU status was declared in Play Console -- answered 2, non-trader (Harold, 2026-11-23)
 - q1. Sprint 85: how to record six task rows that have no minutes -- answered 2 (Harold, 2026-11-23)
 - q2. F363: may the task-clock gates add new hook matchers to `.claude/settings.json` -- answered 1 (Harold, 2026-11-23)
 - d4. F364 (Google Play policy and Console changes: analysis and compliance cards) is in Sprint 86 (Harold, 2026-11-23)
@@ -75,6 +76,16 @@ here and not in `SPRINT_N_PLAN.md`. Source: Harold, 2026-11-22 and 2026-11-23 (d
      clock until its first commit, which is the Sprint 85 failure.
   3. Script and documentation only, no new gates. Pro: no settings change. Con: it relies on Claude remembering,
      which is what failed in Sprint 85.
+
+### q4. Which EU status was declared in Play Console
+
+- **Asked**: 2026-11-23 19:12 (Sprint 85 cycle, Phase 8.4), after Harold's "I have a EU declared development
+  account".
+- **Status**: CLOSED.
+- **Answer (Harold, 2026-11-23)**: "q4. 2".
+- **Done**: `docs/GOOGLE_PLAY_ACCOUNT_SETUP.md` account section and F364 R-5 record NON-TRADER.
+- **What it decides**: which trader status the account declared, so F364 checks the right requirements.
+- **Options**: 1. Trader. 2. Non-trader. 3. Not sure; send a Play Console > Settings > Developer account screenshot.
 
 ## Decisions
 
