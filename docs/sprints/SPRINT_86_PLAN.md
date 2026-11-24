@@ -1,10 +1,10 @@
 # Sprint 86 Plan
 
-**Status**: DRAFT for Phase 3.7 approval (written 2026-11-23). Not approved.
+**Status**: APPROVED 2026-11-24 (Harold: "Sprint plan approved as amended (with any comments I provided), proceed with execution."; answers "q7. 1 q8. 1 q9. 2 and track q10. 2"). Written 2026-11-23.
 **Branch**: `feature/20261122_Sprint_86` (from the Sprint 85 branch). **PR**: #577 (draft, to `develop`).
 **Cards**: Task 0 #578 (version), Task 1 #579, Task 2 #568 (reused), Task 3 #580, Task 4 #581, Task 5 #582,
-Task 6 #583, Task 7 #584, Task 8 #585, Task 9 #586; Tasks 10-11 after register q7.
-**Version**: 0.25.0+23 today. Bump at 3.7.0b to the version register q10 chooses; "Last uploaded to Play" moves to
+Task 6 #583, Task 7 #584, Task 8 #585, Task 9 #586, Task 10 #587, Task 11 #588.
+**Version**: 0.26.0+24 (register q10 = 2, MINOR), bumped at 3.7.0b on 2026-11-24; "Last uploaded to Play" moved to
 0.25.0 (versionCode 23) in the same commit.
 
 ## Scope source
@@ -16,7 +16,7 @@ Task 6 #583, Task 7 #584, Task 8 #585, Task 9 #586; Tasks 10-11 after register q
   exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development,
   security, testing, deployment." Items: F362, F307, F336, F361, F346, F347, F359, F340, F344.
 - **Not in that list, but placed in Sprint 86 earlier by Harold**: F363 task clock (register d2) and F364 Google
-  Play policy analysis (register d4). Planned below as Tasks 10 and 11, **pending register q7** (keep both, drop
+  Play policy analysis (register d4). Planned below as Tasks 10 and 11; **register q7 = 1, keep both** (Harold, 2026-11-24) (keep both, drop
   both, or keep one).
 - Register q6 (scope additions) is answered by the list above.
 
@@ -476,7 +476,7 @@ changed, `.claude/settings.json` (q8 = 1).
 **Step-types**: DOCS, SVC-NEW (tooling), TEST-UNIT
 **Est-Effort**: 60-120m [estimate unverified]
 
-### Task 10 -- F363: Task clock (Priority 32) -- PENDING register q7
+### Task 10 -- F363: Task clock (Priority 32) (#587; q7 = 1)
 
 Full card: `docs/ALL_SPRINTS_MASTER_PLAN.md` F363 (R-1 to R-8, AC-1 to AC-5; q2 = 1: Agent, Edit|Write|NotebookEdit
 and commit gates). If kept, it runs FIRST so every other task is clocked by it.
@@ -488,7 +488,7 @@ and commit gates). If kept, it runs FIRST so every other task is clocked by it.
 _**Risk & rollback**_: a wrong gate blocks all work; each gate has a bypass token for one command and the hook suite
 must pass before it is registered; rollback is removing the matcher from `.claude/settings.json`.
 
-### Task 11 -- F364: Google Play policy and Console changes: analysis and compliance cards (Priority 30) -- PENDING register q7
+### Task 11 -- F364: Google Play policy and Console changes: analysis and compliance cards (Priority 30) (#588; q7 = 1)
 
 Full card: `docs/ALL_SPRINTS_MASTER_PLAN.md` F364 (R-1 to R-5, AC-1 to AC-3). Output
 `docs/GOOGLE_PLAY_POLICY_2026-10-29_ANALYSIS.md` and proposed cards as register items. Account is EU non-trader
@@ -525,4 +525,10 @@ Windows and Android builds are never run at the same time.
 
 ## Open questions (register)
 
-q7, q8, q9 and q10 in `docs/DECISION_REGISTER.md` must be answered before approval.
+None open. Answered 2026-11-24 (Harold, verbatim "q7. 1 q8. 1 q9. 2 and track q10. 2"):
+- q7 = 1: keep F363 and F364 (Tasks 10, 11).
+- q8 = 1: Task 9 moves the hook registrations to `py -3.14` and runs the hook suite.
+- q9 = 2 "and track": Task 1 adds NO close-out gate (AC-2 and T-1 are dropped). Instead the close-out checklist
+  lists every register item still Open as a report line, and the retrospective counts any question that reached
+  close-out unanswered; a gate is proposed again if that count is above zero.
+- q10 = 2: version 0.26.0+24.

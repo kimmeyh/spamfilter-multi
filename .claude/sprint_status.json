@@ -1,16 +1,16 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-11-23 19:52",
+    "_last_updated": "2026-11-24 00:59",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 86,
         "branch": "feature/20261122_Sprint_86",
-        "status": "Phase 3 Sprint Planning",
-        "status_detail": "Phase 3: plan drafted 2026-11-23 19:52 (docs/sprints/SPRINT_86_PLAN.md, 11 tasks; Tasks 10 F363 and 11 F364 pending register q7); waiting for Harold's approval and register q7-q10. Before that: Phase 8 Release Cycle for Sprint 85. 8.1 done (develop 328f6e29, main 8f2e6f5c, tag v0.25.0). 8.2 pass 1 done. 8.3 done: MSIX 0.25.0.0 and AAB 0.25.0+23 submitted, in rollout (Harold 2026-11-23). 8.4: pass 2 slate presented in the new all-items format (register d3); Sprint 86 already holds F363 (d2), F362 and F307 by Harold; waiting for Harold's scope selection. Register q1 = 2 and q2 = 1 recorded.",
-        "plan_approved": false,
+        "status": "Phase 4 Sprint Execution",
+        "status_detail": "Plan APPROVED 2026-11-24 00:55 (Harold: q7 = 1, q8 = 1, q9 = 2 and track, q10 = 2). 3.7.0b bump to 0.26.0+24 done; 'Last uploaded to Play' 0.25.0 (23). 11 tasks; Task 10 F363 first.",
+        "plan_approved": true,
         "pr_number": 577,
-        "version": "0.25.0+23 (Sprint 86 bump happens at 3.7.0b)"
+        "version": "0.26.0+24"
     },
     "previous_sprint": {
         "number": 85,
@@ -36,7 +36,7 @@
         "sprint_83": "Task 0 #535, Task 1 #524 + #527 (reused), Task 2 #536, Task 3 #537, Task 4 #538, Task 5 #539, Task 6 #540, Task 7 #541, Task 8 #542, Task 9 #543, Task 10 #544, Task 11 #545, Task 12 #546",
         "sprint_84": "Task 0 #549, Task 1 #550, Task 2 #551, Task 3 #552, Task 4 #553, Task 5 #554, Task 6 #555, Task 7 #556, Task 8 #557",
         "sprint_84_close": "PR #548 body: Closes #549-#557. #550 (MV-3c carried to the Sprint 85 stub) and #553 (remainder on F341) close with the merge; their open work is tracked in the stub and the master plan. Open as intended: #509 #510 #523 (Apple).",
-        "sprint_86": "PR #577 (draft). Task 0 #578 (version), Task 1 #579 (F362), Task 2 #568 (F307, reused), Task 3 #580 (F336), Task 4 #581 (F361), Task 5 #582 (F346), Task 6 #583 (F347), Task 7 #584 (F359), Task 8 #585 (F340), Task 9 #586 (F344). Tasks 10 F363 and 11 F364: cards after register q7.",
+        "sprint_86": "PR #577 (draft). Task 0 #578 (version), Task 1 #579 (F362), Task 2 #568 (F307, reused), Task 3 #580 (F336), Task 4 #581 (F361), Task 5 #582 (F346), Task 6 #583 (F347), Task 7 #584 (F359), Task 8 #585 (F340), Task 9 #586 (F344), Task 10 #587 (F363), Task 11 #588 (F364).",
         "sprint_85": "Task 0 #560, Task 1 #561, Task 2 #562 (F350), Task 3 #563 (F352), Task 4 #564 (F354), Task 5 #565 (F355), Task 6 #566 (F357), Task 7 #567 (F341), Task 8 #568 (F307), Task 9 #569 (F329), Task 10 #570 (F330), Task 11 #571 (F331), Task 12 #572 (F332), Task 13 #573 (F333), Task 14 #574 (F334), Task 15 #575 (F335)"
     },
     "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
@@ -63,13 +63,11 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "8.4: Harold selects the rest of Sprint 86 scope from the all-items slate (F363, F362, F307 already in).",
-        "Phase 3 planning; at 3.7.0b bump the version and move 'Last uploaded to Play' to 0.25.0 (versionCode 23) in that commit.",
-        "Register docs/DECISION_REGISTER.md: no open items as of 2026-11-23."
+        "Phase 4: execute Tasks 10, 11, 2, 5, 6, 7, 1, 4, 8, 3, 9 per the plan's execution order.",
+        "Register docs/DECISION_REGISTER.md: no open items as of 2026-11-24."
     ],
     "next_sprint_targeted": {
-        "number": 86,
-        "stub": "docs/sprints/SPRINT_86_PLAN.md (written 2026-11-21 at Sprint 85 close-out)",
-        "committed": "0.25.0 store updates, F307 removal (#568, Harold q1), F361 in the top 10 (Harold), iOS when Apple approves; scope from 8.4."
+        "number": 87,
+        "stub": "written at Sprint 86 close-out"
     }
 }

@@ -20,13 +20,14 @@ here and not in `SPRINT_N_PLAN.md`. Source: Harold, 2026-11-22 and 2026-11-23 (d
 
 ### Open
 
-- q7. Sprint 86: keep F363 (task clock) and F364 (Play policy analysis), which the 2026-11-23 scope list left out (asked 2026-11-23)
-- q8. F344: move the hook registrations from Python 3.12 to `py -3.14` (asked 2026-11-23)
-- q9. F362 R-4: does close-out block on an unanswered register question (asked 2026-11-23)
-- q10. Sprint 86 version: 0.25.1 or 0.26.0 (asked 2026-11-23)
+- None.
 
 ### Closed
 
+- q7. Keep F363 and F364 in Sprint 86 -- answered 1, keep both (Harold, 2026-11-24)
+- q8. Hooks to `py -3.14` -- answered 1, move and run the hook suite (Harold, 2026-11-24)
+- q9. Close-out gate on unanswered questions -- answered 2, documentation only, and track (Harold, 2026-11-24)
+- q10. Sprint 86 version -- answered 2, 0.26.0 (Harold, 2026-11-24)
 - q6. Sprint 86: which more items join F364, F363, F362 and F307 -- answered with a scope list (Harold, 2026-11-23)
 - q3. Where the all-items backlog details are shown when they are too long for one message -- answered 2 (Harold, 2026-11-23)
 - q5. Commit the generated backlog slate file -- answered 1 (Harold, 2026-11-23)
@@ -132,7 +133,8 @@ here and not in `SPRINT_N_PLAN.md`. Source: Harold, 2026-11-22 and 2026-11-23 (d
 
 ### q7. Sprint 86: keep F363 (task clock) and F364 (Play policy analysis)
 
-- **Asked**: 2026-11-23, with the Sprint 86 plan for approval. **Status**: OPEN.
+- **Asked**: 2026-11-23, with the Sprint 86 plan for approval. **Status**: CLOSED.
+- **Answer (Harold, 2026-11-24, verbatim: "q7. 1 q8. 1 q9. 2 and track q10. 2")**: option 1, keep both. Done: Tasks 10 (F363) and 11 (F364) are in the approved plan.
 - **What it decides**: the 2026-11-23 scope list names nine items and leaves out F363 (register d2, "add to this
   sprint") and F364 (register d4, "add to backlog for next sprint"). The plan carries both as Tasks 10 and 11, pending
   this answer.
@@ -147,7 +149,8 @@ here and not in `SPRINT_N_PLAN.md`. Source: Harold, 2026-11-22 and 2026-11-23 (d
 
 ### q8. F344: move the hook registrations from Python 3.12 to `py -3.14`
 
-- **Asked**: 2026-11-23, with the Sprint 86 plan. **Status**: OPEN.
+- **Asked**: 2026-11-23, with the Sprint 86 plan. **Status**: CLOSED.
+- **Answer (Harold, 2026-11-24, verbatim: "q7. 1 q8. 1 q9. 2 and track q10. 2")**: option 1. Done in Task 9: the hook registrations move to `py -3.14` and the hook suite runs.
 - **What it decides**: F344 R-3. `.claude/settings*.json` runs every hook with `python` (3.12.10 on PATH). Harold
   chose Python 3.14 for tooling (Sprint 83 MV Question D = 2); changing the registrations is a `.claude` settings
   change, so it is asked now, not mid-sprint.
@@ -158,7 +161,8 @@ here and not in `SPRINT_N_PLAN.md`. Source: Harold, 2026-11-22 and 2026-11-23 (d
 
 ### q9. F362 R-4: does close-out block on an unanswered register question
 
-- **Asked**: 2026-11-23, with the Sprint 86 plan. **Status**: OPEN.
+- **Asked**: 2026-11-23, with the Sprint 86 plan. **Status**: CLOSED.
+- **Answer (Harold, 2026-11-24, verbatim: "q7. 1 q8. 1 q9. 2 and track q10. 2")**: option 2, documentation only, "and track". Done in Task 1: no blocking gate. Read as "track": the close-out checklist lists every register item still Open as a report line (not a block), and the retrospective counts any question that reached close-out unanswered; a gate is proposed again if that count is above zero.
 - **What it decides**: whether `verify-closeout-complete.py` gets a check that blocks sprint close-out while a register
   question asked in that sprint is still Open with no answer.
 - **Options**:
@@ -169,7 +173,8 @@ here and not in `SPRINT_N_PLAN.md`. Source: Harold, 2026-11-22 and 2026-11-23 (d
 
 ### q10. Sprint 86 version: 0.25.1 or 0.26.0
 
-- **Asked**: 2026-11-23, with the Sprint 86 plan. **Status**: OPEN.
+- **Asked**: 2026-11-23, with the Sprint 86 plan. **Status**: CLOSED.
+- **Answer (Harold, 2026-11-24, verbatim: "q7. 1 q8. 1 q9. 2 and track q10. 2")**: option 2, 0.26.0+24 (MINOR). Done at Phase 3.7.0b.
 - **What it decides**: the 3.7.0b bump (versionCode 24 either way).
 - **Options**:
   1. 0.25.1+24, PATCH (Recommendation). Pro: the sprint adds no new user feature; the user-visible change is the
