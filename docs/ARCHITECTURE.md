@@ -694,7 +694,17 @@ diagnostic log (Sprint 84 7.7.1: the log write can hold its lock for 2 seconds a
 process may die). The reason shown in Scan History is "The phone stopped this
 background scan before it finished. The next scan will try again.", or, for the
 AndroidX raw stop reason 1 (`CANCELLED_BY_APP`: background scanning turned off),
-"Background scanning was turned off while this scan ran." The raw value is used
+"Background scanning was turned off while this scan ran." F346 (Sprint 86): after the
+row close and before the log write, the handler reads the device state and the stop
+line ends `powerSave=<v> deviceIdle=<v> thermal=<v>` (`unknown` when a value cannot be
+read; the read is bounded to 500 ms and never throws). The read goes through a LOCAL
+plugin, `mobile-app/packages/spamfilter_device_state/` (Kotlin `DeviceStatePlugin`,
+channel `com.myemailspamfilter/device_state`), not through MainActivity: the stop
+handler runs in the WorkManager background engine, which the plugin creates itself
+(`BackgroundWorker.kt:132`, workmanager_android 0.10.9) and which never sees
+MainActivity's channels; a plugin is registered on every engine. iPhone has no stop
+event (`workmanager_apple` 0.9.11 never calls `onTaskStopped`), a declared ADR-0042
+exception. The raw value is used
 because the plugin's Dart `StopReason` enum numbers the reasons differently
 (`workmanager_platform_interface` 0.10.5 `stop_reason.dart:21`). The write is bounded
 to 2 seconds and is conditional on `in_progress`
@@ -798,7 +808,6 @@ RuleEvaluator.evaluate(EmailMessage)
 | **background_scan_log_screen.dart** | Background scan execution logs |
 | **background_scan_progress_screen.dart** | Background scan progress display |
 | **rules_management_screen.dart** | View/edit/delete rules |
-| **rule_quick_add_screen.dart** | Quick-add rule from email |
 | **safe_senders_management_screen.dart** | View/edit/delete whitelist |
 | **safe_sender_quick_add_screen.dart** | Quick-add safe sender from email |
 | **email_detail_view.dart** | Full email details display |

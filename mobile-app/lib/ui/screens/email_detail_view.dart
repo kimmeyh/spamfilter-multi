@@ -17,7 +17,6 @@ import '../../core/services/rule_conflict_detector.dart';
 import '../../core/storage/rule_database_store.dart';
 import '../../core/storage/safe_sender_database_store.dart';
 import '../../core/storage/unmatched_email_store.dart';
-import 'rule_quick_add_screen.dart';
 import 'safe_sender_quick_add_screen.dart';
 import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
@@ -277,18 +276,6 @@ class _EmailDetailViewState extends State<EmailDetailView>
 
                 const Divider(),
 
-                // Subject match
-                if (widget.email.subject?.isNotEmpty ?? false)
-                  _buildRuleOption(
-                    icon: Icons.subject,
-                    title: 'Subject Contains',
-                    subtitle: widget.email.subject!,
-                    onTap: () {
-                      Navigator.pop(context);
-                      _navigateToRuleScreen();
-                    },
-                  ),
-
                 // Body domains (if any)
                 if (_extractedDomains.domains.isNotEmpty) ...[
                   const Divider(),
@@ -311,19 +298,6 @@ class _EmailDetailViewState extends State<EmailDetailView>
                         ),
                       )),
                 ],
-
-                const Divider(),
-
-                // Custom rule (navigate to full screen)
-                _buildRuleOption(
-                  icon: Icons.edit,
-                  title: 'Custom Rule',
-                  subtitle: 'Create a custom rule with full options',
-                  onTap: () {
-                    Navigator.pop(context);
-                    _navigateToRuleScreen();
-                  },
-                ),
               ],
             ),
           ),
@@ -541,26 +515,6 @@ class _EmailDetailViewState extends State<EmailDetailView>
       ),
     );
     return result ?? false;
-  }
-
-  void _navigateToRuleScreen() {
-    final emailMessage = _createEmailMessage();
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => RuleQuickAddScreen(
-          email: emailMessage,
-          ruleStore: widget.ruleStore!,
-          safeSenderStore: widget.safeSenderStore,
-        ),
-      ),
-    ).then((result) {
-      if (result == true && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Rule created successfully')),
-        );
-      }
-    });
   }
 
   EmailMessage _createEmailMessage() {

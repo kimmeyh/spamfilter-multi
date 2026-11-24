@@ -28,7 +28,6 @@ help:
   manualScanSettings: help/manual_scan_settings.md
   backgroundScanning: help/background_scanning.md
   manageRules: help/manage_rules.md
-  ruleQuickAdd: help/rule_quick_add.md
   ruleTest: help/rule_test.md
   safeSenders: help/safe_senders.md
   folderSelection: help/folder_selection.md

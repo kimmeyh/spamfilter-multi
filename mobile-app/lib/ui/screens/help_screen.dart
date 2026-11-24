@@ -52,7 +52,6 @@ enum HelpSection {
   backgroundScanning,
   // Rule / safe-sender screens
   manageRules,
-  ruleQuickAdd,
   ruleTest,
   safeSenders,
   folderSelection,
@@ -339,7 +338,6 @@ class _HelpScreenState extends State<HelpScreen> {
                   _section(HelpSection.backgroundScanning,
                       title: 'Background Scanning'),
                   _section(HelpSection.manageRules, title: 'Manage Rules'),
-                  _section(HelpSection.ruleQuickAdd, title: 'Rule Quick Add'),
                   _section(HelpSection.ruleTest, title: 'Rule Test'),
                   _section(HelpSection.safeSenders, title: 'Manage Safe Senders'),
                   _section(HelpSection.folderSelection, title: 'Folder Selection'),
@@ -540,8 +538,6 @@ class _HelpScreenState extends State<HelpScreen> {
         return 'backgroundScanning';
       case HelpSection.manageRules:
         return 'manageRules';
-      case HelpSection.ruleQuickAdd:
-        return 'ruleQuickAdd';
       case HelpSection.ruleTest:
         return 'ruleTest';
       case HelpSection.safeSenders:

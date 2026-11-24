@@ -168,7 +168,19 @@ nothing, so the user is not offered a broken rule editor.
 
 **Existing behavior relied on**: F306 covers the four buckets -- verified at task start (R-1), not assumed.
 
-**Old name search**: `RuleQuickAddScreen`, `rule_quick_add`, `ruleQuickAdd`, "Create rule" -- hits: (at completion)
+**Old name search**: `RuleQuickAddScreen`, `rule_quick_add`, `ruleQuickAdd`, "Create rule" -- hits (2026-11-24): none
+in `lib/`, `integration_test/`, `scripts/`; `assets/` only `assets/content/audit-log.md` (history). Kept on purpose:
+"Create rule" in `test/integration/sprint_6_quick_add_workflow_test.dart` and `enhanced_deletion_test.dart` (means
+"make a rule"), and in `no_rule_review_heuristics_test.dart` (asserts the button is gone); sprint history, CHANGELOG
+history and `docs/research/R76-3` (history).
+
+**Result**: R-1 audit, no gap. From header (Block Email / Exact Domain / Entire Domain) and Block Subject are on the
+pop-up (`email_detail_popup.dart` ~1095-1227, saved by `rule_quick_action_service.dart:447-474`); a typed body phrase
+is on Rules > Add block rule (`ManualRuleType.bodyPhrase`). The removed page never stored subject, body or URL text
+(controllers never set; pencil a no-op at `rule_quick_add_screen.dart:715-719`). One partial: the pop-up blocks the
+FIRST outside link domain only, while `EmailDetailView`'s removed item offered up to 5 -- but `EmailDetailView` has no
+production caller (tests only), so no user loses a route; recorded, not reopened. `flutter analyze` clean; T-1
+mutants (button re-added; row tap no-op) KILLED.
 
 **Callers of any guard being changed**: N/A (a removal; the two callers are removed with it).
 
@@ -196,7 +208,7 @@ navigated to the page updated (grep `test_*.json`).
 
 **Model**: Haiku -- the R-1 audit result decides go or stop; removal is mechanical.
 **Delegation checklist included in the sub-agent prompt**: yes
-**Executed-by**: (at completion)
+**Executed-by**: Haiku sub-agent (as assigned) -- 87 min (task clock 2026-11-24 01:46 to 2026-11-24 04:25, 1 segment(s)); the agent ran about 150 min (harness duration 9017984 ms); the clock closed at its first interim stop at 87 min, an F363 defect fixed the same day (a later SubagentStop now moves the end)
 **Step-types**: UI-MOVE, TEST-WIDGET, DOCS
 **Est-Effort**: 45-75m
 _**Decision-class interrupts**_: an R-1 gap (the popup cannot make a rule the page could) is a Class-2 question.

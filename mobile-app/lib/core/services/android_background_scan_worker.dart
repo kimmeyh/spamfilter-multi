@@ -32,6 +32,7 @@ import '../storage/settings_store.dart';
 import 'background_mode_service.dart';
 import 'background_scan_core.dart';
 import 'background_scan_trigger.dart';
+import 'android_device_state.dart';
 import 'diagnostic_logger.dart';
 import 'f264_upgrade_migration.dart';
 import 'notification_account_filter.dart';
@@ -95,7 +96,8 @@ void androidBackgroundScanDispatcher() {
 /// worker, and the log could not say what. WorkManager tells the worker why
 /// (Android 12+; `unknown` before). Bounded: the plugin tears the engine down
 /// when this returns, so a slow write must not hold it. [write] is the test
-/// seam; production writes to the diagnostic log.
+/// seam; production writes to the diagnostic log. [readDeviceState] is the seam
+/// for the F346 device-state read.
 ///
 /// Needs workmanager_android 0.10.9 or later. Up to 0.10.6 the plugin's
 /// `onStopped` sent this call from WorkManager's own thread (`WM.task-N`);
@@ -109,6 +111,7 @@ Future<void> onWorkerStopped(
   StopReason reason, {
   Future<void> Function(String detail)? write,
   Future<int> Function()? closeScans,
+  Future<Object?> Function()? readDeviceState,
 }) async {
   final detail = describeWorkerStop(running: _runningWork, reason: reason);
   Future<void> report(String line) => (write ??
@@ -128,8 +131,14 @@ Future<void> onWorkerStopped(
   // window. The close keeps its own 2 s bound.
   final closedLine =
       await _closeStoppedScanRows(reason: reason, closeScans: closeScans);
+  // F346 (Sprint 86): which device state stopped the scan. After the row close
+  // (the close stays first), before the log write. `describeDeviceState` never
+  // throws and gives up after 500 ms, so it cannot hold the engine teardown;
+  // every value it cannot read is `unknown`, never left out.
+  final deviceState = await describeDeviceState(reader: readDeviceState);
+  AndroidBackgroundScanWorker._logger.w('[worker/android] $deviceState');
   try {
-    await report(detail);
+    await report('$detail $deviceState');
   } catch (_) {
     // Nothing to report to: the log write itself is what failed. In practice
     // only the 2 s TimeoutException lands here -- `DiagnosticLogger.log`

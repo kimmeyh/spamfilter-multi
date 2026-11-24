@@ -26,6 +26,10 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-11-24 (Sprint 86)
+
+- **chore**: Removed the "Create rule" page; rules are made from the rule pop-up on Review No Rule Items (Issue #568)
+
 ### 2026-11-21 (Sprint 85)
 
 - **fix**: Windows development builds: when the start-up copy of the sign-ins into the development folder does not finish, Settings > General now says so in red ("DEV credential copy at start-up did not finish: ... Accounts may be missing until it succeeds; it is tried again at the next start."), and the copy is retried at the next start. Two starts at once no longer copy at the same time, and an earlier copy is kept under its own backup name (Issue #564)

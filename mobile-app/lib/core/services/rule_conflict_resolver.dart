@@ -2,8 +2,8 @@
 ///
 /// When adding a block rule, checks for and removes conflicting safe senders.
 /// When adding a safe sender, checks for and removes conflicting block rules.
-/// Used by ResultsDisplayScreen (inline), RuleQuickAddScreen, and
-/// SafeSenderQuickAddScreen to ensure consistent behavior.
+/// Used by ResultsDisplayScreen (inline), the No Rule Review pop-up's quick
+/// actions, and SafeSenderQuickAddScreen to ensure consistent behavior.
 library;
 
 import 'package:logger/logger.dart';
@@ -41,7 +41,7 @@ class ConflictResolutionResult {
 /// Resolves conflicts between rules and safe senders
 ///
 /// This service centralizes the conflict detection and removal logic that
-/// was previously duplicated across RuleQuickAddScreen, SafeSenderQuickAddScreen,
+/// was previously duplicated across the rule quick-add paths, SafeSenderQuickAddScreen,
 /// and missing from ResultsDisplayScreen (the root cause of Issue #154).
 class RuleConflictResolver {
   final Logger _logger = Logger();

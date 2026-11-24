@@ -55,11 +55,13 @@ void main() {
 
   test('the other two subject-rule creators use keyword too (source gate)',
       () {
-    final quickAdd =
-        File('lib/ui/screens/rule_quick_add_screen.dart').readAsStringSync();
+    // Sprint 86 (F307): the rule quick-add page is gone; its subject creator
+    // is now the No Rule Review pop-up's quick action.
+    final popupActions =
+        File('lib/core/services/rule_quick_action_service.dart').readAsStringSync();
     expect(
-        RegExp(r"patternCategory = 'subject';\s*//[^\n]*\n\s*patternSubType = 'keyword';")
-            .hasMatch(quickAdd),
+        RegExp(r"patternCategory = 'subject';(\s*//[^\n]*\n)*\s*patternSubType = 'keyword';")
+            .hasMatch(popupActions),
         isTrue);
     final split =
         File('lib/core/services/default_rule_set_service.dart').readAsStringSync();

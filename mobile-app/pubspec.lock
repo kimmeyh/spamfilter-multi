@@ -884,6 +884,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.10.1"
+  spamfilter_device_state:
+    dependency: "direct main"
+    description:
+      path: "packages/spamfilter_device_state"
+      relative: true
+    source: path
+    version: "0.1.0"
   sqflite:
     dependency: "direct main"
     description:

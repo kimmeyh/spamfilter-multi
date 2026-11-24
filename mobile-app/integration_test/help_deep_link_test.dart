@@ -41,7 +41,6 @@
 //   platform_selection_screen.dart -> HelpSection.accountSetup
 //   folder_selection_screen.dart -> HelpSection.folderSelection
 //   rules_management_screen.dart -> HelpSection.manageRules
-//   rule_quick_add_screen.dart -> HelpSection.ruleQuickAdd
 //   rule_test_screen.dart -> HelpSection.ruleTest
 //   safe_senders_management_screen.dart -> HelpSection.safeSenders
 //   scan_history_screen.dart -> HelpSection.scanHistory
@@ -102,7 +101,6 @@ const _allSections = <HelpSection, String>{
   HelpSection.manualScanSettings: 'Manual Scan Settings',
   HelpSection.backgroundScanning: 'Background Scanning',
   HelpSection.manageRules: 'Manage Rules',
-  HelpSection.ruleQuickAdd: 'Rule Quick Add',
   HelpSection.ruleTest: 'Rule Test',
   HelpSection.safeSenders: 'Manage Safe Senders',
   HelpSection.folderSelection: 'Folder Selection',

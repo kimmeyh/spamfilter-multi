@@ -10,7 +10,7 @@ import 'rule_conflict_resolver.dart';
 const String kReloadFailedSuffix =
     ' -- saved, but the rules in use could not be reloaded; restart the app';
 
-/// PR #490 7.7.1: appended when Rule Quick Add could not finish removing the
+/// PR #490 7.7.1: appended when the rule quick-add path could not finish removing the
 /// safe senders that match the sender. A safe sender outranks every rule, so
 /// one left behind stops the new rule from acting on this sender.
 const String kConflictingSafeSenderCheckFailedSuffix =

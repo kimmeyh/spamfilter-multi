@@ -162,7 +162,7 @@ class StandardAppBarActions {
       //        scan_history and settings (nullable accountId).
       //    Never on the other nine: scan_progress (includeManualScan: false --
       //    it IS Manual Scan); the five Help-only editors (rules_management,
-      //    safe_senders_management, rule_test, rule_quick_add,
+      //    safe_senders_management, rule_test,
       //    yaml_import_export); and account_selection, account_setup (both call
       //    sites) and platform_selection, which pass no accountId and no
       //    handler. The editor and account-flow screens are deliberate: showing
