@@ -1,13 +1,13 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-11-23 14:02",
+    "_last_updated": "2026-11-23 19:52",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 86,
         "branch": "feature/20261122_Sprint_86",
-        "status": "Phase 8.4 Backlog Refinement Pass 2",
-        "status_detail": "Phase 8 Release Cycle for Sprint 85. 8.1 done (develop 328f6e29, main 8f2e6f5c, tag v0.25.0). 8.2 pass 1 done. 8.3 done: MSIX 0.25.0.0 and AAB 0.25.0+23 submitted, in rollout (Harold 2026-11-23). 8.4: pass 2 slate presented in the new all-items format (register d3); Sprint 86 already holds F363 (d2), F362 and F307 by Harold; waiting for Harold's scope selection. Register q1 = 2 and q2 = 1 recorded.",
+        "status": "Phase 3 Sprint Planning",
+        "status_detail": "Phase 3: plan drafted 2026-11-23 19:52 (docs/sprints/SPRINT_86_PLAN.md, 11 tasks; Tasks 10 F363 and 11 F364 pending register q7); waiting for Harold's approval and register q7-q10. Before that: Phase 8 Release Cycle for Sprint 85. 8.1 done (develop 328f6e29, main 8f2e6f5c, tag v0.25.0). 8.2 pass 1 done. 8.3 done: MSIX 0.25.0.0 and AAB 0.25.0+23 submitted, in rollout (Harold 2026-11-23). 8.4: pass 2 slate presented in the new all-items format (register d3); Sprint 86 already holds F363 (d2), F362 and F307 by Harold; waiting for Harold's scope selection. Register q1 = 2 and q2 = 1 recorded.",
         "plan_approved": false,
         "pr_number": null,
         "version": "0.25.0+23 (Sprint 86 bump happens at 3.7.0b)"

@@ -20,10 +20,14 @@ here and not in `SPRINT_N_PLAN.md`. Source: Harold, 2026-11-22 and 2026-11-23 (d
 
 ### Open
 
-- q6. Sprint 86: which more items join F364, F363, F362 and F307 (asked 2026-11-23)
+- q7. Sprint 86: keep F363 (task clock) and F364 (Play policy analysis), which the 2026-11-23 scope list left out (asked 2026-11-23)
+- q8. F344: move the hook registrations from Python 3.12 to `py -3.14` (asked 2026-11-23)
+- q9. F362 R-4: does close-out block on an unanswered register question (asked 2026-11-23)
+- q10. Sprint 86 version: 0.25.1 or 0.26.0 (asked 2026-11-23)
 
 ### Closed
 
+- q6. Sprint 86: which more items join F364, F363, F362 and F307 -- answered with a scope list (Harold, 2026-11-23)
 - q3. Where the all-items backlog details are shown when they are too long for one message -- answered 2 (Harold, 2026-11-23)
 - q5. Commit the generated backlog slate file -- answered 1 (Harold, 2026-11-23)
 - q4. Which EU status was declared in Play Console -- answered 2, non-trader (Harold, 2026-11-23)
@@ -107,7 +111,11 @@ here and not in `SPRINT_N_PLAN.md`. Source: Harold, 2026-11-22 and 2026-11-23 (d
 
 - **Asked**: 2026-11-23 (Sprint 85 cycle, Phase 8.4 pass 2), after the all-items slate
   (`docs/sprints/SPRINT_86_BACKLOG_SLATE.md`, 50 active and 29 HOLD) was shown in 8 parts.
-- **Status**: OPEN.
+- **Status**: CLOSED.
+- **Answer (Harold, 2026-11-23, verbatim)**: "Sprint 86 Scope should include the below items. Please complete sprint
+  planning (/docs/sprint_planning.md) for the below items and present for approval." Items: F362, F307, F336, F361,
+  F346, F347, F359, F340, F344 (option 3: the recommendation plus F336 and F344). F363 and F364 are not in the list;
+  see q7.
 - **What it decides**: the rest of Sprint 86 scope. Already in: F364 (~60-120m), F363 (~180-270m), F362 (~45-60m),
   F307 (~45-75m) = ~330-525m.
 - **Options**:
@@ -121,6 +129,52 @@ here and not in `SPRINT_N_PLAN.md`. Source: Harold, 2026-11-22 and 2026-11-23 (d
   3. Option 1 plus items Harold names by id. Pro: Harold's own picks. Con: a larger sprint.
 - **Left out of the recommendation**: F336 (~150-260m, another large tooling item beside F363); the iOS items
   F67a-F67d and F304 wait on Apple.
+
+### q7. Sprint 86: keep F363 (task clock) and F364 (Play policy analysis)
+
+- **Asked**: 2026-11-23, with the Sprint 86 plan for approval. **Status**: OPEN.
+- **What it decides**: the 2026-11-23 scope list names nine items and leaves out F363 (register d2, "add to this
+  sprint") and F364 (register d4, "add to backlog for next sprint"). The plan carries both as Tasks 10 and 11, pending
+  this answer.
+- **Options**:
+  1. Keep both (Recommendation). Pro: F363 is the gate that stops a task closing with no minutes, and it runs first so
+     every Sprint 86 task uses it; F364 has a Play window that ends about 2026-11-28 (counting unverified). Con: adds
+     240-390m (sprint 785-1245m).
+  2. Keep F364 only. Pro: the deadline item stays. Con: Sprint 86 minutes are recorded by hand again, the Sprint 85
+     failure. Adds 60-120m.
+  3. Keep F363 only. Pro: minutes are gated. Con: the Play analysis waits a sprint past its window. Adds 180-270m.
+  4. Drop both to Sprint 87. Pro: the nine-item sprint (545-855m). Con: both cons above.
+
+### q8. F344: move the hook registrations from Python 3.12 to `py -3.14`
+
+- **Asked**: 2026-11-23, with the Sprint 86 plan. **Status**: OPEN.
+- **What it decides**: F344 R-3. `.claude/settings*.json` runs every hook with `python` (3.12.10 on PATH). Harold
+  chose Python 3.14 for tooling (Sprint 83 MV Question D = 2); changing the registrations is a `.claude` settings
+  change, so it is asked now, not mid-sprint.
+- **Options**:
+  1. Move to `py -3.14`, then run the full hook suite (Recommendation). Pro: one Python version for hooks and scripts.
+     Con: if a hook fails under 3.14, every tool call is affected until it is fixed; the suite run is the check.
+  2. Leave the hooks on 3.12. Pro: no risk to the hooks this sprint. Con: two Python versions stay in use.
+
+### q9. F362 R-4: does close-out block on an unanswered register question
+
+- **Asked**: 2026-11-23, with the Sprint 86 plan. **Status**: OPEN.
+- **What it decides**: whether `verify-closeout-complete.py` gets a check that blocks sprint close-out while a register
+  question asked in that sprint is still Open with no answer.
+- **Options**:
+  1. Add the check (Recommendation). Pro: an unanswered question cannot be forgotten at close-out (the Sprint 85 q1
+     rows were found only at 7.7.5). Con: +3-4 hook cases, under 2 s locally and in CI; a question Harold wants to
+     leave open must be moved to the next sprint by name.
+  2. Documentation only. Pro: no new gate. Con: relies on remembering, which failed in Sprint 85.
+
+### q10. Sprint 86 version: 0.25.1 or 0.26.0
+
+- **Asked**: 2026-11-23, with the Sprint 86 plan. **Status**: OPEN.
+- **What it decides**: the 3.7.0b bump (versionCode 24 either way).
+- **Options**:
+  1. 0.25.1+24, PATCH (Recommendation). Pro: the sprint adds no new user feature; the user-visible change is the
+     removal of a broken page plus log lines. Con: a removed page is a visible change some would call MINOR.
+  2. 0.26.0+24, MINOR. Pro: marks the removed page as a visible change. Con: no new capability to justify a MINOR.
 
 ### q4. Which EU status was declared in Play Console
 
