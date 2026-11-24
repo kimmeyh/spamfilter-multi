@@ -1,7 +1,9 @@
 # Sprint 86 Plan
 
 **Status**: DRAFT for Phase 3.7 approval (written 2026-11-23). Not approved.
-**Branch**: `feature/20261122_Sprint_86` (from the Sprint 85 branch).
+**Branch**: `feature/20261122_Sprint_86` (from the Sprint 85 branch). **PR**: #577 (draft, to `develop`).
+**Cards**: Task 0 #578 (version), Task 1 #579, Task 2 #568 (reused), Task 3 #580, Task 4 #581, Task 5 #582,
+Task 6 #583, Task 7 #584, Task 8 #585, Task 9 #586; Tasks 10-11 after register q7.
 **Version**: 0.25.0+23 today. Bump at 3.7.0b to the version register q10 chooses; "Last uploaded to Play" moves to
 0.25.0 (versionCode 23) in the same commit.
 
