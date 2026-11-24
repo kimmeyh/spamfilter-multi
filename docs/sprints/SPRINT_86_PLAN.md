@@ -513,9 +513,15 @@ Full card: `docs/ALL_SPRINTS_MASTER_PLAN.md` F364 (R-1 to R-5, AC-1 to AC-3). Ou
 same rule, so a fix stays the same on all three where it can (ADR-0042).
 **Model**: Fable/Opus -- *why not Sonnet*: every claim needs a same-session source and drives a compliance decision
 (CLAUDE.md Sprint 66 IMP-2).
-**Executed-by**: (at completion)
+**Executed-by**: Opus sub-agent (as assigned) -- 71 min (task clock 2026-11-24 01:46 to 2026-11-24 03:24, 1 segment(s))
 **Step-types**: DOCS (research)
 **Est-Effort**: 60-120m [estimate unverified]
+**Result**: `docs/GOOGLE_PLAY_POLICY_2026-10-29_ANALYSIS.md` -- 18 topics: 2 APPLY (trader status; deceptive
+behavior, no gap), 2 UNKNOWN (memory thresholds, Age Signals), 14 DO NOT APPLY. No deadline for this app before
+2026-12-31; the per-rule dates on Google's Policy Deadlines page are 2027-01-27, 2027-04-14 and 2027-08-25, so the
+"about 2026-11-28" risk below did not hold. R-5: one bullet in `docs/GOOGLE_PLAY_ACCOUNT_SETUP.md`
+(`data_safety_declarations_test` 7/7 after it). AC-2: proposed cards F365-F368 are register q12; the trader
+decision is register q11; both are asked at Manual Validation.
 _**Risk & rollback**_: the 30-day window from 2026-10-29 may already have ended (about 2026-11-28; counting
 unverified). Run it first among the analysis tasks.
 

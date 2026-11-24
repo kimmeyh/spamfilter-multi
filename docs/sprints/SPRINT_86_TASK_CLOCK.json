@@ -3,6 +3,7 @@
     "a4a1f52cc00b68eaf": "11",
     "a52caa4da0344db8b": "5",
     "a5493f98ccb0b9206": "2",
+    "a5979ac38db75294b": "3",
     "ae268308cc6449dde": "6"
   },
   "sprint": 86,
@@ -30,7 +31,7 @@
       ]
     },
     "11": {
-      "finished": null,
+      "finished": "2026-11-24T03:24:38",
       "segments": [
         {
           "agent_id": "a4a1f52cc00b68eaf",
@@ -46,8 +47,19 @@
         {
           "agent_id": "a5493f98ccb0b9206",
           "by": "agent",
-          "end": null,
+          "end": "2026-11-24T03:12:30",
           "start": "2026-11-24T01:46:14"
+        }
+      ]
+    },
+    "3": {
+      "finished": null,
+      "segments": [
+        {
+          "agent_id": "a5979ac38db75294b",
+          "by": "agent",
+          "end": null,
+          "start": "2026-11-24T03:07:31"
         }
       ]
     },

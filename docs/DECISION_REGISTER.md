@@ -20,7 +20,8 @@ here and not in `SPRINT_N_PLAN.md`. Source: Harold, 2026-11-22 and 2026-11-23 (d
 
 ### Open
 
-- None.
+- q11. Play trader status: keep NON-TRADER with an LLC as developer name? (asked at Sprint 86 Manual Validation)
+- q12. Which F364 proposed cards (F365-F368) join the backlog (asked at Sprint 86 Manual Validation)
 
 ### Closed
 
@@ -170,6 +171,52 @@ here and not in `SPRINT_N_PLAN.md`. Source: Harold, 2026-11-22 and 2026-11-23 (d
      rows were found only at 7.7.5). Con: +3-4 hook cases, under 2 s locally and in CI; a question Harold wants to
      leave open must be moved to the next sprint by name.
   2. Documentation only. Pro: no new gate. Con: relies on remembering, which failed in Sprint 85.
+
+### q11. Play trader status: keep NON-TRADER with an LLC as the developer name?
+
+- **Asked**: Sprint 86 Manual Validation (written 2026-11-24 from F364, Task 11). **Status**: OPEN.
+- **What it decides**: whether the Play Console trader declaration stays NON-TRADER. Google's deadline to declare is
+  2027-02-01. Source: Google, "Trader status declaration", answer/17594752, fetched 2026-11-24; full analysis in
+  `docs/GOOGLE_PLAY_POLICY_2026-10-29_ANALYSIS.md` section "Non-trader declaration".
+- **Evidence**: the page's only permissive condition is "If you don't distribute apps in the European Economic Area
+  or the United Kingdom, you can declare as a non-trader"; the last recorded country list is United States only
+  (recorded at 0.14.1, current Console list not checked). Trader criteria: profit motive (paid apps, in-app
+  purchases, ads), transaction volume, business setup, legal status (for example D-U-N-S). The app is free, no ads,
+  no purchases. The developer name is "Kimmey Consulting LLC"; the account type is Personal; whether the LLC has a
+  D-U-N-S number is not recorded. Misdeclaring can lead to global account suspension.
+- **Options**:
+  1. Keep NON-TRADER, no Console change (Recommendation). Pro: matches the profit and transaction criteria (none)
+     and the US-only distribution; no public contact details. Con: the LLC name points at "business setup"; if
+     Google disagrees it asks for confirmation first (no response in time "can lead to app removal").
+  2. Change to TRADER. Pro: removes the LLC ambiguity. Con: from 2027-03-01 contact details are shown publicly, and
+     for an individual account a phone number and address; D-U-N-S may be needed.
+  3. Ask Google Play developer support first, then decide. Pro: an answer from the source. Con: a support wait; the
+     2027-02-01 deadline still applies.
+
+### q12. Which F364 proposed cards (F365 to F368) join the backlog
+
+- **Asked**: Sprint 86 Manual Validation (written 2026-11-24 from F364, Task 11). **Status**: OPEN.
+- **What it decides**: which of the four proposed cards are added to `docs/ALL_SPRINTS_MASTER_PLAN.md`. Full card
+  text: `docs/GOOGLE_PLAY_POLICY_2026-10-29_ANALYSIS.md` section "Proposed cards".
+- **The cards**:
+  - F365. Trader status: confirm the Console declaration (q11) and add a release-process rule: adding an EEA or UK
+    country, a price, an in-app product or ads re-decides trader status first. ~20-30 min, high, deadline 2027-02-01.
+    The only card that closes an APPLIES gap.
+  - F366. Android vitals "Memory" and App bundle explorer check (Harold opens the Console; Claude records the
+    values or "insufficient data"). ~20-30 min, medium, before 2027-02-01. Settles an UNKNOWN.
+  - F367. `verify-aab-play-requirements.py` fails when the bundle requests a Play-restricted permission (location,
+    contacts, SMS / call log, all-files, exact alarm, local network, and more). ~45-60 min, medium, no deadline.
+    Prevention: today only AD_ID is caught, and a plugin upgrade could add one silently.
+  - F368. targetSdk 37 readiness: Android 17 blocks LAN TCP by default, which affects a custom IMAP host on a home
+    network. Decision between requesting ACCESS_LOCAL_NETWORK with a declaration, or a user-visible message. ~60-120
+    min, low; trigger is Flutter or Play moving to target 37 (date unverified).
+- **Options**:
+  1. Add all four (Recommendation). Pro: every APPLIES and UNKNOWN topic is covered, plus one prevention gate and one
+     future trigger. Con: four more backlog rows.
+  2. Add F365 and F366 only. Pro: covers the dated items. Con: no gate against a silent restricted permission.
+  3. Add F365 only. Pro: smallest. Con: the memory UNKNOWN stays open past its February 2027 date.
+  4. Add F365, F366 and F367; drop F368. Pro: all dated and prevention items. Con: no record of the targetSdk 37 LAN
+     change until it bites.
 
 ### q10. Sprint 86 version: 0.25.1 or 0.26.0
 
