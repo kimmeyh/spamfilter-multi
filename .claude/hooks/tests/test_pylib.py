@@ -317,7 +317,7 @@ class PilotHookProcessTests(unittest.TestCase):
         for hook in self.HOOK_FILES:
             matching = [c for c in commands if hook in c]
             self.assertEqual(len(matching), 1, f"{hook} must be registered exactly once")
-            self.assertTrue(matching[0].startswith('python "${CLAUDE_PROJECT_DIR}/.claude/hooks/'), matching[0])
+            self.assertTrue(matching[0].startswith('py -3.14 "${CLAUDE_PROJECT_DIR}/.claude/hooks/'), matching[0])
             self.assertNotIn("\\", matching[0])
             self.assertTrue((HOOKS / hook).exists())
         self.assertFalse([c for c in commands if "block-blind-staging.ps1" in c
@@ -1357,7 +1357,7 @@ class PortedHookTests(unittest.TestCase):
         settings = json.loads((REPO / ".claude" / "settings.json").read_text(encoding="utf-8"))
         commands = [h["command"] for group in settings["hooks"]["Stop"] for h in group["hooks"]]
         matching = [c for c in commands if "verify-closeout-complete" in c]
-        self.assertEqual(matching, ['python "${CLAUDE_PROJECT_DIR}/.claude/hooks/verify-closeout-complete.py"'])
+        self.assertEqual(matching, ['py -3.14 "${CLAUDE_PROJECT_DIR}/.claude/hooks/verify-closeout-complete.py"'])
 
 
 FOOTERS = ("11/06/2026 12:40pm | Sprint 84 Phase 4 Execution",   # current format (Sprint 70 and later)
@@ -1617,7 +1617,7 @@ class AutoAdvanceTests(unittest.TestCase):
         settings = json.loads((REPO / ".claude" / "settings.json").read_text(encoding="utf-8"))
         entries = [h for group in settings["hooks"]["Stop"] for h in group["hooks"] if "sprint-auto-advance" in h["command"]]
         self.assertEqual([e["command"] for e in entries],
-                         ['python "${CLAUDE_PROJECT_DIR}/.claude/hooks/sprint-auto-advance.py"'])
+                         ['py -3.14 "${CLAUDE_PROJECT_DIR}/.claude/hooks/sprint-auto-advance.py"'])
         self.assertEqual(entries[0]["timeout"], 15)
 
 

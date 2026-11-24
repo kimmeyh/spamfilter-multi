@@ -199,6 +199,25 @@ def stop(ledger: dict, task: str, by: str | None = None, agent_id: str | None = 
     return closed
 
 
+def extend_agent_stop(ledger: dict, task: str, agent_id: str, now: datetime | None = None) -> bool:
+    """A LATER SubagentStop of the same agent moves its last closed segment's end forward. SubagentStop fires
+    each time a background agent stops with no live children of its own, so an agent that pauses for its own
+    background work stops more than once; only the last stop is when it finished (Sprint 86 Task 2: the first
+    stop closed the segment at 87 of 150 minutes). Not applied once the task is finished. Returns True when
+    an end moved."""
+    entry = ledger["tasks"].get(task)
+    if not entry or entry.get("finished"):
+        return False
+    stamp = now_text(now)
+    for segment in reversed(entry["segments"]):
+        if segment.get("agent_id") == agent_id and segment.get("end"):
+            if parse_time(stamp) > parse_time(segment["end"]):
+                segment["end"] = stamp
+                return True
+            return False
+    return False
+
+
 def minutes(entry: dict, now: datetime | None = None) -> int:
     """Union of the segments in whole minutes, rounded up (an open segment counts to `now`)."""
     spans = []

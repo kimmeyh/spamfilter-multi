@@ -38,9 +38,10 @@ prompt (skill, command or agent).
 Additions at acceptance (Harold, 2026-11-04):
 
 - **Interpreter**: Python 3.14 is the preferred version. On this machine the `py` launcher defaults to 3.14, while
-  `python` on PATH, which the hook registrations call, is 3.12.10 (both read 2026-11-04). Until the registrations
-  change, code must run on 3.12 as well; CI uses its runner's Python. Moving the hooks to 3.14 is a settings change
-  asked separately.
+  `python` on PATH is 3.12.10 (both read 2026-11-04). Since Sprint 86 (F344, register q8 = 1) every hook is
+  registered as `py -3.14 ...` (Python 3.14.10, read 2026-11-24), and the hook suite passes under it (230/230).
+  Scripts started as `python ...` still run under 3.12, so code must run on 3.12 as well; CI uses its runner's
+  Python.
 - **Prompts**: a prompt (skill, command or agent) whose steps can be written deterministically is rewritten as a tool.
   Only the parts that need judgment stay Markdown.
 - **Helper tools for prompts**: when several prompts need the same deterministic step (read a file's format, count
@@ -87,13 +88,16 @@ folders and line-ending helpers are NOT written yet; the batch that first needs 
 ### Registration form
 
 ```
-python "${CLAUDE_PROJECT_DIR}/.claude/hooks/<name>.py"
+py -3.14 "${CLAUDE_PROJECT_DIR}/.claude/hooks/<name>.py"
 ```
 
-Forward slashes only, double-quoted path, no shell operators. It runs unchanged under Git Bash and cmd on Windows and
-under sh on Linux and macOS, and it is the form the sibling repository uses. Requirements: `python` must be on PATH. On
-Linux that means the `python-is-python3` package or a `python` symlink; on a runner that has only `python3`, the
-CI step uses `python3` directly (the hooks are not registered in CI). No `python3 ... || python ...` fallback is
+Forward slashes only, double-quoted path, no shell operators, ONE interpreter for every hook (Sprint 86, F344; until
+then the word was `python`). It runs unchanged under Git Bash and cmd on Windows. Requirements: the Windows `py`
+launcher with Python 3.14 installed. `run-test-cases.py` and `scripts/test-hook.py` read the interpreter from
+`.claude/settings.json` (`common.hook_interpreter`), so they test the program the real hooks use; on Windows a
+missing one is an error, and off Windows (CI has no `py` launcher; the hooks are not registered in CI) they fall
+back to `python3` / `python` with a NOTE. A macOS or Linux developer machine would need its own registration.
+`.codex/hooks.json` still registers `python` (outside q8's `.claude/settings*.json` scope). No `python3 ... || python ...` fallback is
 used: the first run consumes stdin, so a second run would read an empty payload and allow.
 
 ### The mutation lock interface

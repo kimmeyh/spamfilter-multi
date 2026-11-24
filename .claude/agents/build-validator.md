@@ -28,29 +28,18 @@ flutter build apk --release
 - Ensure no build errors
 - Check that APK is generated in `build/app/outputs/flutter-apk/`
 
-### 3. Type Safety & Analysis
+### 3. Analysis and Tests (one script, one verdict)
 
 ```powershell
-cd mobile-app
-flutter analyze
+python scripts/quality-gate.py
 ```
 
-- No analysis errors
-- No strong-mode errors
-- All imports resolve correctly
+- Run it from the repository root. It runs `flutter analyze` and then `flutter test`, prints `[OK]` or `[FAIL]` for each step and ends with `RESULT: PASS` or `RESULT: FAIL (<steps>)`.
+- Exit 0 is a pass. Exit 1 is a failed step or a step that printed no summary. Exit 2 means the gate could not run (flutter missing); report that as a blocker.
+- The pass rule (0 analyzer issues, no failed test, at least one test passed) lives in the script. Do not restate a test count here.
+- The full output is in the log file the script names on its last lines.
 
-### 4. Tests
-
-```powershell
-cd mobile-app
-flutter test
-```
-
-- All 138+ tests should pass
-- Check coverage if available
-- No test failures or skipped tests
-
-### 5. Code Quality
+### 4. Code Quality
 
 ```powershell
 cd mobile-app

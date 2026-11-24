@@ -8,7 +8,9 @@ One hook file, registered for four events (see .claude/settings.json):
   PreToolUse  Agent                    R-2: START the clock of the task the prompt names (`Task <N>`).
   PostToolUse Agent                    R-2: a foreground run that completed STOPS its segment; a background run
                                        (status async_launched) records its agentId for SubagentStop.
-  SubagentStop                         R-2: STOPS the segment of the background agent that finished.
+  SubagentStop                         R-2: STOPS the segment of the background agent that finished. It fires
+                                       again each time the agent stops after waiting on its own background
+                                       work; a later stop moves the segment end forward (Sprint 86 Task 2).
 
 Only during Phases 4-5 of an approved plan (current_sprint.status starts "Phase 4" or "Phase 5" and
 plan_approved is true); outside that window every event is allowed and nothing is written.
@@ -218,7 +220,8 @@ def agent_event(payload: dict) -> hooklib.Verdict:
         if event == "SubagentStop":
             agent_id = str(payload.get("agent_id") or "")
             task = ledger["agents"].get(agent_id) if agent_id else None
-            if task and tc.stop(ledger, task, agent_id=agent_id):
+            if task and (tc.stop(ledger, task, agent_id=agent_id)
+                         or tc.extend_agent_stop(ledger, task, agent_id)):
                 tc.save(root, sprint, ledger)
             return hooklib.allow()
         task = _agent_task(payload, sprint)

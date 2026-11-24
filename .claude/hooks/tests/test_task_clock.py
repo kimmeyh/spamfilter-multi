@@ -246,6 +246,27 @@ class AgentClockTests(RepoCase):
         self.agent("SubagentStop", agent_id="bg1")
         self.assertEqual(tc.open_segments(self.ledger(), "2"), [])
 
+    def test_a_later_subagent_stop_moves_the_end_forward(self):
+        """Sprint 86 Task 2: SubagentStop fired at an interim pause (87 of 150 min) and the final stop was
+        ignored. Does NOT catch an agent whose LAST stop never fires (its segment ends at the interim stop)."""
+        self.agent("PreToolUse")
+        self.agent("PostToolUse", response={"status": "async_launched", "agentId": "bg1"})
+        self.agent("SubagentStop", agent_id="bg1")
+        ledger = self.ledger()
+        segment = ledger["tasks"]["2"]["segments"][-1]
+        segment["end"] = "2026-11-24T01:00:00"   # the interim stop, well in the past
+        tc.save(self.root, 86, ledger)
+        self.agent("SubagentStop", agent_id="bg1")
+        moved = self.ledger()["tasks"]["2"]["segments"][-1]["end"]
+        self.assertGreater(tc.parse_time(moved), tc.parse_time("2026-11-24T01:00:00"))
+        ledger = self.ledger()
+        ledger["tasks"]["2"]["finished"] = "2026-11-24T02:00:00"
+        ledger["tasks"]["2"]["segments"][-1]["end"] = "2026-11-24T01:30:00"
+        tc.save(self.root, 86, ledger)
+        self.agent("SubagentStop", agent_id="bg1")
+        self.assertEqual(self.ledger()["tasks"]["2"]["segments"][-1]["end"], "2026-11-24T01:30:00",
+                         "a finished task is not extended")
+
     def test_agent_without_task_ref_writes_nothing(self):
         self.agent("PreToolUse", description="Claude Code hook payload facts")
         self.assertFalse(tc.ledger_path(self.root, 86).exists())

@@ -4,30 +4,24 @@ You are a verification specialist. Your job is to thoroughly test that the Flutt
 
 ## Verification Process
 
-### 1. Static Analysis
+### 1. Static Analysis and Automated Tests (one script, one verdict)
 
 ```powershell
+python scripts/quality-gate.py
 cd mobile-app
-flutter analyze
 dart fix --dry-run
 ```
 
-- Run analysis: `flutter analyze` (must report 0 issues)
-- Check for any compilation errors
-- Verify no strong-mode violations
-- Check for unused imports or variables
-
-### 2. Automated Tests
-
-```powershell
-cd mobile-app
-flutter test
-```
-
-- Run the full test suite (must pass 138+ tests)
-- Note any failures and their error messages
+- `python scripts/quality-gate.py` (run from the repository root) runs `flutter analyze` and the full `flutter test` suite. It ends with `RESULT: PASS` or `RESULT: FAIL (<steps>)`; exit 0 is a pass, 1 a failed step or a missing summary, 2 means it could not run (report that as a blocker).
+- The pass rule (0 analyzer issues, no failed test, at least one test passed) lives in the script. Do not restate a test count here.
+- Note any failures and their error messages from the log file the script names
 - Check test coverage (target 95%+ for modified code)
-- Verify no test flakiness or intermittent failures
+- Verify no test flakiness or intermittent failures (a test that fails once and passes on re-run is a finding)
+
+### 2. Compilation and Unused Code
+
+- Check for any compilation errors (the gate reports a compile error as "no summary line")
+- Check for unused imports or variables (`dart fix --dry-run` above lists fixable ones)
 
 ### 3. Platform-Specific Verification
 
@@ -89,4 +83,4 @@ After verification, provide:
 - Do not assume something works - verify it on actual platforms
 - Check both happy paths and error paths
 - Verify no performance regressions
-- Ensure all 138+ tests pass before clearing verification
+- Do not clear verification until `python scripts/quality-gate.py` ends with `RESULT: PASS`

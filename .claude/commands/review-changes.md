@@ -19,9 +19,8 @@ For spamfilter-multi, follow this comprehensive review process:
 
 3. **Run automated checks**:
    ```powershell
+   python scripts/quality-gate.py     # from the repository root; must end with RESULT: PASS (exit 0)
    cd mobile-app
-   flutter analyze        # Must have 0 issues
-   flutter test          # Must pass all 138+ tests
    dart format --line-length=100 --check lib/
    ```
 

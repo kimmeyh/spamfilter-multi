@@ -7,8 +7,7 @@ For spamfilter-multi, follow these steps for a quick commit:
 1. **Review state**: Run `git status` and `git diff` to understand changes
 
 2. **Verify quality**:
-   - Run `flutter analyze` (must have 0 issues)
-   - Run `flutter test` (must pass all tests)
+   - Run `python scripts/quality-gate.py` from the repository root (it runs `flutter analyze` and `flutter test`; it must end with `RESULT: PASS`, exit 0)
 
 3. **Stage all changes**: `git add -A` (only after verifying changes are correct)
 

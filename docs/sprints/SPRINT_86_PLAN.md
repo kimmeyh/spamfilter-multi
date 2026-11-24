@@ -489,9 +489,20 @@ changed, `.claude/settings.json` (q8 = 1).
 
 **Definition of Done**: default DoD. Effort for test time (F361): about +1 s per helper unittest file.
 
+**Result**: AC-1 `docs/research/F344_PROMPT_INVENTORY.md`: 28 prompts outside skills, 10 deterministic (9 are the
+hooks, already Python), 16 hybrid, 2 GenAI. AC-2: two shared helpers built -- `scripts/quality-gate.py` (analyze
+then test, one PASS/FAIL verdict; 8 agent and command prompts call it) and `scripts/subagent-brief.py` (`block`
+prints the Progress and restart block, 6 prompts; `files` prints the review file list with the `0*` and `archive/`
+exclusions, 3 review prompts); 11 + 10 unittests with real failing inputs; 4 mutants KILLED. Three one-caller
+helpers named, not built. AC-3 (q8 = 1): all 12 registrations in `.claude/settings.json` now `py -3.14 ...`
+(Python 3.14.10); hook suite 230/230 under it; `run-test-cases.py` and `scripts/test-hook.py` now READ the
+interpreter from settings.json (`common.hook_interpreter`; Windows: missing = error; CI: python3 fallback with a
+NOTE), so the suite keeps testing the program the real hooks use; runner 30, test-hook 19, settings 5 tests pass.
+Test time measured on a loaded machine: 51 s + 95 s for the two new files (unloaded estimate +1-3 s each).
+
 **Model**: Sonnet -- *why not Haiku*: classifying a prompt as deterministic or GenAI is judgment.
 **Delegation checklist included in the sub-agent prompt**: yes
-**Executed-by**: (at completion)
+**Executed-by**: Sonnet sub-agent (R-1, R-2, R-4, as assigned) plus Opus main session (R-3: a .claude/settings.json change and the runner interpreter design) -- 50 min (task clock 2026-11-24 03:27 to 2026-11-24 04:45, 1 segment(s))
 **Step-types**: DOCS, SVC-NEW (tooling), TEST-UNIT
 **Est-Effort**: 60-120m [estimate unverified]
 

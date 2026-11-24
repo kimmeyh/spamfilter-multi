@@ -13,27 +13,27 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/block-carry-forward-stash.py\"",
+            "command": "py -3.14 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/block-carry-forward-stash.py\"",
             "timeout": 15
           },
           {
             "type": "command",
-            "command": "python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/require-sprint-cards.py\"",
+            "command": "py -3.14 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/require-sprint-cards.py\"",
             "timeout": 15
           },
           {
             "type": "command",
-            "command": "python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/block-heredoc-python-backslash.py\"",
+            "command": "py -3.14 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/block-heredoc-python-backslash.py\"",
             "timeout": 15
           },
           {
             "type": "command",
-            "command": "python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/block-blind-staging.py\"",
+            "command": "py -3.14 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/block-blind-staging.py\"",
             "timeout": 15
           },
           {
             "type": "command",
-            "command": "python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/warn-commit-without-velocity.py\"",
+            "command": "py -3.14 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/warn-commit-without-velocity.py\"",
             "timeout": 15
           }
         ]
@@ -43,12 +43,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/block-commit-during-mutation.py\"",
+            "command": "py -3.14 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/block-commit-during-mutation.py\"",
             "timeout": 15
           },
           {
             "type": "command",
-            "command": "python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/task-clock-gate.py\"",
+            "command": "py -3.14 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/task-clock-gate.py\"",
             "timeout": 15
           }
         ]
@@ -58,7 +58,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/task-clock-gate.py\"",
+            "command": "py -3.14 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/task-clock-gate.py\"",
             "timeout": 15
           }
         ]
@@ -70,7 +70,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/task-clock-gate.py\"",
+            "command": "py -3.14 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/task-clock-gate.py\"",
             "timeout": 15
           }
         ]
@@ -81,7 +81,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/task-clock-gate.py\"",
+            "command": "py -3.14 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/task-clock-gate.py\"",
             "timeout": 15
           }
         ]
@@ -92,12 +92,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/sprint-auto-advance.py\"",
+            "command": "py -3.14 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/sprint-auto-advance.py\"",
             "timeout": 15
           },
           {
             "type": "command",
-            "command": "python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/verify-closeout-complete.py\"",
+            "command": "py -3.14 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/verify-closeout-complete.py\"",
             "timeout": 20
           }
         ]
