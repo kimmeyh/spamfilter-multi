@@ -628,6 +628,17 @@ first and a mutation check.
 **Executed-by**: Opus main session + 4 Sonnet sub-agents (groups A-D) + Opus 5.1.2 reviewer -- 41 min (task clock 2026-11-24 07:18 to 2026-11-24 07:58, 5 segment(s))
 **Est-Effort**: 60-120m
 
+### Task 13 -- Manual Validation decisions follow-up (no card; register q11-q13)
+
+Record Harold's 2026-11-24 answers (q11 = 1, q12 = 1, q13 = 1) in `docs/DECISION_REGISTER.md`, and add the backlog
+cards they create to `docs/ALL_SPRINTS_MASTER_PLAN.md`: F365-F368 (from the F364 analysis) and F369 (retire the two
+Android helper scripts). No code. Task 11 was finished and the clock does not reopen a finished task, so this
+follow-up has its own card (same gap as Task 12: no defined place to clock Phase 5 work; retrospective input).
+**Model**: Opus main session -- *why not Haiku*: a few minutes of register and backlog text in the session that
+holds the context.
+**Executed-by**: Opus 5.5 main session -- 2 min (task clock 2026-11-24 16:25 to 2026-11-24 16:26, 1 segment(s))
+**Est-Effort**: 10-15m
+
 ## Execution order
 
 1. Task 10 F363 (if kept), so every later task is clocked.
@@ -653,7 +664,7 @@ Windows and Android builds are never run at the same time.
   F346 lines, both 0.26.0 release notes, ARCHITECTURE F347 paragraph added.
 - **5.1.2 open findings**: none fixed-or-open beyond register q13 (retire `setup-android-oauth.py` and
   `export-tokens-for-android.py`, a backlog decision; evidence: the app stores tokens in a DPAPI file, not
-  Credential Manager).
+  Credential Manager). Answered q13 = 1 (Harold, 2026-11-24): backlog card F369.
 - **5.1.5 WinWright sweep**: 2026-11-24, finished before the 08:16 app relaunch, 3 scripts run (test_f124_rule_labels, test_f320_no_rule_review,
   test_s75_new_controls; the two f56 scripts stay excluded as documented in the runner), 3 PASS / 0 FAIL (63 steps),
   tray icon PASS, dev DB no drift. Workstation locked: 6 cursor steps skipped by the runner (F291), named in its log.
@@ -690,8 +701,10 @@ Windows and Android builds are never run at the same time.
 
 ## Open questions (register)
 
-Open, asked at the MV handover: q11 (Play trader status), q12 (F364 cards F365-F368), q13 (retire two Android
-helper scripts). Answered 2026-11-24 (Harold, verbatim "q7. 1 q8. 1 q9. 2 and track q10. 2"):
+Open: none. Asked at the MV handover and answered 2026-11-24 (Harold, verbatim "q11. 1 - I am not charging for the
+app, therefore a non-trader q12 1 q13. 1"): q11 = 1, keep NON-TRADER (F365 confirms the country list); q12 = 1,
+F365-F368 added to the backlog; q13 = 1, F369 (retire both helper scripts) added to the backlog (Task 13).
+Answered 2026-11-24 (Harold, verbatim "q7. 1 q8. 1 q9. 2 and track q10. 2"):
 - q7 = 1: keep F363 and F364 (Tasks 10, 11).
 - q8 = 1: Task 9 moves the hook registrations to `py -3.14` and runs the hook suite.
 - q9 = 2 "and track": Task 1 adds NO close-out gate (AC-2 and T-1 are dropped). Instead the close-out checklist

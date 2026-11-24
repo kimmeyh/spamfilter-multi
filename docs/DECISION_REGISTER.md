@@ -20,11 +20,13 @@ here and not in `SPRINT_N_PLAN.md`. Source: Harold, 2026-11-22 and 2026-11-23 (d
 
 ### Open
 
-- q11. Play trader status: keep NON-TRADER with an LLC as developer name? (asked at Sprint 86 Manual Validation)
-- q12. Which F364 proposed cards (F365-F368) join the backlog (asked at Sprint 86 Manual Validation)
-- q13. Retire the Android helper scripts setup-android-oauth.py and export-tokens-for-android.py? (asked at Sprint 86 Manual Validation)
+(none)
 
 ### Closed
+
+- q11. Play trader status -- answered 1, keep NON-TRADER (Harold, 2026-11-24)
+- q12. F364 proposed cards -- answered 1, all four (F365-F368) to the backlog (Harold, 2026-11-24)
+- q13. Retire two Android helper scripts -- answered 1, retire both through backlog card F369 (Harold, 2026-11-24)
 
 - q7. Keep F363 and F364 in Sprint 86 -- answered 1, keep both (Harold, 2026-11-24)
 - q8. Hooks to `py -3.14` -- answered 1, move and run the hook suite (Harold, 2026-11-24)
@@ -175,7 +177,12 @@ here and not in `SPRINT_N_PLAN.md`. Source: Harold, 2026-11-22 and 2026-11-23 (d
 
 ### q11. Play trader status: keep NON-TRADER with an LLC as the developer name?
 
-- **Asked**: Sprint 86 Manual Validation (written 2026-11-24 from F364, Task 11). **Status**: OPEN.
+- **Asked**: Sprint 86 Manual Validation (written 2026-11-24 from F364, Task 11). **Status**: CLOSED.
+- **Answer (Harold, 2026-11-24, verbatim: "q11. 1 - I am not charging for the app, therefore a non-trader q12 1
+  q13. 1")**: option 1, keep NON-TRADER, no Console change. Note recorded with the answer: on Google's page, no
+  charge meets only the profit criterion; the condition the page states for non-trader is no distribution in the
+  EEA or UK. F365 confirms the current Console country list and adds the release rule that re-decides trader
+  status before an EEA or UK country, a price, an in-app product or ads is added.
 - **What it decides**: whether the Play Console trader declaration stays NON-TRADER. Google's deadline to declare is
   2027-02-01. Source: Google, "Trader status declaration", answer/17594752, fetched 2026-11-24; full analysis in
   `docs/GOOGLE_PLAY_POLICY_2026-10-29_ANALYSIS.md` section "Non-trader declaration".
@@ -196,7 +203,9 @@ here and not in `SPRINT_N_PLAN.md`. Source: Harold, 2026-11-22 and 2026-11-23 (d
 
 ### q12. Which F364 proposed cards (F365 to F368) join the backlog
 
-- **Asked**: Sprint 86 Manual Validation (written 2026-11-24 from F364, Task 11). **Status**: OPEN.
+- **Asked**: Sprint 86 Manual Validation (written 2026-11-24 from F364, Task 11). **Status**: CLOSED.
+- **Answer (Harold, 2026-11-24, verbatim: "q12 1")**: option 1, all four. Done: F365-F368 added to
+  `docs/ALL_SPRINTS_MASTER_PLAN.md` "Backlog from the Sprint 86 Manual Validation decisions".
 - **What it decides**: which of the four proposed cards are added to `docs/ALL_SPRINTS_MASTER_PLAN.md`. Full card
   text: `docs/GOOGLE_PLAY_POLICY_2026-10-29_ANALYSIS.md` section "Proposed cards".
 - **The cards**:
@@ -221,7 +230,9 @@ here and not in `SPRINT_N_PLAN.md`. Source: Harold, 2026-11-22 and 2026-11-23 (d
 
 ### q13. Retire the Android helper scripts setup-android-oauth.py and export-tokens-for-android.py?
 
-- **Asked**: Sprint 86 Manual Validation (written 2026-11-24 from the 5.1.2 review of Task 3, F336). **Status**: OPEN.
+- **Asked**: Sprint 86 Manual Validation (written 2026-11-24 from the 5.1.2 review of Task 3, F336). **Status**: CLOSED.
+- **Answer (Harold, 2026-11-24, verbatim: "q13. 1")**: option 1, retire both through a backlog card. Done: F369
+  added to `docs/ALL_SPRINTS_MASTER_PLAN.md` "Backlog from the Sprint 86 Manual Validation decisions".
 - **What it decides**: whether two of the seven Android helper scripts ported this sprint stay in
   `mobile-app/scripts/` or are deleted with their tests and references (a backlog card, not this sprint).
 - **Evidence**: `export-tokens-for-android.py` looks for Gmail tokens in Windows Credential Manager (`cmdkey`), but

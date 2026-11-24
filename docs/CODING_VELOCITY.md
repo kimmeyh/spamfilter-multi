@@ -356,6 +356,7 @@ Every Item that is implemented gets ONE row here the moment it is picked up -- s
 | Task 7: F359: Android emulator integration test for the paths only a phone found (#584) | 86 | DONE | 120-180 | 120-180 | 83 | 83 | Task clock (F363): started 2026-11-24 05:17, finished 2026-11-24 06:40, 1 segment(s). Sonnet sub-agent (as assigned). agent run per harness 82 min (4930170 ms) |
 | Task 0: Version bump 0.26.0+24 and its release notes (3.7.0b) (#578) (#578) | 86 | DONE | 10-20 | 10-20 | 3 | 3 | Task clock (F363): started 2026-11-24 06:56, finished 2026-11-24 06:58, 1 segment(s). Opus main session. the bump itself (64bfeb07) was done before the task clock existed; these minutes are the release notes only |
 | Task 12: Phase 5.1.2 F-PRECHECK fixes (no card; Phase 5 review work) | 86 | DONE | 60-120 | 60-120 | 41 | 41 | Task clock (F363): started 2026-11-24 07:18, finished 2026-11-24 07:58, 5 segment(s). Opus main session + 4 Sonnet sub-agents (groups A-D) + Opus 5.1.2 reviewer. |
+| Task 13: Manual Validation decisions follow-up (no card; register q11-q13) | 86 | DONE | 10-15 | 10-15 | 2 | 2 | Task clock (F363): started 2026-11-24 16:25, finished 2026-11-24 16:26, 1 segment(s). Opus 5.5 main session. |
 
 ## Can the missing sprints (48-69) be reconstructed from git? -- TESTED 2026-09-19, answer: NO
 

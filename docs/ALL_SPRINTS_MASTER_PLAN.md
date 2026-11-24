@@ -210,6 +210,67 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
+### Backlog from the Sprint 86 Manual Validation decisions (Harold, 2026-11-24)
+
+Source for F365-F368: `docs/GOOGLE_PLAY_POLICY_2026-10-29_ANALYSIS.md` "Proposed cards" (F364, Sprint 86 Task 11);
+register q11 = 1 (keep NON-TRADER) and q12 = 1 (all four cards). F369: register q13 = 1.
+
+**F365. Trader status: confirm the Play Console declaration and gate EEA/UK distribution (~20-30m) Priority 22 -- NEW 2026-11-24 (Harold, register q12 = 1); DEADLINE 2027-02-01**
+- Phase: Release Readiness (Google Play)
+- Platform: Android (Play Console); no app code
+- Decided: stay NON-TRADER (register q11 = 1). Harold, 2026-11-24: "I am not charging for the app, therefore a
+  non-trader". On Google's page (answer/17594752) no charge meets the profit criterion; the condition the page
+  states for a non-trader is no distribution in the EEA or the UK.
+- R-1: Harold opens the Console declaration screen and the Play country list for every track; record both. The last
+  recorded list (US only) is from 0.14.1 and was not re-checked.
+- R-2: add a step to `docs/STORE_RELEASE_PROCESS.md` and the Play country-change procedure: adding an EEA or UK
+  country, a price, an in-app product or ads re-decides trader status first.
+- Windows and iPhone: no shared code. A Microsoft Store or Apple App Store trader equivalent is unverified.
+- Depends on: none.
+
+**F366. Android vitals memory check before February 2027 (~20-30m) Priority 42 -- NEW 2026-11-24 (Harold, register q12 = 1); DEADLINE before 2027-02-01**
+- Phase: Release Readiness (Google Play)
+- Platform: Android (Play Console); a fix, if one is needed, is shared Dart code
+- Harold opens Play Console > Android vitals > overview > "Memory", and the App bundle explorer. Record the
+  90th-percentile values per state and the optimization percentage, or "insufficient data". If a value is near a
+  threshold (answer/17492799), open a fix card.
+- Depends on: none.
+
+**F367. Fail the AAB check on a Play-restricted permission (~45-60m) Priority 44 -- NEW 2026-11-24 (Harold, register q12 = 1)**
+- Phase: Release Readiness (Google Play)
+- Platform: Android only by necessity (reads the Android bundle manifest)
+- Extend `mobile-app/scripts/verify-aab-play-requirements.py` (F204; it already parses `uses-permission`) to fail
+  when the bundle requests a permission that needs a Play declaration: ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION,
+  ACCESS_BACKGROUND_LOCATION, ACCESS_LOCAL_NETWORK, READ_CONTACTS, WRITE_CONTACTS, MANAGE_CONTACTS, the SMS and call
+  log groups, MANAGE_EXTERNAL_STORAGE, READ_MEDIA_IMAGES, READ_MEDIA_VIDEO, QUERY_ALL_PACKAGES, USE_EXACT_ALARM,
+  SCHEDULE_EXACT_ALARM, and an accessibility service. Today only AD_ID is caught; a plugin upgrade could add one
+  silently.
+- Effort for test time (F361, estimate): about 4-6 script unittests, under 1 s locally and in CI.
+- Depends on: none.
+
+**F368. targetSdk 37 readiness: Local Network access for a custom IMAP host (~60-120m, unverified) Priority 90 -- NEW 2026-11-24 (Harold, register q12 = 1)**
+- Phase: Core App Quality
+- Platform: Android; if the message route is chosen, shared UI on all three platforms
+- Android 17 blocks LAN TCP by default, which affects a custom IMAP host on a home network. Decision-class choice
+  for Harold: (a) request `ACCESS_LOCAL_NETWORK` with a Play declaration (core-use test, answer/16909972), or (b) a
+  user-visible message on the custom server screen when a LAN host is blocked.
+- Trigger: the Flutter release that raises `flutter.targetSdkVersion` to 37, or the Play target-API-37 date
+  (unverified), whichever comes first.
+- Depends on: none.
+
+**F369. Retire `setup-android-oauth.py` and `export-tokens-for-android.py` (~15-30m) Priority 46 -- NEW 2026-11-24 (Harold, register q13 = 1)**
+- Phase: Process
+- Platform: development scripts only; no app code
+- Delete both scripts from `mobile-app/scripts/`, their tests in `scripts/tests/test_android_helpers.py`, and every
+  reference (grep the repo; record the count). Move the useful printed guidance to a doc (for example
+  `docs/OAUTH_SETUP.md`).
+- Evidence (register q13): the export script looks in Windows Credential Manager, but the app stores tokens in a
+  DPAPI file (`flutter_secure_storage_windows` 4.1.0, `flutter_secure_storage_windows_ffi.dart:234`, `:388-404`);
+  the setup script writes a Windows-only secret, and its Android premise is stale since #575.
+- Keep the shared key constants in `android_support.py` and the test that every Gmail key in the secrets templates
+  is read by `lib/` (Sprint 86 Task 12).
+- Depends on: none.
+
 ### Backlog from the Sprint 85 Phase 8 cycle (Harold, 2026-11-22)
 
 **F364. Analyze the Google Play policy and Console changes and their impact on this repository; then propose backlog cards to bring it into compliance (~60-120m analysis, estimate unverified) Priority 30 -- NEW 2026-11-23, SPRINT 86 (Harold, register d4: "add to backlog for next sprint")**
