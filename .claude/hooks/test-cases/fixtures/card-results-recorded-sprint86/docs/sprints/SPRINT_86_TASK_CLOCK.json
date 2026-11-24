@@ -1,0 +1,19 @@
+{
+  "agents": {},
+  "sprint": 86,
+  "tasks": {
+    "1": {
+      "finished": "2026-11-24T01:30:00",
+      "segments": [
+        {"agent_id": null, "by": "agent", "end": "2026-11-24T01:20:00", "start": "2026-11-24T01:00:00"},
+        {"agent_id": null, "by": "main", "end": "2026-11-24T01:30:00", "start": "2026-11-24T01:20:00"}
+      ]
+    },
+    "2": {
+      "finished": "2026-11-24T02:12:00",
+      "segments": [
+        {"agent_id": null, "by": "agent", "end": "2026-11-24T02:12:00", "start": "2026-11-24T02:00:00"}
+      ]
+    }
+  }
+}

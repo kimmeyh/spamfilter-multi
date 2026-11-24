@@ -1,0 +1,99 @@
+{
+  "agents": {
+    "a4a1f52cc00b68eaf": "11",
+    "a52caa4da0344db8b": "5",
+    "a5493f98ccb0b9206": "2",
+    "ae268308cc6449dde": "6"
+  },
+  "sprint": 86,
+  "tasks": {
+    "1": {
+      "finished": "2026-11-24T02:14:12",
+      "segments": [
+        {
+          "agent_id": null,
+          "by": "main",
+          "end": "2026-11-24T02:14:12",
+          "start": "2026-11-24T01:54:55"
+        }
+      ]
+    },
+    "10": {
+      "finished": "2026-11-24T02:55:59",
+      "segments": [
+        {
+          "agent_id": null,
+          "by": "main",
+          "end": "2026-11-24T02:55:59",
+          "start": "2026-11-24T01:07:13"
+        }
+      ]
+    },
+    "11": {
+      "finished": null,
+      "segments": [
+        {
+          "agent_id": "a4a1f52cc00b68eaf",
+          "by": "agent",
+          "end": "2026-11-24T02:56:50",
+          "start": "2026-11-24T01:46:11"
+        }
+      ]
+    },
+    "2": {
+      "finished": null,
+      "segments": [
+        {
+          "agent_id": "a5493f98ccb0b9206",
+          "by": "agent",
+          "end": null,
+          "start": "2026-11-24T01:46:14"
+        }
+      ]
+    },
+    "4": {
+      "finished": "2026-11-24T02:19:42",
+      "segments": [
+        {
+          "agent_id": null,
+          "by": "main",
+          "end": "2026-11-24T02:19:42",
+          "start": "2026-11-24T02:15:17"
+        }
+      ]
+    },
+    "5": {
+      "finished": null,
+      "segments": [
+        {
+          "agent_id": "a52caa4da0344db8b",
+          "by": "agent",
+          "end": null,
+          "start": "2026-11-24T01:46:18"
+        }
+      ]
+    },
+    "6": {
+      "finished": null,
+      "segments": [
+        {
+          "agent_id": "ae268308cc6449dde",
+          "by": "agent",
+          "end": null,
+          "start": "2026-11-24T01:46:22"
+        }
+      ]
+    },
+    "8": {
+      "finished": "2026-11-24T02:41:19",
+      "segments": [
+        {
+          "agent_id": null,
+          "by": "main",
+          "end": "2026-11-24T02:41:19",
+          "start": "2026-11-24T02:21:57"
+        }
+      ]
+    }
+  }
+}

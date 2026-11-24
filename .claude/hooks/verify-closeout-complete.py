@@ -37,6 +37,8 @@ from datetime import datetime
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "lib"))
 import common  # noqa: E402
 import hooklib  # noqa: E402
+import task_clock  # noqa: E402
+from pathlib import Path  # noqa: E402
 
 I = re.IGNORECASE
 M = re.MULTILINE
@@ -457,6 +459,53 @@ def card_value_problem(value: str, need_evidence: bool = True):
     return None
 
 
+TASK_CLOCK_FROM = 86
+NOT_RECORDED = re.compile(r"\b0\s*min\b|not\s+recorded", I)
+REGISTER_DECISION = re.compile(r"\bd\d+\b")
+
+
+def check_task_clock(status, cwd: str, sprint_num: int, violations: list):
+    """3d-3 task clock (F363 R-6, Sprint 86+): every task card has a ledger entry with a start and a finish, and
+    its Executed-by line names the ledger minutes. "0 min" and "not recorded" are refused unless the line names
+    a register decision d<n> in which Harold accepted the gap. An unreadable ledger is a violation (R-7)."""
+    if not (sprint_num >= TASK_CLOCK_FROM and status is not None and _plan_approved(status)):
+        return
+    plan_text = load_plan(cwd, sprint_num, violations)
+    if plan_text is None:
+        return
+    try:
+        ledger = task_clock.load(Path(cwd), sprint_num)
+    except task_clock.LedgerError as exc:
+        violations.append(f"3d-3 task clock did not run: {exc}. Restore docs/sprints/SPRINT_{sprint_num}_TASK_CLOCK.json "
+                          "(F363 R-7: an unreadable ledger is not a pass).")
+        return
+    problems = []
+    for heading in task_clock.CARD_HEADING.finditer(plan_text):
+        task = heading.group(1)
+        span = task_clock.card_section(plan_text, task)
+        found = EXECUTED_BY.search(plan_text[span[0]:span[1]]) if span else None
+        value = found.group(1) if found else ""
+        if REGISTER_DECISION.search(value):
+            continue
+        entry = ledger["tasks"].get(task)
+        if not entry or not task_clock.first_start(entry):
+            problems.append(f"Task {task}: no start in the ledger")
+            continue
+        if not entry.get("finished"):
+            problems.append(f"Task {task}: no finish in the ledger")
+            continue
+        total = task_clock.minutes(entry)
+        if NOT_RECORDED.search(value):
+            problems.append(f"Task {task}: Executed-by says '0 min' or 'not recorded'")
+        elif not re.search(rf"(?<!\d){total}\s*min\b", value):
+            problems.append(f"Task {task}: Executed-by does not name the ledger total ({total} min)")
+    if problems:
+        violations.append(
+            f"3d-3 task clock (F363): {len(problems)} card(s) are not clocked: " + "; ".join(problems) + ". Run "
+            "'python scripts/task-clock.py finish <task> --model \"<model>\"' (it writes the Executed-by line from "
+            "the ledger). A gap Harold accepted is recorded as a register decision d<n> named on the Executed-by line.")
+
+
 def check_card_results(status, cwd: str, sprint_num: int, violations: list):
     """3d-4 (Sprint 86+; Sprint 85 retro i5): each "Port of existing code" and "Old name search" line records its
     RESULT on the line itself. A result is a file:line, "none found", "no hits" / "0 hits", or "N/A -- <reason>".
@@ -747,6 +796,7 @@ def decide(payload: dict) -> hooklib.Verdict:
     check_phase5_evidence(payload, status, cwd, sprint_num, violations)
     check_final_reviews(status, cwd, sprint_num, violations)
     check_executed_by(status, cwd, sprint_num, violations)
+    check_task_clock(status, cwd, sprint_num, violations)
     check_card_results(status, cwd, sprint_num, violations)
     check_previous_summary(cwd, sprint_num, violations)
     check_velocity_rows(cwd, sprint_num, violations)

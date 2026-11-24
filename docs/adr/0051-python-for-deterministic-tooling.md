@@ -176,10 +176,12 @@ Skills (`.claude/skills/`, 10):
 - Hybrid (a script gathers the facts, the model judges them; the skill stays `.md`): `phase-check`, `memory-save`
   (F339).
 - GenAI (stays `.md`, no card): `plan-sprint`, `backlog-refinement`, `first-principles`.
-- Retired: `memory-restore` (delete candidate, F340).
+- Retired: `memory-restore`. F340 (Sprint 86) KEPT it: it is the Sprint 51 tombstone Harold chose over deletion
+  (F130-S51), so an invocation lands on an explanation, not a missing command. It has no script to convert.
 
-`.claude/scripts/` (3 `.ps1`): `archive-memory`, `check-memory-on-startup`, `save-memory` are deterministic and look
-obsolete since the Sprint 51 retirement of `/memory-restore`; F340 audits them and deletes or converts.
+`.claude/scripts/` (3 `.ps1`): `archive-memory`, `check-memory-on-startup`, `save-memory` were DELETED by F340
+(Sprint 86): no hook, skill, setting or script calls them (grep 2026-11-24; the only hits were sprint history and two
+doc lines, updated), and they read and write the `.claude/memory/` files frozen since Sprint 39.
 
 `.claude/commands/` (5) and `.claude/agents/` (5) are prompts to a model and stay `.md`. The brief did not ask for them
 to be classified; they are listed here so the inventory is complete.

@@ -1,0 +1,11 @@
+{
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Edit",
+  "cwd": "D:/Data/Harold/github/spamfilter-multi/.claude/hooks/test-cases/fixtures/taskclock-phase4-no-ledger",
+  "tool_input": {
+    "file_path": "D:/Data/Harold/github/spamfilter-multi/.claude/hooks/test-cases/fixtures/taskclock-phase4-no-ledger/.claude/sprint_status.json",
+    "old_string": "a",
+    "new_string": "b"
+  },
+  "session_id": "task-clock-allow-4-edit-exempt-status"
+}

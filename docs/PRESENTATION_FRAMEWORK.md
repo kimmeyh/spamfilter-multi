@@ -388,7 +388,7 @@ Everything Claude needs to know, read automatically at session start:
 | `/phase-check` | Sprint phase transition checkpoint |
 | `/full-test` | Run all Flutter tests + analyze code quality |
 | `/memory-save` | Save sprint context to file for next session |
-| `/memory-restore` | Restore sprint context from saved memory |
+| `/memory-restore` | RETIRED (Sprint 51): explains that sprint state is in `.claude/sprint_status.json` |
 | `/validate-rules` | Validate YAML rule files for syntax and regex errors |
 | `/deploy-debug` | Build, install, and launch debug APK on emulator |
 | `/first-principles` | Deconstruct problems to fundamentals when stuck |
@@ -402,9 +402,8 @@ Everything Claude needs to know, read automatically at session start:
 **The Stateless Problem**: Claude Code has no memory between sessions. Every conversation starts fresh.
 
 **Memory System** (`.claude/memory/`):
-- `/memory-save` serializes current sprint context (active sprint, completed tasks, blockers, decisions made) to `current.md`
-- `/memory-restore` loads it back at session start via `/startup-check`
-- PowerShell scripts (`save-memory.ps1`, `check-memory-on-startup.ps1`) automate the process
+- Sprint state lives in `.claude/sprint_status.json`, maintained at every phase change; `/startup-check` reads it with staleness checks at session start
+- `/memory-save` produces a compact save point; `/memory-restore` is retired (Sprint 51) and only explains where state lives now. The old memory scripts were deleted in Sprint 86 (F340)
 - "Document for amnesia" — if it is not written down, it does not exist
 
 **Slash Commands** (`.claude/commands/` — 5 commands):

@@ -317,7 +317,12 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
   - **Why**: Sprint 39 Effort Accuracy -- hour-floored estimates ran 4-14x too high; actuals were single-digit minutes. Estimating from recorded medians (not anchors) is the fix Harold asked for ("use data from this sprint to improve").
   - **Action**: for each task, pick the step-type(s) from the CODING_VELOCITY taxonomy and set the estimate from that row's current median/range. If a step-type has no history yet, estimate conservatively in minutes and tag `[no-history]`.
   - **Companion at Phase 7**: record each task's ACTUAL wall-clock in the CODING_VELOCITY Actuals Log on completion, and recompute the Estimate Table medians at the retrospective (Category 3). The loop is: estimate-from-history (here) -> record-actuals (Phase 4-5) -> recompute-medians (Phase 7).
-  - **Start time written when the task STARTS (Sprint 85 retro i7)**: when a Phase 4 task begins (or its agent is launched), read the clock (`Get-Date`, same turn) and add the task's CODING_VELOCITY Actuals Log row with `Started <YYYY-MM-DD HH:MM>` in its notes. Completion fills in the end time and the actual minutes. A row that has no start time at completion reads "start time not recorded", never an estimate. Not gated (close-out check 3b-2 checks only that rows exist); the retrospective's Category 3 counts the rows without a start time. (Sprint 85: Tasks 1, 2, 5, 7 and 8 read "time not recorded", and Sprint 84 Task 8 the same, so their estimate accuracy could not be judged.)
+  - **The task clock (F363, Sprint 86; replaces the Sprint 85 retro i7 hand-written start line)**: every Phase 4-5 task is clocked by `scripts/task-clock.py`, which reads the clock itself -- Claude never types a time.
+    - Main-session task: `python scripts/task-clock.py start <task>` BEFORE the first edit; `stop <task>` to pause it when switching to another task; `finish <task> --model "<model that ran it>" [--note "<text>"]` at completion. `finish` writes the card's `**Executed-by**` line, the CODING_VELOCITY Coverage Ledger row and `task_status` from the ledger, and prints the end-of-task checklist (each line OK or FAIL).
+    - Subagent task: name `Task <N>` (or `Sprint <S> Task <N>`) in the Agent description. The `task-clock-gate.py` hook starts the clock at launch and stops it when a foreground agent returns or a background agent's SubagentStop fires. Run `finish` at handback.
+    - Ledger: `docs/sprints/SPRINT_<N>_TASK_CLOCK.json`, committed with the sprint. A task's minutes are the union of its segments.
+    - Gates (Phases 4-5 of an approved plan only): an Edit/Write to a repo file with NO task clock open is BLOCKED (exempt: the plan, the ledger, CODING_VELOCITY.md, DECISION_REGISTER.md, sprint_status.json, git-ignored files); a commit with `Closes #<card>` of an unfinished task, or naming `Task <N>` never started, is BLOCKED; close-out check 3d-3 refuses a card whose Executed-by line does not name the ledger minutes, and "0 min" / "not recorded" unless the line names a register decision `d<n>` accepting the gap. An unreadable ledger or status file BLOCKS ("the check did not run").
+    - (Sprint 85: six of sixteen cards closed with "actual minutes not recorded, 0 min logged", and the i7 line written to prevent it was not followed, because nothing ran at the moment the task started.)
   - Companion memory: `feedback_estimating_minutes.md`.
 
 - [ ] **3.3 Branch Management**
@@ -1362,6 +1367,8 @@ Before conducting sprint review, build and test the Windows desktop app:
 
   Claude reviews the combined retrospective and proposes specific improvements. Improvements may be of any type: process, code, tests, architecture, documentation, tooling.
 
+  **Register (F362, Sprint 86)**: each proposal is written IN FULL to `docs/DECISION_REGISTER.md` as it is proposed, with its register id `i<n>` (the counter runs across sprints; read the highest `i<n>` in the register and continue), every field below and every option. Harold's answer is added to the entry, verbatim and dated, and the line moves from Open to Closed. A message that re-asks an unanswered item copies the full entry from the register.
+
   Sources for proposals:
   - Issues raised in any of the 14 categories by Harold's feedback
   - Issues raised by Claude's draft feedback
@@ -1379,7 +1386,7 @@ Before conducting sprint review, build and test the Windows desktop app:
   - Extends: <the existing gate, hook, checklist item, test or helper it extends, or "new">
   - Long-term value: <what improves in every later sprint>
   - Evidence: <how many times it occurred (sprints, counts), the time lost, and the efficiency gained and how>
-  - Effort: <minutes, and the number of files>
+  - Effort: <minutes, and the number of files>; plus **test time added** (F361, Sprint 86): the time the change adds to the LOCAL full suite (`flutter test`, the Python script tests, `python .claude/hooks/run-test-cases.py`) and to CI, each in seconds or minutes, with how it was found ("measured: <command>, before/after" or "estimated: N new cases at about M s each"). Write "+0" when the change adds no test or check. A recurring cost Harold pays on every run is part of the improvement's price, so it is stated before he decides.
   - Options:
     - a. (Recommendation) <option; now or backlog; effort>. Pro: <...>. Con: <...>.
     - b. <option>. Pro: <...>. Con: <...>.

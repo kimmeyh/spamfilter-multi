@@ -16,6 +16,7 @@ Hook routing is by DIRECTORY (F130-S51 R-2):
     test-cases/staging-guard/*.json -> block-blind-staging.py          (PreToolUse)
     test-cases/commit-lock/*.json   -> block-commit-during-mutation.py (PreToolUse)
     test-cases/velocity-warn/*.json -> warn-commit-without-velocity.py (PreToolUse)
+    test-cases/task-clock/*.json    -> task-clock-gate.py              (PreToolUse; F363, Sprint 86)
 
 Prints a PASS/FAIL line per case and a summary. Exit 0 when every case passes, 1 when any fails, 2 when the
 runner itself could not run (a missing hook or python, a fixture that would not build, an unknown --only-route, or
@@ -69,6 +70,7 @@ ROUTES = {
     "staging-guard": "block-blind-staging.py",
     "commit-lock": "block-commit-during-mutation.py",
     "velocity-warn": "warn-commit-without-velocity.py",
+    "task-clock": "task-clock-gate.py",
 }
 
 

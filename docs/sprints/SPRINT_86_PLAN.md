@@ -131,21 +131,19 @@ follows their pattern (fail closed, prints what it read).
 **Dependencies / blockers**: register q9 answered before approval.
 
 **Acceptance criteria**:
-- AC-1: the three docs name `docs/DECISION_REGISTER.md` (grep shows each).
-- AC-2 (q9 = 1): a fixture register with an Open `q<n>` asked in this sprint and no Answer BLOCKS close-out; the same
-  fixture with the Answer line passes; an unreadable register BLOCKS with "the check did not run".
+- AC-1: the three docs name `docs/DECISION_REGISTER.md` (grep shows each). RESULT 2026-11-24: CLAUDE.md 1,
+  SPRINT_EXECUTION_WORKFLOW.md 2, SPRINT_RETROSPECTIVE.md 1, SPRINT_CHECKLIST.md 1 (the q9 "track" line).
+- AC-2: DROPPED by register q9 = 2 (Harold, 2026-11-24: documentation only, "and track"). Replaced by the close-out
+  checklist line "Decision register open items listed" and the retrospective Category 9 count.
 
 **Tests to write**:
-- T-1 (AC-2) -- HOOK case in `.claude/hooks/test-cases/` plus a unittest in `.claude/hooks/tests/`: block, pass,
-  unreadable.
+- T-1 (AC-1) -- the grep above. No gate, so no hook case (q9 = 2).
 
-**Definition of Done**: default DoD; hook suite `python .claude/hooks/run-test-cases.py` green; mutation-checked gate.
-Effort for test time (F361): +3-4 hook cases, under 2 s locally and in CI (q9 = 1); +0 (q9 = 2).
+**Definition of Done**: default DoD. Effort for test time (F361): +0 (q9 = 2, no gate).
 
-**Model**: Haiku for the docs; Sonnet for the gate -- *why not Haiku*: a fail-closed close-out check; Sprint 84/85
-found defects in hook ports written without that care.
+**Model**: Haiku for the docs (the gate half was dropped by q9 = 2).
 **Delegation checklist included in the sub-agent prompt**: yes
-**Executed-by**: (at completion)
+**Executed-by**: Opus main session (not Haiku: four short doc edits beside the main-session Task 10 work; delegating would cost more than the edits) -- 20 min (task clock 2026-11-24 01:54 to 2026-11-24 02:14, 1 segment(s))
 **Step-types**: DOCS, HOOK
 **Est-Effort**: 45-60m
 
@@ -279,7 +277,7 @@ returns).
 
 **Model**: Haiku -- doc wording.
 **Delegation checklist included in the sub-agent prompt**: yes
-**Executed-by**: (at completion)
+**Executed-by**: Opus main session (not Haiku: three one-line doc edits in files Task 1 had just edited; serialized in-session as the plan required) -- 5 min (task clock 2026-11-24 02:15 to 2026-11-24 02:19, 1 segment(s))
 **Step-types**: DOCS
 **Est-Effort**: 30-45m
 
@@ -421,7 +419,16 @@ run (not in the default suite); CI +0 (no emulator job).
 - R-2: delete what nothing live calls; convert a survivor under ADR-0051; update every reference.
 - R-3: a `.claude/settings.local.json` change is shown to Harold before it is made (local settings file).
 
-**Old name search**: the four names -- hits: (at completion)
+**Old name search**: the four names -- hits (grep 2026-11-24, excluding `archive/` and `0*`): no hook, skill, setting
+or script calls the three `.ps1` files. Updated: `docs/PRESENTATION_FRAMEWORK.md:391,404-406` and
+`docs/adr/0051-python-for-deterministic-tooling.md:179-182`. Kept because they are history: `CHANGELOG.md`,
+`docs/sprints/SPRINT_8_*`, `SPRINT_12/22/27/33/51_*`, the backlog slate and the master-plan F340 card. Kept because
+the skill stays: `memory-restore` in `CLAUDE.md:822`, `AGENTS.md:650`, `.agents/skills/memory-restore/SKILL.md` and
+`.claude/settings.local.json:36` (skill visibility, no change, so R-3 had nothing to show).
+
+**Result (AC-1)**: DELETED `.claude/scripts/archive-memory.ps1`, `check-memory-on-startup.ps1`, `save-memory.ps1`
+(the folder is now gone). KEPT `.claude/skills/memory-restore/` -- it is the Sprint 51 tombstone Harold chose over
+deletion (F130-S51, CHANGELOG 725); deleting it would reverse that decision, and it holds no script to convert.
 
 **Platform**: development tooling only.
 
@@ -435,7 +442,7 @@ run (not in the default suite); CI +0 (no emulator job).
 
 **Model**: Haiku -- grep and delete.
 **Delegation checklist included in the sub-agent prompt**: yes
-**Executed-by**: (at completion)
+**Executed-by**: Opus main session (not Haiku: the audit found the memory-restore tombstone is a prior Harold decision, a judgment the plan flagged as Class-2) -- 20 min (task clock 2026-11-24 02:21 to 2026-11-24 02:41, 1 segment(s))
 **Step-types**: DOCS, HOOK
 **Est-Effort**: 20-40m [estimate unverified]
 
@@ -483,10 +490,18 @@ and commit gates). If kept, it runs FIRST so every other task is clocked by it.
 
 **Platform**: development process only; no app code.
 **Model**: Sonnet -- *why not Haiku*: three new fail-closed hook matchers that gate every edit and commit.
+**Executed-by**: Opus main session (Sonnet assigned; run in-session because every later task depends on the gate, and the gate needed same-session hook facts) -- 109 min (task clock 2026-11-24 01:07 to 2026-11-24 02:55, 1 segment(s)); work began about 01:01, 6 min before the clock existed (the task builds the clock); a first finish at 02:56 failed on a missing Executed-by line and stamped the finish, and the 4 min fix after it is not in the total
 **Step-types**: HOOK, TEST-UNIT, DOCS
 **Est-Effort**: 180-270m
-_**Risk & rollback**_: a wrong gate blocks all work; each gate has a bypass token for one command and the hook suite
-must pass before it is registered; rollback is removing the matcher from `.claude/settings.json`.
+_**Risk & rollback**_: a wrong gate blocks all work. Built with NO bypass token (the draft said one would exist): the
+way past the edit gate is `task-clock.py start <task>`, and the files that fix a broken state (plan, ledger,
+CODING_VELOCITY, register, sprint_status.json) are exempt. The 11 mutants were killed before registration and the
+full hook suite passed just after it (230/230); rollback is
+removing the `task-clock-gate.py` entries from `.claude/settings.json`.
+**Result**: `scripts/task-clock.py`, `.claude/hooks/lib/task_clock.py`, `.claude/hooks/task-clock-gate.py`, close-out
+`check_task_clock`. Live check 2026-11-24 01:46: four background agents (Tasks 2, 5, 6, 11) each got a ledger start
+and their agentId mapped. Tests: 36 unittests, 13 route cases, close-out AC-1 case, git fault-injection test; hook
+suite 230/230; mutants 12/12 KILLED. AC-5 (Sprint 86 closes out clocked) is checked at close-out.
 
 ### Task 11 -- F364: Google Play policy and Console changes: analysis and compliance cards (Priority 30) (#588; q7 = 1)
 
@@ -498,6 +513,7 @@ Full card: `docs/ALL_SPRINTS_MASTER_PLAN.md` F364 (R-1 to R-5, AC-1 to AC-3). Ou
 same rule, so a fix stays the same on all three where it can (ADR-0042).
 **Model**: Fable/Opus -- *why not Sonnet*: every claim needs a same-session source and drives a compliance decision
 (CLAUDE.md Sprint 66 IMP-2).
+**Executed-by**: (at completion)
 **Step-types**: DOCS (research)
 **Est-Effort**: 60-120m [estimate unverified]
 _**Risk & rollback**_: the 30-day window from 2026-10-29 may already have ended (about 2026-11-28; counting
