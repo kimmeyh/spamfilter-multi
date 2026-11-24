@@ -11,6 +11,9 @@ Phase 3; this stub only records what Sprint 85 carried in.
   HEAD of `main` after the merge. Serialize the Windows and Android builds.
 - **F307 removal (Harold, Sprint 85 q1)** -- remove the "Create rule" page (RuleQuickAddScreen). Sprint 85 Task 8
   (#568) did the R-1 coverage audit only; #568 stays open for this sprint. Master plan Priority 36.
+- **F364 Google Play policy analysis (Harold, 2026-11-23, register d4)** -- analyze the 2026-10-29 Play policy
+  announcement and Console changes against this repository, then propose backlog cards for each gap. Master plan
+  Priority 30. The 30-day window from 2026-10-29 is short, so run it early.
 - **F363 task clock (Harold, 2026-11-23, register d2)** -- every task's start and finish recorded by a script and
   enforced by gates, so no task closes with no minutes. Build it first, so the other Sprint 86 tasks use it. Master
   plan Priority 32. Needs register q2 (new hook matchers) answered before planning.

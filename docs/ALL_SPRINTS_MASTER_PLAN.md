@@ -212,6 +212,37 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 
 ### Backlog from the Sprint 85 Phase 8 cycle (Harold, 2026-11-22)
 
+**F364. Analyze the Google Play policy and Console changes and their impact on this repository; then propose backlog cards to bring it into compliance (~60-120m analysis, estimate unverified) Priority 30 -- NEW 2026-11-23, SPRINT 86 (Harold, register d4: "add to backlog for next sprint")**
+- Phase: Release Readiness (Google Play)
+- Platform: Android (Play); no app code in this card
+- Source: Harold, 2026-11-23 (verbatim): "add to backlog for next sprint: analyze changes to google play
+  store/console and their impact on this repository. Follow-up analysis with suggested additions to the backlog to
+  bring the repository into compliance https://support.google.com/googleplay/android-developer/answer/18100766"
+- The page is "Policy announcement: October 29, 2026" (fetched 2026-11-23). It gives "at least 30 days from October
+  29, 2026" to comply. Topics it names (summary of the fetch, not yet checked against the app): new Local Network
+  and Manage Contacts permission policies (Play Console declaration for API 37+ / core use); AppFunctions API;
+  eligibility-based subscription discounts; Location permission rules mandatory 2027-01-27 (`ACCESS_FINE_LOCATION`
+  declaration); All Files Access; Accessibility API; Deceptive Behavior; SMS / Call Log (`READ_CALL_LOG` phone-call
+  verification ends 2027-01-27); Payments through AI or agentic flows; Play Age Signals API; Japan payments
+  authorization by 2026-12-01; trader status declaration in Play Console "Starting in November 2026"; app quality
+  memory and code-optimization thresholds by February 2027 (answer/17492799); car apps; Android XR.
+- R-1: for each topic, read the Google page it links (including answer/17594752 trader status and answer/17492799
+  app quality) and record the exact requirement, date and source link. Do not state a policy from memory.
+- R-2: check each requirement against the repo with evidence: the merged `AndroidManifest.xml` permissions,
+  `targetSdk` / `compileSdk` in `mobile-app/android/app/build.gradle.kts`, the plugins in `pubspec.lock` that add
+  permissions, `docs/GOOGLE_PLAY_ACCOUNT_SETUP.md` (declarations already submitted) and the Play Console state Harold
+  reports (the Console cannot be read from here; ask for a screenshot when a fact is only there).
+- R-3: classify each topic: applies (with the file:line or Console screen), does not apply (with the evidence), or
+  unknown (with what would settle it).
+- R-4: write the result to `docs/GOOGLE_PLAY_POLICY_2026-10-29_ANALYSIS.md` and propose one backlog card per gap
+  (F-number, effort, priority, deadline), presented to Harold as register items for a decision.
+- R-5: record the EU / trader-status position in `docs/GOOGLE_PLAY_ACCOUNT_SETUP.md` (Harold, 2026-11-23: "I have a
+  EU declared development account") and confirm with Harold which status was declared, if the Console shows it.
+- AC-1: every topic on the page has a classification and a source link. AC-2: every "applies" topic has a proposed
+  card or a recorded reason none is needed. AC-3: no claim about a Google rule without a same-session source.
+- Depends on: none. Deadline pressure: the 30-day window from 2026-10-29 ends about 2026-11-28 (unverified how
+  Google counts it; the Policy Deadlines page settles it).
+
 **F363. Task clock: every task's start and finish are recorded by a script and enforced by gates, so no task ever ends with no minutes (~180-270m) Priority 32 -- NEW 2026-11-23, SPRINT 86 (Harold, register d2: "add to this sprint ... it should never fail for even one task")**
 - Phase: Process
 - Platform: development process (hooks and scripts; no app code)
@@ -284,10 +315,10 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - R-2: the register's Index lists every open item. An item leaves Open only when Harold answers or withdraws it.
 - R-3: a message that needs an answer to an open item copies the FULL entry from the register, never a reference to
   it (extends the existing "re-present, do not reference" rule in CLAUDE.md with a stored source to copy from).
+- R-4: decide with Harold whether a close-out check blocks on an open register entry with no answer (prevention by
+  gate, like check 3d-4) or whether the rule stays documentation only.
 - R-5: CLAUDE.md, `SPRINT_EXECUTION_WORKFLOW.md` 7.3 STEP 5 and the retrospective template name the register as the
   place improvements and questions are written.
-- R-4: decide with Harold whether a close-out check blocks on an "Open questions" entry with no answer (prevention by
-  gate, like check 3d-4) or whether the rule stays documentation only.
 - Effort for test time (F361): a close-out check adds about 3-4 hook cases, under 2 s locally and in CI; documentation
   only adds +0.
 - Depends on: none. Pairs with F361 (both change how retrospective items are written).

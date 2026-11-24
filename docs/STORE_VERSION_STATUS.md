@@ -30,7 +30,11 @@ Partner Center before saying anything about the Store version.
 ## 0.25.0 -- Sprint 85 cycle Phase 8.3 (2026-11-22)
 
 **SUBMITTED, IN ROLLOUT (Harold, 2026-11-23: "store and play are in rollout").** Both the MSIX 0.25.0.0 (Partner
-Center) and the AAB 0.25.0 versionCode 23 (Play closed testing) are submitted. Not yet confirmed live or installed.
+Center) and the AAB 0.25.0 versionCode 23 (Play closed testing) are submitted. MSIX not yet confirmed live.
+**Android 0.25.0 running on the phone (Harold's screenshots, 2026-11-23 19:05-19:08, phone clock)**: every screen
+shows "Version 0.25.0"; manual scans of the yahoo, icloud, gmail and dev gmail accounts and an AOL background scan
+completed at 19:06-19:07 with Errors 0. Evidence: `validation-screenshots/sprint-86/Screenshot_20261123_1905*`
+to `_190800.png` (gitignored). The install source (Play or side-load) is not shown on these screens.
 "Last uploaded to Play" moves to 0.25.0 (versionCode 23) in the same commit as the Sprint 86 version bump (Phase
 3.7.0b), never before it.
 

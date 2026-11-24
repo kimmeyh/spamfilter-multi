@@ -20,12 +20,12 @@ here and not in `SPRINT_N_PLAN.md`. Source: Harold, 2026-11-22 and 2026-11-23 (d
 
 ### Open
 
-- None.
 
 ### Closed
 
 - q1. Sprint 85: how to record six task rows that have no minutes -- answered 2 (Harold, 2026-11-23)
 - q2. F363: may the task-clock gates add new hook matchers to `.claude/settings.json` -- answered 1 (Harold, 2026-11-23)
+- d4. F364 (Google Play policy and Console changes: analysis and compliance cards) is in Sprint 86 (Harold, 2026-11-23)
 - d3. Backlog refinement shows ALL open items with details for all (Harold, 2026-11-23)
 - d1. Questions, decisions and improvements live in this register with short ids (Harold, 2026-11-23)
 - d2. F363 (task clock: minutes recorded for every task) is in Sprint 86 (Harold, 2026-11-23)
@@ -105,6 +105,15 @@ here and not in `SPRINT_N_PLAN.md`. Source: Harold, 2026-11-22 and 2026-11-23 (d
   `SPRINT_CHECKLIST.md` 1.2 and Phase 1, and `SPRINT_EXECUTION_WORKFLOW.md` Phase 1.2. The index lists every open
   active item, then every HOLD item; details follow for all of them in the same order ("Details", then "ON HOLD
   Details"). Replaces the F293 limit of 20.
+
+### d4. F364 (Google Play policy and Console changes: analysis and compliance cards) is in Sprint 86
+
+- **Harold, 2026-11-23 (verbatim)**: "add to backlog for next sprint: analyze changes to google play store/console
+  and their impact on this repository. Follow-up analysis with suggested additions to the backlog to bring the
+  repository into compliance https://support.google.com/googleplay/android-developer/answer/18100766"
+- **Same message**: "I have a EU declared development account. Make note in the repository".
+- **Done**: card F364 in `docs/ALL_SPRINTS_MASTER_PLAN.md` (Priority 30); listed in `docs/sprints/SPRINT_86_PLAN.md`
+  "Start of sprint"; EU note in `docs/GOOGLE_PLAY_ACCOUNT_SETUP.md` (account section).
 
 ## Improvements
 
