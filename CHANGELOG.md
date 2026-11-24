@@ -29,6 +29,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ### 2026-11-24 (Sprint 86)
 
 - **chore**: Removed the "Create rule" page; rules are made from the rule pop-up on Review No Rule Items (Issue #568)
+- **feat**: When an email server connection fails or times out, the diagnostic log (when turned on) names the step that did not finish (connect, TLS, STARTTLS or greeting; DNS when a recheck fails) and the network type (Issue #583)
 - **chore**: Seven Android helper scripts (run-emulator, start-emulator, setup-android-oauth, export-tokens-for-android, capture-diagnostic-logs, enable-screen-reader-flag, fix-flutter-git) ported from PowerShell to Python with a shared `android_support.py`; adb and the emulator resolve through ANDROID_HOME and only ever target an emulator; the ports fix unchecked exit codes, printed secret characters and a broken log-capture Stop (Issue #580)
 
 ### 2026-11-21 (Sprint 85)

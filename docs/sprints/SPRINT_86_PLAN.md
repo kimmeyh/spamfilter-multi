@@ -380,9 +380,22 @@ exception.
 
 **Dependencies / blockers**: none.
 
+**Result (premise corrected)**: the "Existing behavior relied on" line was FALSE. AOL, Gmail-IMAP, Yahoo and iCloud
+connect through enough_mail 2.1.7 `connectToServer` (`client_base.dart:103`, 20 s default applied at :115 to one
+`SecureSocket.connect`, so TCP and TLS share one timer); `ImapTlsConnector` serves Custom IMAP only. F342 research
+line 63 corrected. New `lib/core/security/imap_connect_diagnostics.dart` (`traceConnect` rethrows the SAME exception
+object): one `NOT_CONNECTED` / `IMAP/connect` diagnostic line with host:port, `phase=`, per-step ms, a post-failure DNS
+recheck (5 s bound, only when the connect did not pass TCP), `network=` from `connectivity_plus` (`unknown` on error
+or after 1 s), the exception TYPE only. STARTTLS path: `tcp`, `starttls`, `tls`, `greeting`. SSL/TLS and the provider
+path (`generic_imap_adapter.dart`, `connectToServer` wrapped, unchanged): `tcp+tls`, marked `phase-inferred`. An SSL
+split into `Socket.connect` + `SecureSocket.secure` made 3-8 of 19 integration tests hang (cause unknown; reverted).
+Not covered: a provider greeting that never arrives (no library timeout, so nothing throws); `connectivity_plus` in
+the WorkManager isolate is unverified (first device log settles it). Backlog candidate: phase split on the provider
+path (needs replacing `connectToServer`, Class-2). 13 + 1 tests, 4 mutants KILLED, `check-log-redaction.py` clean.
+
 **Acceptance criteria**:
 - AC-1: a forced TCP-phase timeout logs `phase=tcp` with the network type; a forced TLS-phase timeout logs
-  `phase=tls`.
+  `phase=tls`. MET on the STARTTLS path (tests); the SSL/TLS and provider paths log `tcp+tls` (see Result).
 - AC-2: the exception type and message thrown to the caller are unchanged (test asserts both).
 
 **Tests to write**:
@@ -394,7 +407,7 @@ gate `scripts/check-log-redaction.py`).
 
 **Model**: Sonnet -- *why not Haiku*: the connect path every IMAP account uses.
 **Delegation checklist included in the sub-agent prompt**: yes
-**Executed-by**: (at completion)
+**Executed-by**: Sonnet sub-agent (as assigned) -- 208 min (task clock 2026-11-24 01:46 to 2026-11-24 05:15, 1 segment(s)); agent run per harness 207 min (12449436 ms); much of it waiting on a machine loaded by four agents' Flutter runs
 **Step-types**: IMAP, TEST-UNIT
 **Est-Effort**: 45m
 

@@ -83,16 +83,22 @@
           "by": "agent",
           "end": "2026-11-24T04:02:38",
           "start": "2026-11-24T01:46:18"
+        },
+        {
+          "agent_id": null,
+          "by": "main",
+          "end": null,
+          "start": "2026-11-24T05:15:44"
         }
       ]
     },
     "6": {
-      "finished": null,
+      "finished": "2026-11-24T05:15:19",
       "segments": [
         {
           "agent_id": "ae268308cc6449dde",
           "by": "agent",
-          "end": null,
+          "end": "2026-11-24T05:13:52",
           "start": "2026-11-24T01:46:22"
         }
       ]

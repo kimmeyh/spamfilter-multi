@@ -70,6 +70,7 @@ import 'package:enough_mail/src/private/util/client_base.dart'
 import 'package:logger/logger.dart';
 
 import '../../adapters/email_providers/custom_imap_settings.dart';
+import 'imap_connect_diagnostics.dart';
 import '../../adapters/email_providers/spam_filter_platform.dart'
     show UserFacingConnectionException;
 
@@ -369,15 +370,38 @@ class ImapTlsConnector {
     required ImapEncryption encryption,
     String? trustedFingerprint,
     Duration timeout = const Duration(seconds: 20),
+  }) {
+    // F347 (Sprint 86): a TimeoutException or SocketException is logged with
+    // the step that did not finish and the network type, then rethrown
+    // unchanged (R-3). Nothing else about the connect changes.
+    return ImapConnectDiagnostics.traceConnect<ImapTlsConnection>(
+      host: host,
+      port: port,
+      body: (trace) => _connectTraced(
+        host: host,
+        port: port,
+        encryption: encryption,
+        trustedFingerprint: trustedFingerprint,
+        timeout: timeout,
+        trace: trace,
+      ),
+    );
+  }
+
+  static Future<ImapTlsConnection> _connectTraced({
+    required String host,
+    required int port,
+    required ImapEncryption encryption,
+    required String? trustedFingerprint,
+    required Duration timeout,
+    required ImapConnectTrace trace,
   }) async {
     final decision = _TrustDecision(trustedFingerprint);
     final SecureSocket secure;
     try {
       secure = encryption == ImapEncryption.sslTls
-          ? await SecureSocket.connect(host, port,
-                  onBadCertificate: decision.onBadCertificate)
-              .timeout(timeout)
-          : await _startTls(host, port, decision, timeout);
+          ? await _sslConnect(host, port, decision, trace).timeout(timeout)
+          : await _startTls(host, port, decision, timeout, trace);
     } on HandshakeException catch (e) {
       final named = decision.failure(host, port, e);
       if (named != null) {
@@ -403,6 +427,7 @@ class ImapTlsConnector {
     client.connect(socket,
         connectionInformation: ConnectionInfo(host, port, isSecure: true));
     try {
+      trace.begin('greeting');
       await client.greetingReceived.timeout(timeout);
       if (encryption == ImapEncryption.startTls) {
         // RFC 3501 6.2.1: discard pre-TLS capabilities, ask again over TLS.
@@ -424,6 +449,23 @@ class ImapTlsConnector {
     );
   }
 
+  /// SSL/TLS from the first byte: ONE `SecureSocket.connect`, as before F347.
+  /// The trace names the step `tcp+tls`. Splitting it into `Socket.connect`
+  /// plus `SecureSocket.secure` (to time TCP and TLS apart) was tried and
+  /// reverted: the Custom IMAP integration tests then hung 30 s each, and the
+  /// baseline without the split passed in 39 s (measured 2026-11-24). The
+  /// caller bounds the call with ONE timeout.
+  static Future<SecureSocket> _sslConnect(
+    String host,
+    int port,
+    _TrustDecision decision,
+    ImapConnectTrace trace,
+  ) async {
+    trace.begin('tcp+tls');
+    return SecureSocket.connect(host, port,
+        onBadCertificate: decision.onBadCertificate);
+  }
+
   /// Plain connect, the STARTTLS exchange, then the TLS handshake with the
   /// trust callback. Refuses (and sends nothing further) unless the server
   /// greets with `* OK` and answers STARTTLS with a tagged OK, and refuses if
@@ -434,8 +476,11 @@ class ImapTlsConnector {
     int port,
     _TrustDecision decision,
     Duration timeout,
+    ImapConnectTrace trace,
   ) async {
+    trace.begin('tcp');
     final plain = await Socket.connect(host, port).timeout(timeout);
+    trace.begin('starttls'); // pre-TLS greeting and STARTTLS reply
     final reader = _LineReader(plain);
     try {
       final greeting = await reader.nextLine().timeout(timeout);
@@ -467,6 +512,9 @@ class ImapTlsConnector {
       await reader.cancel();
       plain.destroy();
       if (e is TimeoutException || e is SocketException) {
+        // F347: converted to a refusal below, so the trace never sees the
+        // original; log it here (the step in flight is `starttls`).
+        await ImapConnectDiagnostics.reportFailure(trace, e.runtimeType.toString());
         throw _refused('$e');
       }
       rethrow;
@@ -474,6 +522,7 @@ class ImapTlsConnector {
 
     // Same order as enough_mail's own upgrade: pause, secure, cancel.
     reader.pause();
+    trace.begin('tls');
     try {
       return await SecureSocket.secure(
         plain,
