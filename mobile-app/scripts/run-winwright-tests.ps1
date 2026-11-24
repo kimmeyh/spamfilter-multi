@@ -504,7 +504,12 @@ if (-not $DryRun) {
     # Enable screen reader flag (required for Flutter Semantics tree)
     if (-not $SkipScreenReaderFlag) {
         Write-Host "[Setup] Enabling SPI_SETSCREENREADER flag..." -ForegroundColor Cyan
-        & (Join-Path $PSScriptRoot "enable-screen-reader-flag.ps1") enable
+        # F336 (Sprint 86): the flag script is Python now; it exits non-zero when the flag does not read back as set.
+        & python -I (Join-Path $PSScriptRoot "enable-screen-reader-flag.py") enable
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "enable-screen-reader-flag.py failed (exit $LASTEXITCODE); the sweep cannot read the Flutter UI tree without the flag."
+            exit 1
+        }
         Start-Sleep -Seconds 2
     }
 

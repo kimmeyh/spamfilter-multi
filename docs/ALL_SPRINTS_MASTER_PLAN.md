@@ -355,7 +355,7 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Phase: Process / Testing
 - Platform: Windows Desktop
 - The runner turns the Windows screen-reader flag on (`run-winwright-tests.ps1:507`) and never turns it off; restore
-  the state it found when it ends (`enable-screen-reader-flag.ps1` has status, enable and disable).
+  the state it found when it ends (`enable-screen-reader-flag.py` has status, enable and disable).
 - `test_f124_rule_labels` failed 6 of 6 through the runner at step 2 ("No main window found") and passed 29 of 29
   eight times run directly on the same build (Sprint 85 5.1.5). Ruled out: a background scan, a second window with
   the same title, the window state, the flag, the script. Remaining suspect: WinWright does not retry the main-window

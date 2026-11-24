@@ -27,17 +27,17 @@ Added detailed logging to identify exactly what's happening during rule evaluati
 **Commits deployed**: 307b747, b066679, 83c1588
 
 ### 2. Created Log Capture Tools
-**Script**: `mobile-app/scripts/capture-diagnostic-logs.ps1`
+**Script**: `mobile-app/scripts/capture-diagnostic-logs.py`
 
 Usage:
 ```powershell
 # Before running test in app
-.\capture-diagnostic-logs.ps1 -Action Start
+python capture-diagnostic-logs.py --action start
 
 # (Run your Bulk Mail Testing scan in the app)
 
 # After scan completes
-.\capture-diagnostic-logs.ps1 -Action Stop
+python capture-diagnostic-logs.py --action stop
 ```
 
 The script will:
@@ -93,7 +93,7 @@ Diagnostic code is backward compatible (only adds logging).
 cd mobile-app/scripts
 
 # Start log capture
-.\capture-diagnostic-logs.ps1 -Action Start
+python capture-diagnostic-logs.py --action start
 ```
 
 **Then in the app**:
@@ -106,7 +106,7 @@ cd mobile-app/scripts
 **Then back in PowerShell**:
 ```powershell
 # Stop capture and analyze
-.\capture-diagnostic-logs.ps1 -Action Stop
+python capture-diagnostic-logs.py --action stop
 ```
 
 ### Step 3: Share the Output
@@ -138,7 +138,7 @@ Share this output (or the log file) and I'll immediately:
 ## Files Ready for You
 
 ### Tools
-- `mobile-app/scripts/capture-diagnostic-logs.ps1` - Log capture and analysis script
+- `mobile-app/scripts/capture-diagnostic-logs.py` - Log capture and analysis script
 
 ### Documentation
 - `DIAGNOSTIC_TEST_PROCEDURE.md` - Quick-start guide for capture

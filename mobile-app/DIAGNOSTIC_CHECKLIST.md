@@ -28,7 +28,7 @@
 ### Step 1: Start Log Capture
 ```powershell
 cd mobile-app/scripts
-.\capture-diagnostic-logs.ps1 -Action Start
+python capture-diagnostic-logs.py --action start
 ```
 
 **Expected output**:
@@ -43,7 +43,7 @@ Next Steps:
 2. Click 'Start Live Scan' (NOT Demo Scan)
 3. Select 'Bulk Mail Testing' folder
 4. Wait for scan to complete or process ~20 emails
-5. Once done, run: .\capture-diagnostic-logs.ps1 -Action Stop
+5. Once done, run: python capture-diagnostic-logs.py --action stop
 ```
 
 - [ ] Log capture started successfully
@@ -67,7 +67,7 @@ In your Android app:
 ### Step 3: Stop Log Capture
 Once scan is done, in PowerShell:
 ```powershell
-.\capture-diagnostic-logs.ps1 -Action Stop
+python capture-diagnostic-logs.py --action stop
 ```
 
 **Expected output**:
@@ -165,7 +165,7 @@ The log file is created in `mobile-app/scripts/`:
 ### Option C: Run Custom Analysis
 If you want to look deeper yourself:
 ```powershell
-.\capture-diagnostic-logs.ps1 -Action Analyze -LogFile "diagnostic_bulk_mail_20260128_143022.log"
+python capture-diagnostic-logs.py --action analyze --log-file "..\build\diagnostic-logs\diagnostic_bulk_mail_20260128_143022.log"
 ```
 
 ---

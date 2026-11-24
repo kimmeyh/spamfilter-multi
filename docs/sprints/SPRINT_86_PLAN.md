@@ -235,7 +235,24 @@ them.
 - Error paths: (at completion) ; real failing command tested in: (at completion)
 - Gates by file type: (at completion)
 
-**Old name search**: each `.ps1` name -- hits: (at completion)
+**Old name search**: each `.ps1` name -- hits (git grep 2026-11-24): updated `.vscode/tasks.json`,
+`mobile-app/scripts/run-winwright-tests.ps1:507` (now also checks the exit code), `docs/SPRINT_PLANNING.md:131`,
+`docs/WINWRIGHT_SELECTORS.md` (5), `mobile-app/test/winwright/README.md:77`, `DIAGNOSTIC_LOG_INTERPRETATION.md`,
+`INVESTIGATION_READY_FOR_TESTING.md` (4), `mobile-app/DIAGNOSTIC_CHECKLIST.md` (4),
+`docs/ALL_SPRINTS_MASTER_PLAN.md:358`. Kept: the F336 card text, CHANGELOG and sprint history, ADR-0051's list of
+scripts to convert, each new `.py`'s "port of" header. `test_no_runs_of_missing_scripts` passes.
+
+**Result**: all 7 ported to Python (none stays PowerShell; the screen-reader flag uses ctypes) with a shared
+`mobile-app/scripts/android_support.py`: adb and the emulator resolve through ANDROID_HOME and only ever target an
+emulator serial. Defects fixed in the port include: printed client-secret characters (2 scripts), a broken log
+capture Stop (`$pid` is read-only), an unconfirmed `git reset --hard` (now dry run unless `--yes`), unchecked exit
+codes in every script, a stale AVD id and pre-flavor package id. 63 tests (1 skipped off Windows), one REAL failing
+command per script; 11 mutants KILLED. Live (AC-1): `start-emulator.py` launched pixel34_updated from ANDROID_HOME;
+boot detected; capture start/stop ran against it (one first-start `logcat` exit 255, cause unknown, passed 3 min
+later). No APK install was run live (no build allowed in that window). Finding: since #575 the Android build no
+longer reads the Desktop client secret, so `setup-android-oauth.py`'s premise is mostly stale; ported with a note,
+retirement is a backlog candidate. `android_support.py` duplicates helpers in `build-with-secrets.py` (follow-up).
+Test time (F361): about +2-3 s unloaded, 38 s measured on the loaded machine.
 
 **Platform**: development tooling on the Windows PC; targets the Android emulator (adb is allowed on the emulator,
 never on the phones). Windows and iPhone apps unchanged. iPhone has no equivalent scripts (the Mac runner builds it).
@@ -258,7 +275,7 @@ Effort for test time (F361): +7-10 unittests, about +1-2 s locally and in CI.
 **Model**: Sonnet -- *why not Haiku*: ports need defect review and real failure-path tests (Sprint 85 7.7.1 found 8
 class-B port defects).
 **Delegation checklist included in the sub-agent prompt**: yes
-**Executed-by**: (at completion)
+**Executed-by**: Sonnet sub-agent (as assigned) -- 118 min (task clock 2026-11-24 03:07 to 2026-11-24 05:06, 1 segment(s)); agent run per harness 117 min (7040980 ms) at its handback; the agent then waited on its own background work
 **Step-types**: SVC-NEW (tooling), TEST-UNIT
 **Est-Effort**: 150-260m [estimate unverified]
 _**Risk & rollback**_: a broken port blocks emulator work; rollback is `git revert` of the port commit (the `.ps1`

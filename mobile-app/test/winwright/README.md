@@ -74,7 +74,7 @@ title and closes it at end-of-run. Consequences for script authors:
 2. **Screen reader flag enabled** (activates Flutter Semantics tree -- without this, the FLUTTERVIEW pane appears as a single opaque element):
    ```powershell
    cd mobile-app/scripts
-   .\enable-screen-reader-flag.ps1 enable
+   python .\enable-screen-reader-flag.py enable
    ```
 
    **A blank tree or an all-white screenshot is not evidence that the app is blank** (Sprint 85, F354 check). With the

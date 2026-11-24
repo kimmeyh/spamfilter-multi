@@ -14,27 +14,19 @@
     {
       "label": "Mobile: Run emulator (debug)",
       "type": "shell",
-      "command": "powershell",
+      "command": "python",
       "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "${workspaceFolder}/mobile-app/scripts/run-emulator.ps1"
+        "${workspaceFolder}/mobile-app/scripts/run-emulator.py"
       ],
       "problemMatcher": []
     },
     {
       "label": "Mobile: Run emulator (install release APK)",
       "type": "shell",
-      "command": "powershell",
+      "command": "python",
       "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "${workspaceFolder}/mobile-app/scripts/run-emulator.ps1",
-        "-InstallReleaseApk"
+        "${workspaceFolder}/mobile-app/scripts/run-emulator.py",
+        "--install-release-apk"
       ],
       "problemMatcher": []
     }
