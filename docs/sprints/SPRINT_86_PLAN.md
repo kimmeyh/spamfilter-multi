@@ -654,11 +654,35 @@ Windows and Android builds are never run at the same time.
 - **5.1.2 open findings**: none fixed-or-open beyond register q13 (retire `setup-android-oauth.py` and
   `export-tokens-for-android.py`, a backlog decision; evidence: the app stores tokens in a DPAPI file, not
   Credential Manager).
+- **5.1.5 WinWright sweep**: 2026-11-24, finished before the 08:16 app relaunch, 3 scripts run (test_f124_rule_labels, test_f320_no_rule_review,
+  test_s75_new_controls; the two f56 scripts stay excluded as documented in the runner), 3 PASS / 0 FAIL (63 steps),
+  tray icon PASS, dev DB no drift. Workstation locked: 6 cursor steps skipped by the runner (F291), named in its log.
+  Also run at 5f96420d (same result) before the Task 12 `lib/ui` comment change.
+  sweep-head: 743ffab0
+- **5.1.9 MV rehearsal**: 2026-11-24, on the DEV build of 743ffab0 (launched 08:16 and left running). MV-1 rehearsed
+  by the widget test `no Create rule action on a row; the rule pop-up still opens (F307 T-1)`
+  (`no_rule_review_heuristics_test.dart:193`, in the 3697-pass full run) and on the real window by WinWright
+  F320-NR-1 (row invoked, pop-up resolved with its Safe Senders and Create Block Rule rows; screen locked, pattern
+  steps only). MV-2 cannot be rehearsed before release (phones take no DEV build: USB debugging blocked by policy);
+  its emulator equivalent passed: F359 case 3 wrote `powerSave=false deviceIdle=false thermal=none`, and the F347
+  line is covered by `imap_connect_diagnostics_test.dart`. Guard tests with mutation verdicts: C6-1 log-off KILLED,
+  C7-1 order KILLED (emulator), F346 plugin-notImplemented KILLED (emulator), template key guard KILLED.
 
-- Windows DEV: Review No Rule Items has no "Create rule" action; the rule popup opens (Task 2).
-- Android (Fold, closed-test build after release or a DEV build): after the next background stop, the diagnostic log
-  has the device-state line (Task 5); after an IMAP timeout, the phase line (Task 6).
-- iPhone: Simulator CI evidence only until Apple approves enrollment.
+### MV steps
+
+- **MV-1 (Windows DEV, Task 2 F307)**: Review No Rule Items (the screen the DEV app opens on). Look at any email
+  row: it has no "Create rule" button at its right edge. Tap the row: the rule pop-up opens with "Add to Safe
+  Senders" (Exact Email, Exact Domain, Entire Domain) and "Create Block Rule" (Block Email, Block Exact Domain, Block
+  Entire Domain, Block Subject). Close it with Escape; create no rule.
+  Rehearsed: 2026-11-24, widget test plus WinWright F320-NR-1 on this build, PASS.
+  Precondition: at least one unaddressed No Rule item in the DEV DB: checked by F320-NR-1 step 3 (passes only with a
+  listed item) in the 743ffab0 sweep on this build.
+- **MV-2 (Android Fold, Tasks 5 and 6, AFTER the 0.26.0 closed-test release)**: per the approved plan, on the
+  closed-test build. With Settings > Write a diagnostic log on, after Android stops a background scan the log has a
+  stop line ending `powerSave=... deviceIdle=... thermal=...`; after an IMAP connect failure, a line with `phase=`.
+  Not rehearsable before release. Precondition: the diagnostic log setting is on (Harold's phone; not readable by
+  Claude); background scanning notification access is on (standing fact).
+- **MV-3 (iPhone)**: Simulator CI evidence only until Apple approves enrollment. Nothing to do.
 
 ## Standing facts (Harold)
 
@@ -666,7 +690,8 @@ Windows and Android builds are never run at the same time.
 
 ## Open questions (register)
 
-None open. Answered 2026-11-24 (Harold, verbatim "q7. 1 q8. 1 q9. 2 and track q10. 2"):
+Open, asked at the MV handover: q11 (Play trader status), q12 (F364 cards F365-F368), q13 (retire two Android
+helper scripts). Answered 2026-11-24 (Harold, verbatim "q7. 1 q8. 1 q9. 2 and track q10. 2"):
 - q7 = 1: keep F363 and F364 (Tasks 10, 11).
 - q8 = 1: Task 9 moves the hook registrations to `py -3.14` and runs the hook suite.
 - q9 = 2 "and track": Task 1 adds NO close-out gate (AC-2 and T-1 are dropped). Instead the close-out checklist
