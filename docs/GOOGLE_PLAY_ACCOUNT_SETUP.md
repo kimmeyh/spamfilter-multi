@@ -629,7 +629,12 @@ Record ROLES and dates only. **No names, no email addresses** -- this file is in
 **On the official Play tester list**: **8 of 12** as of 2026-09-10 (Harold added 3 that day,
 up from 3). FOUR SHORT.
 
-**Confirmed opt-ins**: UNKNOWN -- not yet reconciled against the console.
+**Confirmed opt-ins**: **5 of 12** as of 2026-11-23 (Harold's Play Console screenshot, app Dashboard,
+"Apply for access to production": "Have at least 12 testers opted-in to your closed test -- 5 testers
+currently opted-in"; "Run your closed test with at least 12 testers, for at least 14 days" not checked;
+"Publish a closed testing release" checked; "Apply for production" disabled). SEVEN SHORT. The Dashboard
+shows no day count and no per-tester opt-in date, so the 14-day clock cannot be read there; it cannot
+start to count toward production until 12 testers are opted in at the same time.
 
 **These are two different numbers and only the second one gates production access.** Being on
 the tester list makes someone ELIGIBLE; the 14-day clock starts for that person when they
