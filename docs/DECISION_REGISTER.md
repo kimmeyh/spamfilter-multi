@@ -20,7 +20,7 @@ here and not in `SPRINT_N_PLAN.md`. Source: Harold, 2026-11-22 and 2026-11-23 (d
 
 ### Open
 
-None.
+- q6. Sprint 86: which more items join F364, F363, F362 and F307 (asked 2026-11-23)
 
 ### Closed
 
@@ -102,6 +102,25 @@ None.
 - **What it decides**: whether the script-generated slate is kept in git as the pass 2 record.
 - **Options**: 1. Commit it (Recommendation). Pro: a fixed record of what was chosen from. Con: a second copy that
   ages. 2. Do not commit; regenerate when needed. Pro: no duplicate. Con: no record.
+
+### q6. Sprint 86: which more items join F364, F363, F362 and F307
+
+- **Asked**: 2026-11-23 (Sprint 85 cycle, Phase 8.4 pass 2), after the all-items slate
+  (`docs/sprints/SPRINT_86_BACKLOG_SLATE.md`, 50 active and 29 HOLD) was shown in 8 parts.
+- **Status**: OPEN.
+- **What it decides**: the rest of Sprint 86 scope. Already in: F364 (~60-120m), F363 (~180-270m), F362 (~45-60m),
+  F307 (~45-75m) = ~330-525m.
+- **Options**:
+  1. Add F361 (~30-45m), F346 (~30m), F347 (~45m), F359 (~120-180m) and F340 (~20-40m) (Recommendation). Total
+     about 575-865m. Pro: F361 pairs with F362 (both change how retrospective items are written); F346 and F347 add
+     the logging that names the cause of the phone errors still seen (AOL errors on 11-22); F359 puts the
+     phone-only defect paths under an automatic test; F340 is a small cleanup. Con: F363 is a large tooling item and
+     comes first, so the app work starts later in the sprint.
+  2. No additions: only F364, F363, F362, F307 (~330-525m). Pro: a short sprint, F363 and the Play deadline get full
+     attention. Con: no app quality work this sprint.
+  3. Option 1 plus items Harold names by id. Pro: Harold's own picks. Con: a larger sprint.
+- **Left out of the recommendation**: F336 (~150-260m, another large tooling item beside F363); the iOS items
+  F67a-F67d and F304 wait on Apple.
 
 ### q4. Which EU status was declared in Play Console
 
