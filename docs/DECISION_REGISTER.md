@@ -20,10 +20,11 @@ here and not in `SPRINT_N_PLAN.md`. Source: Harold, 2026-11-22 and 2026-11-23 (d
 
 ### Open
 
-- q14. Default account set during a session: apply it at once (Sprint 86 fix), backlog it, or keep "next start"? (asked at Sprint 86 Manual Validation)
+(none)
 
 ### Closed
 
+- q14. Default account set during a session -- answered 1, fix in Sprint 86 as Task 14 (Harold, 2026-11-24)
 - q11. Play trader status -- answered 1, keep NON-TRADER (Harold, 2026-11-24)
 - q12. F364 proposed cards -- answered 1, all four (F365-F368) to the backlog (Harold, 2026-11-24)
 - q13. Retire two Android helper scripts -- answered 1, retire both through backlog card F369 (Harold, 2026-11-24)
@@ -253,7 +254,9 @@ here and not in `SPRINT_N_PLAN.md`. Source: Harold, 2026-11-22 and 2026-11-23 (d
 
 - **Asked**: Sprint 86 Manual Validation, 2026-11-24, after Harold's Store 0.25.0 report (verbatim: "noting repeat of
   bug reported in Dev before rollout - even after default account selected, when going to Settings it pops up screen
-  to select account - but it should know which is the default"). **Status**: OPEN.
+  to select account - but it should know which is the default"). **Status**: CLOSED.
+- **Answer (Harold, 2026-11-24, verbatim: "q14. 1")**: option 1, fix in Sprint 86 as Task 14 (ships in 0.26.0);
+  ADR-0052 decision 3 amended.
 - **What it decides**: whether a default account set on Select Account is used at once, and when that ships. This
   changes ADR-0052 decision 3 ("At startup, the default seeds `SelectedAccountProvider` once"), so it is an
   architecture and sprint-scope decision.

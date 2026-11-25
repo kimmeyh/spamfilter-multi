@@ -28,9 +28,10 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ### 2026-11-24 (Sprint 86)
 
+- **fix**: A default account set on Select Account is used at once: Settings and the other account screens open on it without asking which account, with no restart needed (Sprint 86 Manual Validation, register q14)
 - **chore**: Removed the "Create rule" page; rules are made from the rule pop-up on Review No Rule Items (Issue #568)
 - **feat**: When Android stops a background scan before it finishes, the diagnostic log (when turned on) records whether the phone was in power-save mode, in idle (Doze) mode, and its thermal status (Issue #582)
-- **feat**: When an email server connection fails with a network error or times out, the diagnostic log (when turned on) names the network type and the step that did not finish where the app can tell: Custom IMAP accounts report connect, TLS, STARTTLS or greeting separately; for AOL, Gmail, Yahoo and iCloud the connect and TLS steps are reported together; DNS is named only when a recheck of the server name fails (Issue #583)
+- **feat**: When an email server connection fails with a network error or times out, the diagnostic log (when turned on) names the network type and the step that did not finish where the app can tell: Custom IMAP accounts using STARTTLS report connect, STARTTLS, TLS or greeting separately; Custom IMAP accounts using SSL/TLS, and AOL, Gmail, Yahoo and iCloud, report the connect and TLS steps together; DNS is named only when a recheck of the server name fails (Issue #583)
 - **chore**: Seven Android helper scripts (run-emulator, start-emulator, setup-android-oauth, export-tokens-for-android, capture-diagnostic-logs, enable-screen-reader-flag, fix-flutter-git) ported from PowerShell to Python with a shared `android_support.py`; adb and the emulator resolve through ANDROID_HOME and only ever target an emulator; the ports fix unchecked exit codes, printed secret characters and a broken log-capture Stop (Issue #580)
 
 ### 2026-11-21 (Sprint 85)

@@ -19,6 +19,10 @@
 //      (`BackgroundScanEnabler`, used by Settings > Background > Enable
 //      Background Scanning and by "Turn on" on the account list) with the real
 //      WorkManager and the real Android scheduler.
+//   4. (Sprint 86 Task 15, MV-2) the F347 IMAP connect-failure line: a refused
+//      Custom IMAP connect writes `phase=tcp+tls` (SSL/TLS) or `phase=tcp`
+//      (STARTTLS) and the network type that connectivity_plus reads on Android
+//      to the real diagnostic log.
 //
 // Cases 1 and 3 run on Android only (ADR-0042 declared exception: WorkManager has
 // no counterpart on Windows or iOS). Case 2 runs everywhere: on Windows the lock
@@ -51,7 +55,10 @@ import 'package:integration_test/integration_test.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:workmanager/workmanager.dart';
 
+import 'package:my_email_spam_filter/adapters/email_providers/custom_imap_settings.dart';
 import 'package:my_email_spam_filter/adapters/storage/app_paths.dart';
+import 'package:my_email_spam_filter/core/security/imap_certificate_trust.dart';
+import 'package:my_email_spam_filter/core/security/imap_connect_diagnostics.dart';
 import 'package:my_email_spam_filter/core/services/android_background_scan_worker.dart';
 import 'package:my_email_spam_filter/core/services/background_scan_enabler.dart';
 import 'package:my_email_spam_filter/core/services/background_scan_scheduler.dart';
@@ -282,6 +289,99 @@ void main() {
           reason: 'unknown means the device-state plugin did not reach the '
               'WorkManager background engine',
         );
+      });
+    });
+  });
+
+  // Sprint 86 Task 15 (MV-2, Harold 2026-11-24: "Can't be tried on the Android
+  // emulator?"): the F347 connect-failure line, written by the real code path
+  // to the real diagnostic log, with the network type read by connectivity_plus
+  // on Android. Would NOT catch: a timeout on a real mobile network (this
+  // connect is refused at once, phase tcp), or the provider path's inferred
+  // `tcp+tls` phase (covered by imap_connect_diagnostics_test.dart on the host).
+  group('F347 IMAP connect failure on the emulator', () {
+    final android = Platform.isAndroid;
+
+    testWidgets('a refused Custom IMAP connect writes its phase (tcp+tls for '
+        'SSL/TLS, tcp for STARTTLS) and a real network type', skip: !android,
+        timeout: const Timeout(Duration(minutes: 2)), (tester) async {
+      await tester.runAsync(() async {
+        final paths = AppPaths();
+        await paths.initialize();
+        DatabaseHelper().setAppPaths(paths);
+        final settings = SettingsStore();
+        final wasEnabled = await settings.getDiagnosticLogEnabled();
+        final wasExportDir = await settings.getCsvExportDirectory();
+        await settings.setDiagnosticLogEnabled(true);
+        // Same reason as the worker case: the app's own external folder.
+        final external = await getExternalStorageDirectory() ??
+            await getApplicationSupportDirectory();
+        final exportDir = await Directory('${external.path}/f347_export')
+            .create(recursive: true);
+        await settings.setCsvExportDirectory(exportDir.path);
+        DiagnosticLogger.invalidateCache();
+        addTearDown(() async {
+          await settings.setDiagnosticLogEnabled(wasEnabled);
+          await settings.setCsvExportDirectory(wasExportDir);
+          DiagnosticLogger.invalidateCache();
+        });
+        final logDir = Directory(await DiagnosticLogger.resolveLogDir());
+        final since = DateTime.now();
+
+        // Port 1 on the loopback: nothing listens, so the connect is refused
+        // at once with a SocketException (no network or DNS needed).
+        await expectLater(
+          ImapTlsConnector.connect(
+            host: '127.0.0.1',
+            port: 1,
+            encryption: ImapEncryption.sslTls,
+            timeout: const Duration(seconds: 10),
+          ),
+          throwsA(isA<SocketException>()),
+        );
+        await ImapConnectDiagnostics.settleForTest();
+
+        final lines = await _waitFor(
+          () => _logLinesSince(logDir, since, 'host=127.0.0.1:1'),
+          'the F347 connect line in ${logDir.path}',
+          limit: const Duration(seconds: 30),
+        );
+        final line = lines.first;
+        // ignore: avoid_print
+        print('F347 connect line: $line');
+        // SSL/TLS is one SecureSocket.connect, so the step is the combined
+        // tcp+tls (imap_certificate_trust.dart _sslConnect). Exact match: the
+        // first version of this case asserted contains('phase=tcp'), which
+        // `phase=tcp+tls` also satisfies.
+        expect(line, contains('phase=tcp+tls phase-inferred'));
+        expect(line, contains('error=SocketException'));
+        expect(
+          line,
+          matches(RegExp(
+              r'network=(wifi|mobile|ethernet|vpn|none|bluetooth|other)\b')),
+          reason: 'unknown means connectivity_plus gave no answer on Android',
+        );
+
+        // STARTTLS marks the steps one by one; a refused plain connect stops
+        // in `tcp` with nothing finished.
+        await expectLater(
+          ImapTlsConnector.connect(
+            host: '127.0.0.1',
+            port: 2,
+            encryption: ImapEncryption.startTls,
+            timeout: const Duration(seconds: 10),
+          ),
+          throwsA(isA<SocketException>()),
+        );
+        await ImapConnectDiagnostics.settleForTest();
+        final startTlsLines = await _waitFor(
+          () => _logLinesSince(logDir, since, 'host=127.0.0.1:2'),
+          'the F347 STARTTLS connect line in ${logDir.path}',
+          limit: const Duration(seconds: 30),
+        );
+        // ignore: avoid_print
+        print('F347 STARTTLS connect line: ${startTlsLines.first}');
+        expect(startTlsLines.first, contains('phase=tcp finished=[]'));
       });
     });
   });

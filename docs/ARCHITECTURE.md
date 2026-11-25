@@ -345,7 +345,9 @@ in the full-fetch path reaches the scanner's per-folder handler, which counts it
 **Sprint 86 F347 connect-failure line**: both connect paths go through `ImapConnectDiagnostics.traceConnect`
 (`lib/core/security/imap_connect_diagnostics.dart`): the provider path wraps `connectToServer`
 (`generic_imap_adapter.dart`, one 20 s enough_mail timer, so its step is the combined `tcp+tls`), and the Custom
-IMAP path (`ImapTlsConnector`) marks `tcp`, `tls`, `starttls` and `greeting` separately. On a network error or
+IMAP path (`ImapTlsConnector`) marks `tcp`, `starttls`, `tls` and `greeting` separately for STARTTLS; for SSL/TLS
+(the Custom IMAP default) it marks `tcp+tls` (one `SecureSocket.connect`, `imap_certificate_trust.dart:452-467`)
+and then `greeting` (corrected 2026-11-24 from the Task 15 emulator run, which logged `phase=tcp+tls`). On a network error or
 timeout it writes one diagnostic-log line with the in-flight step, the network type (`connectivity_plus`) and a DNS
 recheck of the host; `phase=dns` only when that recheck fails, `dns-recheck=timeout` when it could not finish. The
 report runs in the background AFTER the original exception is rethrown unchanged, so the caller's error and its
@@ -541,7 +543,11 @@ optional default account, stored once as `default_account_id` in `SettingsStore`
 Account (each row has a star control and the default row is marked; Settings > Account shows a read-only "Default
 account" label). At startup `main()` calls `SelectedAccountProvider.createSeeded`, which copies the default into the
 provider once, before the first screen is built, only when that account still exists (a stale id is cleared). The
-start screen does not change; picking another account changes only the session; `DataDeletionService.deleteAccountData`
+start screen does not change; picking another account changes only the session. Since Sprint 86 Task 14 (ADR-0052
+decision 3 amended, register q14 = 1) the default also applies during the session: setting it on Select Account
+makes it the session selection, and both resolvers (`_resolveAccountForScopedDestination` on Select Account,
+`_resolveAccountForScopedTab` in Settings) use the stored default when the session has no selection, before the
+single-account rule and the picker. `DataDeletionService.deleteAccountData`
 clears the default in the same transaction that deletes the account; there is no automatic default for a single
 account; background scans do not read it. All platforms use the same shared code (ADR-0042; no platform exception).
 

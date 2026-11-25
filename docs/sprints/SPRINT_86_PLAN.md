@@ -639,6 +639,51 @@ holds the context.
 **Executed-by**: Opus 5.5 main session -- 2 min (task clock 2026-11-24 16:25 to 2026-11-24 16:26, 1 segment(s))
 **Est-Effort**: 10-15m
 
+### Task 14 -- Default account set during a session is used at once (Manual Validation finding; register q14 = 1)
+
+Harold, 2026-11-24, Store 0.25.0: "even after default account selected, when going to Settings it pops up screen to
+select account - but it should know which is the default". Cause: `_toggleDefault` saved only the stored default
+("seeds from the default at the next start"), and neither resolver reads the stored default.
+- R-1: setting the default on Select Account also makes it the session selection. Removing the default leaves the
+  session selection unchanged.
+- R-2: both resolvers (`account_selection_screen.dart` `_resolveAccountForScopedDestination`,
+  `settings_screen.dart` `_resolveAccountForScopedTab`) use the stored default when the session has no selection and
+  the account still exists, before the single-account rule and the picker.
+- Callers (IMP-1 grep of `SelectedAccountProvider` in `lib/`): Settings `:345`, Review No Rule Items `:242`, Scan
+  History `:99`, Help `:137` read the session selection; R-1 gives each the default at once, with no change to their
+  code. The delete path `:911` (`clearIfSelected`) is unchanged.
+- ADR-0052 decision 3 amended; ARCHITECTURE and CHANGELOG updated. Windows, Android and iPhone: shared Dart code,
+  no platform exception (ADR-0042).
+- AC-1 (behavioral): with 2+ accounts and no session selection, starring an account then opening Settings shows no
+  picker and opens on that account. AC-2: with no session selection and a stored default, both resolvers return the
+  default with no picker. Each guard test is mutation-checked.
+- **Result (2026-11-24)**: `f352_default_account_screen_test.dart` 14/14 (5 new; the test that asserted "does not
+  change the session selection" now asserts the reverse, per q14). Mutants KILLED 3/3: star does not select, Select
+  Account resolver ignores the default, Settings tab resolver ignores the default. `flutter analyze` clean. ADR-0052
+  decision 3 amended; ARCHITECTURE, CHANGELOG and both 0.26.0 release notes updated (`release_notes_test` 5/5).
+**Model**: Opus main session -- *why not Haiku*: an ADR-amending change found in Manual Validation, in the session
+that holds the context.
+**Executed-by**: Opus 5.5 main session -- 23 min (task clock 2026-11-24 23:14 to 2026-11-24 23:37, 1 segment(s))
+**Est-Effort**: 30-60m
+
+### Task 15 -- MV-2 F347 `phase=` line proved on the Android emulator (Manual Validation; Harold 2026-11-24)
+
+Harold, MV-2 feedback: "Can't be tried on the Android emulator? otherwise table to next sprint". The F346 stop line
+was already proved on the emulator (F359 case 1). The F347 line had only a host unit test. Add an emulator case to
+`integration_test/android_phone_paths_test.dart`: the diagnostic log on, a Custom IMAP connect
+(`ImapTlsConnector.connect`) to `127.0.0.1:1` (nothing listens, refused at once), then the real log file must hold
+`phase=tcp` and a real `network=` value from `connectivity_plus` on Android (not `unknown`).
+- AC-1: the case passes on emulator-5554 and prints the line. AC-2: the guard is mutation-checked (the report not
+  launched -> the case fails).
+- **Result (2026-11-24)**: PASS on emulator-5554. SSL/TLS: `phase=tcp+tls phase-inferred ... network=wifi
+  error=SocketException`; STARTTLS: `phase=tcp finished=[] ... network=wifi error=SocketException`. Mutant (no report
+  launched) KILLED on the emulator. The first run showed the CHANGELOG and ARCHITECTURE F347 text overstated the
+  split: Custom IMAP SSL/TLS (the default) reports `tcp+tls` together; only STARTTLS splits. Both texts corrected;
+  the first assertion `contains('phase=tcp')` also matched `tcp+tls` and was made exact.
+**Model**: Opus main session -- *why not Haiku*: emulator harness work in the session that holds the context.
+**Executed-by**: Opus 5.5 main session -- 18 min (task clock 2026-11-24 23:20 to 2026-11-24 23:37, 1 segment(s))
+**Est-Effort**: 20-40m
+
 ## Execution order
 
 1. Task 10 F363 (if kept), so every later task is clocked.
@@ -694,6 +739,14 @@ Windows and Android builds are never run at the same time.
   Not rehearsable before release. Precondition: the diagnostic log setting is on (Harold's phone; not readable by
   Claude); background scanning notification access is on (standing fact).
 - **MV-3 (iPhone)**: Simulator CI evidence only until Apple approves enrollment. Nothing to do.
+
+### MV results (Harold, 2026-11-24)
+
+- MV-1: PASS (a "OK", b "ok", c "OK").
+- MV-2: Harold, verbatim: "Can't be tried on the Android emulator? otherwise table to next sprint". The stop line
+  was proved on the emulator in Task 7 (F359 case 1); Task 15 adds the F347 `phase=` line on the emulator.
+- Store 0.25.0 report (not an MV step): the default account was not used in the session it was set; register q14 = 1,
+  fixed in Task 14 (new MV-4).
 
 ## Standing facts (Harold)
 
