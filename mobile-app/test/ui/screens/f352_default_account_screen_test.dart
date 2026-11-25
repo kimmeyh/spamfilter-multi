@@ -162,6 +162,23 @@ void main() {
       await drain(tester);
     });
 
+    testWidgets('an unreadable default tells the user, and the list still '
+        'loads (Sprint 86 7.7.1 L9)', (tester) async {
+      // Does NOT catch: a default that reads back as a wrong but valid id.
+      await seedAccounts(tester);
+      await tester.runAsync(() async {
+        final db = await DatabaseHelper().database;
+        await db.execute('DROP TABLE app_settings');
+      });
+      await mountSelect(tester, SelectedAccountProvider());
+
+      expect(find.textContaining('default account could not be read'),
+          findsOneWidget);
+      expect(toggleA, findsOneWidget, reason: 'the list still loads');
+      expect(markA, findsNothing);
+      await drain(tester);
+    });
+
     testWidgets('the control sets the default, marks that row, stores it, and '
         'selects it for this session (Sprint 86 Task 14)', (tester) async {
       await seedAccounts(tester);

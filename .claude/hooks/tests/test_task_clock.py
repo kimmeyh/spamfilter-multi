@@ -477,8 +477,16 @@ class CloseoutTests(RepoCase):
         plan.write_text(text[:start] + "**Executed-by**: " + executed_by_for_task_1 + text[end:], encoding="utf-8")
 
     def test_register_decision_excuses_gap(self):
+        (self.root / "docs").mkdir(exist_ok=True)
+        (self.root / "docs" / "DECISION_REGISTER.md").write_text(
+            "# Decision register\n\n### d9. Task 1 minutes not recorded, accepted\n", encoding="utf-8")
         self.clocked_with("not recorded, accepted in register d9")
         self.assertEqual(self.violations(), [])
+
+    def test_register_decision_missing_from_the_register_does_not_excuse_gap(self):
+        # Sprint 86 7.7.1 L6: naming a decision is not enough; it must exist in docs/DECISION_REGISTER.md.
+        self.clocked_with("not recorded, accepted in register d9")
+        self.assertTrue(any("not in docs/DECISION_REGISTER.md" in v for v in self.violations()))
 
     def test_bare_d_number_does_not_excuse_gap(self):
         # C6-8: "d9" without "register" is not the explicit form.

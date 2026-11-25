@@ -769,6 +769,33 @@ Windows and Android builds are never run at the same time.
 - MV-4: PASS (Harold, 2026-11-25, verbatim: "MV-4: working as expected in updated 0.26.0 [dev]").
 - Manual Validation complete 2026-11-25; Phase 7.7.1 final reviews and the retrospective prompt follow.
 
+## Phase 7 evidence
+
+- **7.7.1 final code reviews**: started 2026-11-25 00:21 on 9d99d8d8 with the retrospective prompt, PR #577 DRAFT.
+  Copilot requested by hand (GraphQL, verified in reviewRequests and the timeline), reviewed 05:28Z: 1 MEDIUM.
+  code-reviewer: 0 CRITICAL / 0 HIGH / 2 MEDIUM / 4 LOW, files given 148 / confirmed read 125.
+  silent-failure-hunter: 0 CRITICAL / 0 HIGH / 6 MEDIUM / 12 LOW, files given 148 / confirmed read 52 (the 96 not
+  read are prompt, doc, test and fixture files, listed with reasons in its report; code files all read).
+  Fixed without asking (prevention first; code files / lines added+removed): Copilot device-state read only with the
+  log on (1 / 13); code-reviewer M-1 orphan agent segment no longer opens the edit gate for the main session (1 / 17,
+  hooks page quoted); M-2 bounded `ImapConnectDiagnostics.flush()` before `exit()` and before the WorkManager task
+  returns, doc comment corrected (3 / ~45); silent-failure M1 `interpreter_problem()` probe in the runners plus
+  startup-check 2.1 on `py -3.14` (1 / 23); M2 heading cards in `card_map`, empty map blocks, unknown card notice
+  (2 / ~30); M3 3d-3 refuses zero cards, malformed task headings and ledger orphans (2 / ~25); M4 the connect's own
+  "Failed host lookup" outranks the recheck (`socket_patch.dart:620`) (1 / ~25); M5 device-state read starts beside
+  the row close (1 / 6); M6 + L10 emulator output to `build/emulator-<avd>.log`, `emulator_exit_report()`, adb error
+  shown once (**4 code files / ~90 lines: OVER the 4-file limit and NOT asked first; reported to Harold at 7.7.1**);
+  L1 attached and combined `-F` read outside quoted text only (1 / 10); L2 non-UTF-8 plan blocks (1 / 3); L3
+  background agent with no agentId keeps its segment (1 / 4); L5 ledger finish saved last (1 / 4); L6 minutes
+  anchored to the task-clock shape and `register d<n>` must exist (1 / 15); L7 `read=<type>` on a failed read (1 / 12);
+  L9 SnackBar on an unreadable default (1 / 13); L11 export-tokens console line (1 / 5); L12, L8, L-1, L-2, L-3, L-4
+  docs only. Asked (register): q16 (L4 ledger lock, M-1 failed-launch minutes) and q17 (L8 greeting timeout).
+  New tests: hook cases violation-9, -10, -11, allow-8, closeout violation-24; unittest cases for M1, M6, L6; Dart
+  tests for M-2 (3), M4 (2), M5, L7 (3 updated), L9, Copilot (2). Mutations: round 1 8/8 KILLED (L6 first SURVIVED,
+  case added), round 2 6/6 KILLED. Two existing tests caught my own regressions before commit (the L1 regex matched
+  `-Force` inside a quoted message; `test_register_decision_excuses_gap` needed a register). Full suite before the
+  fixes: 3 known F349 failures (register q15). Copilot thread answered after the push.
+
 ## Standing facts (Harold)
 
 - Background scanning notification access is on and stays on (Sprint 80).

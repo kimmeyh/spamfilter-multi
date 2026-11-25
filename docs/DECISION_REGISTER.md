@@ -21,6 +21,8 @@ here and not in `SPRINT_N_PLAN.md`. Source: Harold, 2026-11-22 and 2026-11-23 (d
 ### Open
 
 - q15. F349 Task Scheduler test timeouts: fix in Sprint 86 or keep in the backlog
+- q16. Task clock: ledger lock and failed-agent minutes (7.7.1 L4 and M-1 rest): backlog card or now
+- q17. Provider IMAP greeting with no timeout (7.7.1 L8): backlog card, now, or leave
 
 ### Closed
 
@@ -249,6 +251,50 @@ here and not in `SPRINT_N_PLAN.md`. Source: Harold, 2026-11-22 and 2026-11-23 (d
   2. Retire `export-tokens-for-android.py` only; keep the fixed `setup-android-oauth.py`. Pro: keeps a working
      secrets-file writer. Con: a Windows-secret writer named "android" stays misleading.
   3. Keep both as they are now. Pro: no work. Con: one script that cannot work stays in the repo.
+
+### q16. Task clock: ledger lock and failed-agent minutes (7.7.1 L4 and M-1 rest): backlog card or now
+
+- **Asked**: Sprint 86 Phase 7.7.1, 2026-11-25. **Status**: OPEN.
+- **What it decides**: whether two remaining task-clock gaps from the 7.7.1 reviews are fixed in Sprint 86 or in a
+  backlog card. A backlog recommendation is a scope decision, so it is asked.
+- **Evidence**:
+  - L4 (silent-failure-hunter): `task_clock.py` saves the ledger with read-modify-write and no lock (`lib/task_clock.py`
+    save). Two hook processes writing at once could lose a segment. UNVERIFIED that Claude Code runs hooks
+    concurrently. The real Sprint 86 ledger shows four agent launches within 11 s (Tasks 11, 2, 5, 6 at 01:46) and
+    four Task 12 agents within 39 s; all segments survived.
+  - M-1 rest (code-reviewer): the main fix is DONE (a denied Agent launch no longer opens the edit gate for the main
+    session). Still open: that launch's segment stays open until `finish`, so its minutes count. The hooks page
+    (https://code.claude.com/docs/en/hooks): "Permission denials fire PreToolUse but not this event"; a FAILED launch
+    fires `PostToolUseFailure`, which `.claude/settings.json` does not register. Registering it changes settings.json.
+- **Options**:
+  1. Backlog card F370 "Task clock robustness" (Recommendation): a 20-process stress test first, then a lock file
+     only if a segment is lost; register `PostToolUseFailure` for Agent and close the pending segment. About 60-90 min.
+     Pro: the race is unverified and the ledger shows no loss; Sprint 86 stays in Phase 7. Con: a lost segment or a
+     few inflated minutes stay possible until then.
+  2. Fix both in Sprint 86 now (2 code files plus settings.json and tests). Pro: closed now. Con: more Phase 7 work
+     for an unverified race, and a settings.json change late in the sprint.
+  3. Leave as is (no card). Pro: no work. Con: the gaps are only in this register.
+- **Recommendation**: 1.
+
+### q17. Provider IMAP greeting with no timeout (7.7.1 L8): backlog card, now, or leave
+
+- **Asked**: Sprint 86 Phase 7.7.1, 2026-11-25. **Status**: OPEN.
+- **What it decides**: whether the AOL, Gmail (IMAP), Yahoo and iCloud connect gets a time limit on the server
+  greeting. This changes how those connections behave, so it is a development decision.
+- **Evidence (enough_mail 2.1.7, pub cache, read 2026-11-25)**: `connectToServer` returns `_greetingsCompleter.future`
+  with no timeout (`client_base.dart:117-121`), and `onConnectionError` (`imap_client.dart:331-336`) never completes
+  it. So a server that accepts the connection and never greets, or closes during the greeting, leaves the connect
+  waiting with no exception and no F347 line. This predates Sprint 86. The adapter comment now states it
+  (`generic_imap_adapter.dart`, Sprint 86 7.7.1 L8). What the user sees today: a scan that waits on that account
+  until the scan's own limits end it. No such stall is known in the Fold logs.
+- **Options**:
+  1. Backlog card F371 (Recommendation): add `.timeout(20 s)` on the greeting wait in the adapter, map it like the
+     connect timeout, and an F347 phase `greeting`. About 45-60 min with a test server that never greets. Pro:
+     planned and tested like any connect change. Con: the gap stays until it runs.
+  2. Fix in Sprint 86 now. Pro: closed in 0.26.0. Con: a behavior change to every provider connect after Manual
+     Validation, so Phase 5 would run again.
+  3. Leave it (the comment documents it). Pro: no work. Con: a stall stays silent.
+- **Recommendation**: 1.
 
 ### q15. F349 Task Scheduler test timeouts: fix in Sprint 86 or keep in the backlog
 

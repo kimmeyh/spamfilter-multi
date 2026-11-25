@@ -31,6 +31,7 @@ import 'core/services/diagnostic_logger.dart';
 import 'adapters/storage/app_paths.dart';
 import 'adapters/storage/secure_credentials_store.dart';
 import 'core/security/certificate_pinner.dart';
+import 'core/security/imap_connect_diagnostics.dart';
 import 'core/services/scan_coordinator.dart'; // F175 (Sprint 62)
 import 'core/storage/scan_result_store.dart'; // F175 (Sprint 62)
 import 'util/redact.dart';
@@ -246,11 +247,15 @@ void main(List<String> args) async {
       );
       await bgLog('Background scan completed: ${success ? "SUCCESS" : "FAILURE"}');
 
+      // Sprint 86 7.7.1 M-2: let an F347 connect-failure line in flight reach
+      // the log before exit() ends the process (bounded at 3 s, never throws).
+      await ImapConnectDiagnostics.flush();
       // Exit after background scan completes
       exit(success ? 0 : 1);
     } catch (e, stackTrace) {
       await bgLog('Background scan EXCEPTION: $e');
       await bgLog('Stack trace: $stackTrace');
+      await ImapConnectDiagnostics.flush();
       exit(1);
     }
   }

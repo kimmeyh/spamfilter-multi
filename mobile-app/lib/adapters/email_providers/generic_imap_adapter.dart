@@ -443,7 +443,12 @@ class GenericIMAPAdapter with BatchOperationsMixin
       // the phase and network type and rethrown unchanged. The library hides
       // the TCP/TLS split, so the phase is the inferred `tcp+tls`. The 20 s
       // limit is the library default (enough_mail 2.1.7 client_base.dart:103),
-      // not changed here.
+      // not changed here. NOT caught (Sprint 86 7.7.1 L8, library behavior
+      // that predates F347): `connectToServer` then waits for the greeting
+      // with NO timeout (client_base.dart:117-121), and a connection that
+      // closes during it does not complete that wait (imap_client.dart:331-336),
+      // so a greeting stall gives no exception and no F347 line; `tcp+tls`
+      // also covers the greeting on this path.
       await ImapConnectDiagnostics.traceConnect<Object?>(
         host: _imapHost,
         port: _imapPort,

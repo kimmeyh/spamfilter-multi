@@ -81,8 +81,8 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "Phase 4: execute Tasks 10, 11, 2, 5, 6, 7, 1, 4, 8, 3, 9 per the plan's execution order.",
-        "Register docs/DECISION_REGISTER.md: no open items as of 2026-11-24."
+        "Phase 7: fix the 7.7.1 findings (Copilot, code-reviewer, silent-failure-hunter); Harold's 14-category retrospective feedback; then the 7 retrospective steps, the improvement review and CI run 1, gh pr ready, 7.7.5.",
+        "Register docs/DECISION_REGISTER.md: q15 OPEN (F349 Task Scheduler test timeouts) as of 2026-11-25."
     ],
     "next_sprint_targeted": {
         "number": 87,

@@ -85,15 +85,23 @@ def ensure_emulator(adb: str, emulator: str | None, avd: str) -> str | None:
         return None
     sup.say(f"[emulator] Launching AVD '{avd}' ...")
     try:
-        sup.launch_emulator(emulator, avd)
+        proc = sup.launch_emulator(emulator, avd)
     except OSError as exc:
         sup.say(f"[ERROR] could not start the emulator: {exc}")
         return None
+    adb_error_shown = False
     for tick in range(APPEAR_SECONDS // 2):
         sup.sleep(2)
-        serials, _ = sup.online_emulators(adb)
+        serials, error = sup.online_emulators(adb)
         if serials:
             return serials[0]
+        exited = sup.emulator_exit_report(proc)
+        if exited:  # Sprint 86 7.7.1 M6: stop at once with the cause, not after the full wait
+            sup.say(f"[ERROR] {exited}")
+            return None
+        if error and not adb_error_shown:  # 7.7.1 L10: a failing adb is not "no emulator yet"
+            sup.say(f"[WARNING] adb devices failed: {error}")
+            adb_error_shown = True
         if tick % 5 == 0:
             sup.say(f"  Still waiting for the emulator... ({tick * 2}s)")
     sup.say(f"[ERROR] The emulator did not appear in adb within {APPEAR_SECONDS} s.")

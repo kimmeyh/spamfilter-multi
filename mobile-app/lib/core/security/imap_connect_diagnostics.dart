@@ -141,9 +141,12 @@ class ImapConnectDiagnostics {
   /// Run [body], which performs the connect and marks steps on its trace.
   ///
   /// Any failure is rethrown UNCHANGED (same object, same stack). A
-  /// `TimeoutException` or `SocketException` also writes the diagnostic line
-  /// first. When [providerPath] is true the body never marks a step, and a
-  /// failure is reported as the inferred phase `tcp+tls`.
+  /// `TimeoutException` or `SocketException` also STARTS a background report
+  /// of the diagnostic line; the rethrow does not wait for it (Sprint 86
+  /// 7.7.1 M-2: this comment used to say the line is written "first"). A
+  /// process that exits soon after calls [flush] so the line is not lost.
+  /// When [providerPath] is true the body never marks a step, and a failure
+  /// is reported as the inferred phase `tcp+tls`.
   static Future<T> traceConnect<T>({
     required String host,
     required int port,
@@ -157,11 +160,21 @@ class ImapConnectDiagnostics {
     } on TimeoutException {
       await reportFailure(trace, 'TimeoutException');
       rethrow;
-    } on SocketException {
-      await reportFailure(trace, 'SocketException');
+    } on SocketException catch (e) {
+      await reportFailure(trace, 'SocketException',
+          lookupFailed: isLookupFailure(e));
       rethrow;
     }
   }
+
+  /// True when [e] is the connect's own name lookup failing. `dart:io`
+  /// throws `SocketException("Failed host lookup: '<host>'")` for it
+  /// (`sdk/lib/_internal/vm/bin/socket_patch.dart:620` and `:1205`, Flutter
+  /// 3.47.4). Sprint 86 7.7.1 M4: without this, a lookup that failed DURING
+  /// the connect and passed in the later recheck (Wi-Fi to mobile data) was
+  /// labeled `tcp+tls`.
+  static bool isLookupFailure(SocketException e) =>
+      e.message.startsWith('Failed host lookup');
 
   static Future<_DnsResult> _recheckDns(String host) async {
     final sw = Stopwatch()..start();
@@ -185,6 +198,25 @@ class ImapConnectDiagnostics {
     }
   }
 
+  /// Wait up to [max] for launched reports, then return. Never throws.
+  ///
+  /// Called by the paths that end the process or the isolate right after a
+  /// scan (Windows Task Scheduler run before `exit()`, the Android
+  /// WorkManager task before it returns), so a connect failure on the LAST
+  /// account still reaches the log (Sprint 86 7.7.1 M-2). Returns at once
+  /// when nothing is pending. A report still running after [max] is lost;
+  /// the bound keeps a stalled DNS recheck from holding the exit.
+  static Future<void> flush(
+      {Duration max = const Duration(seconds: 3)}) async {
+    if (_pending.isEmpty) return;
+    try {
+      await settleForTest().timeout(max);
+    } catch (e) {
+      _logger.w('IMAP connect diagnostic flush did not finish: '
+          '${e.runtimeType}');
+    }
+  }
+
   /// Test seam: whether the diagnostic log is on. Default asks
   /// [DiagnosticLogger.isEnabled] (the check [DiagnosticLogger.log] uses).
   static Future<bool> Function() logEnabled = DiagnosticLogger.isEnabled;
@@ -199,13 +231,17 @@ class ImapConnectDiagnostics {
   /// background; when the diagnostic log is off it does nothing at all (no
   /// lookup, no connectivity read). The trace is read when the report starts,
   /// which is before the caller's next await.
+  ///
+  /// [lookupFailed]: the failure itself says the name lookup failed (see
+  /// [isLookupFailure]); the phase is then `dns` whatever the recheck finds.
   static Future<void> reportFailure(
-      ImapConnectTrace trace, String exceptionType) {
+      ImapConnectTrace trace, String exceptionType,
+      {bool lookupFailed = false}) {
     final inFlight = trace._current; // did not finish
     final finishedSnapshot = List<MapEntry<String, int>>.of(trace._finished);
     final totalMs = trace._total.elapsedMilliseconds;
-    final report =
-        _report(trace, inFlight, finishedSnapshot, totalMs, exceptionType);
+    final report = _report(trace, inFlight, finishedSnapshot, totalMs,
+        exceptionType, lookupFailed);
     _pending.add(report);
     report.whenComplete(() => _pending.remove(report));
     return Future<void>.value();
@@ -219,6 +255,7 @@ class ImapConnectDiagnostics {
     List<MapEntry<String, int>> finishedSteps,
     int totalMs,
     String exceptionType,
+    bool lookupFailed,
   ) async {
     try {
       if (!await logEnabled()) return;
@@ -229,8 +266,9 @@ class ImapConnectDiagnostics {
       final dnsFailed = dns != null && dns.failure != null;
       // A recheck that timed out is "could not check", not a cause: the
       // phase stays the in-flight one. Only a lookup that FAILED is `dns`.
+      // The connect's own lookup failure outranks the recheck (M4).
       final dnsTimedOut = dnsFailed && dns.failure == 'timeout';
-      final dnsBlamed = dnsFailed && !dnsTimedOut;
+      final dnsBlamed = lookupFailed || (dnsFailed && !dnsTimedOut);
 
       final String phase;
       if (dnsBlamed) {
@@ -247,7 +285,10 @@ class ImapConnectDiagnostics {
       }
 
       final dnsNote = dns == null
-          ? 'dns=passed'
+          ? (lookupFailed ? 'dns=failed-in-connect' : 'dns=passed')
+          : lookupFailed
+              ? 'dns=failed-in-connect dns-recheck='
+                  '${dns.failure ?? 'ok'}(${dns.elapsedMs}ms)'
           : !dnsFailed
               ? 'dns-recheck=ok(${dns.elapsedMs}ms)'
               : dnsTimedOut

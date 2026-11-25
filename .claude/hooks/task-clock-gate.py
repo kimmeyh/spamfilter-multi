@@ -31,7 +31,12 @@ has `status` "completed" (foreground) or "async_launched" (background) and `agen
 
 What this does NOT catch: work on task B while task A's clock is open (the gate asks only that SOME task is
 open); a background agent whose SubagentStop never fires (its segment stays open until `finish`); a task done
-only in conversation (close-out check 3d-3 catches it). Tests: .claude/hooks/test-cases/task-clock/ and
+only in conversation (close-out check 3d-3 catches it); a tracked file written by a SHELL command (PowerShell
+Set-Content, a Python script) rather than Edit/Write, which this hook does not see; an editor commit with no -m or
+-F (it cannot run in this non-interactive harness); a `Closes #N` for a card in neither the plan header nor a task
+heading (allowed with a notice naming the card); the MINUTES of an Agent launch that was denied or failed (its
+segment stays open until `finish` and is counted; it no longer opens the edit gate for the main session, M-1).
+Tests: .claude/hooks/test-cases/task-clock/ and
 .claude/hooks/tests/test_task_clock.py.
 """
 from __future__ import annotations
@@ -50,7 +55,11 @@ import task_clock as tc  # noqa: E402
 EDIT_TOOLS = {"edit", "write", "notebookedit", "multiedit"}
 SHELL_TOOLS = {"bash", "powershell"}
 GIT_COMMIT = re.compile(r"\bgit\b[^\n;&|]*\bcommit\b", re.I)
-MESSAGE_FILE = re.compile(r"\bgit\b[^\n;&|]*?\bcommit\b[^\n;&|]*?\s(?:-F\s+|--file(?:=|\s+))(\"([^\"]+)\"|'([^']+)'|(\S+))")
+# -F with a space, attached (-Fmsg.txt), or last in a combined short-flag group (-qF msg.txt); --file= / --file
+# (Sprint 86 7.7.1 L1: the attached and combined forms were not read, so their `Closes #` went unchecked).
+MESSAGE_FILE = re.compile(r"\bgit\b[^\n;&|]*?\bcommit\b[^\n;&|]*?\s(?:-[A-Za-z]*F\s*|--file(?:=|\s+))"
+                          r"(\"([^\"]+)\"|'([^']+)'|(\S+))")
+QUOTED_SPAN = re.compile(r"\"[^\"]*\"|'[^']*'")  # same spans common.strip_quoted empties
 ASSIGNMENT = re.compile(r"(?:^|[\s;&])(?:\$)?([A-Za-z_]\w*)\s*=\s*(\"([^\"]*)\"|'([^']*)'|([^\s;&|]+))")
 VARIABLE = re.compile(r"\$\{?([A-Za-z_]\w*)\}?")
 GIT_BASH_PATH = re.compile(r"^/([A-Za-z])/(.*)$")
@@ -102,6 +111,21 @@ def _ignored(root: Path, path: Path) -> bool:
     return code == 0
 
 
+def _clock_covers(payload: dict, open_segments: list) -> bool:
+    """True when an open segment covers this edit.
+
+    Sprint 86 7.7.1 M-1: an agent segment with no agent_id is opened at the Agent PreToolUse, before the launch. A
+    launch that is denied gets no PostToolUse ("Permission denials fire PreToolUse but not this event",
+    https://code.claude.com/docs/en/hooks), so that segment can stay open with nothing running. It covers only an
+    edit made INSIDE a subagent (the hook input then carries `agent_id`, same page), never a main-session edit, so
+    the main session cannot inherit a dead launch's clock."""
+    from_subagent = bool(payload.get("agent_id"))
+    for _key, segment in open_segments:
+        if from_subagent or not (segment.get("by") == "agent" and not segment.get("agent_id")):
+            return True
+    return False
+
+
 def edit_gate(payload: dict) -> hooklib.Verdict:
     raw = _edit_path(payload)
     if not raw:
@@ -125,7 +149,7 @@ def edit_gate(payload: dict) -> hooklib.Verdict:
         return hooklib.allow()
     if path in _exempt(root, sprint) or _ignored(root, path):
         return hooklib.allow()
-    if tc.open_segments(ledger):
+    if _clock_covers(payload, tc.open_segments(ledger)):
         return hooklib.allow()
     finished = sorted(k for k, v in ledger["tasks"].items() if v.get("finished"))
     return hooklib.block(
@@ -141,10 +165,15 @@ def edit_gate(payload: dict) -> hooklib.Verdict:
 
 def _message(cmd: str, cwd: str) -> str:
     """The commit message text: the command plus the -F file. Raises ValueError when the file cannot be read."""
-    match = MESSAGE_FILE.search(cmd)
+    # The flag is looked for OUTSIDE quoted text only: the attached form (-Fmsg.txt) would otherwise read
+    # "-Force" or "-First" inside a quoted -m message as a message file. Each quoted span is blanked to the
+    # same length (its quote marks kept), so the match positions still index the original command.
+    masked = QUOTED_SPAN.sub(lambda m: m.group(0)[0] + " " * (len(m.group(0)) - 2) + m.group(0)[-1], cmd)
+    match = MESSAGE_FILE.search(masked)
     if not match:
         return cmd
-    path = next(g for g in (match.group(2), match.group(3), match.group(4)) if g)
+    groups = [(match.start(i), match.end(i)) for i in (2, 3, 4)]
+    path = next(cmd[s:e] for s, e in groups if s >= 0 and e > s)
     if path == "-":
         # Same fail-closed rule as an unreadable file: the hook cannot see what git will read from stdin.
         raise ValueError("the message is read from stdin (-F -), which this hook cannot read; write the message "
@@ -183,12 +212,20 @@ def commit_gate(payload: dict) -> hooklib.Verdict:
         return _did_not_run("commit", str(exc))
     try:
         cards = tc.card_map(tc.plan_path(root, sprint).read_text(encoding="utf-8"))
-    except OSError as exc:
-        return _did_not_run("commit", f"SPRINT_{sprint}_PLAN.md could not be read ({exc.strerror})")
+    except (OSError, ValueError) as exc:  # ValueError: not UTF-8 (Sprint 86 7.7.1 L2; it escaped and allowed)
+        return _did_not_run("commit", f"SPRINT_{sprint}_PLAN.md could not be read "
+                                      f"({getattr(exc, 'strerror', None) or exc.__class__.__name__})")
+    closes = list(dict.fromkeys(CLOSES.findall(text)))
+    if closes and not cards:
+        # An approved plan always lists its cards; none found means the format changed (Sprint 86 7.7.1 M2).
+        return _did_not_run("commit", f"no 'Task N #card' pair or '(#card)' task heading was found in "
+                                      f"SPRINT_{sprint}_PLAN.md")
     problems = []
-    for card in dict.fromkeys(CLOSES.findall(text)):
+    for card in closes:
         task = cards.get(card)
         if task is None:
+            hooklib.notice(f"F363 task clock: 'Closes #{card}' names a card in neither the SPRINT_{sprint}_PLAN.md "
+                           "header nor a task heading, so its task clock was not checked")
             continue
         if not ledger["tasks"].get(task, {}).get("finished"):
             problems.append(f"'Closes #{card}' closes Task {task}, which has no finish in the ledger. Run "
@@ -241,6 +278,10 @@ def agent_event(payload: dict) -> hooklib.Verdict:
                 if pending:
                     pending[-1]["agent_id"] = agent_id
                 ledger["agents"][agent_id] = task
+            elif status == "async_launched":
+                # Sprint 86 7.7.1 L3: closing the segment here would record 0 minutes for a background agent.
+                hooklib.notice(f"F363 task clock: a background agent on Task {task} has no agentId; its segment "
+                               "stays open until 'finish'")
             elif pending:
                 pending[-1]["end"] = tc.now_text()
             tc.save(root, sprint, ledger)

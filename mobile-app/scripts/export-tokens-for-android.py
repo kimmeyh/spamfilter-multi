@@ -120,7 +120,10 @@ def main(argv: list[str] | None = None) -> int:
                 sup.say("[INFO] No matching credential target was found.")
 
     sup.say("")
-    sup.say("[NOTE] Windows Credential Manager stores tokens encrypted and a script cannot read them back. Two options:")
+    # Sprint 86 7.7.1 L11: matches the KNOWN LIMIT in the header (the app's tokens are in a DPAPI file, not Credential
+    # Manager), so the console does not name the wrong mechanism.
+    sup.say("[NOTE] The app keeps its tokens in a DPAPI-encrypted file (flutter_secure_storage), not in Credential Manager,")
+    sup.say("       and a script cannot read them back. Two options:")
     sup.say("")
     sup.say("Option 1: OAuth Playground (recommended)")
     sup.say("  1. Visit https://developers.google.com/oauthplayground/")

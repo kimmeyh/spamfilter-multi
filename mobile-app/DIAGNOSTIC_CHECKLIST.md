@@ -8,9 +8,10 @@
 ## Pre-Test Checklist
 
 ### Setup (5 minutes)
-- [ ] Have PowerShell window open in `mobile-app/scripts/` directory
-- [ ] Android device or emulator connected (or will connect it now)
-- [ ] `adb devices` shows your device (if not, it will wait for it)
+- [ ] Have a terminal open in the repository folder (`capture-diagnostic-logs.py` runs from any folder)
+- [ ] The Android EMULATOR is running (the Python script works on the emulator only; it exits 1 when no
+      emulator is online, and never on a phone: adb on a phone is not available)
+- [ ] `adb devices` shows the emulator (the script does not wait for one)
 - [ ] Android app built and installed with latest diagnostic code
 
 ### Latest Code (Important!)
@@ -158,7 +159,7 @@ After running the test:
 Just paste the terminal output from Step 3 (the "DIAGNOSTIC SUMMARY" section)
 
 ### Option B: Share the Raw Log File (Most Detailed)
-The log file is created in `mobile-app/scripts/`:
+The log file is created in `mobile-app/build/diagnostic-logs/`:
 - File pattern: `diagnostic_bulk_mail_YYYYMMDD_HHMMSS.log`
 - Example: `diagnostic_bulk_mail_20260128_143022.log`
 

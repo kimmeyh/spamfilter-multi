@@ -314,8 +314,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   /// is a genuine choice to make (F133-S52 R-10).
   ///
   /// Mirrors `_resolveAccountForScopedDestination()` on the account-selection
-  /// screen: session selection -> single configured account -> prompt. The
-  /// picker is the LAST resort, not the first step.
+  /// screen: session selection -> stored default account (ADR-0052, Sprint 86
+  /// Task 14) -> single configured account -> prompt. The picker is the LAST
+  /// resort, not the first step.
   Future<void> _resolveAccountForScopedTab() async {
     _accountResolutionAttempted = true;
     try {

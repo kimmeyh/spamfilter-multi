@@ -1,0 +1,9 @@
+{
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Bash",
+  "cwd": "D:/Data/Harold/github/spamfilter-multi/.claude/hooks/test-cases/fixtures/taskclock-phase4-no-cards",
+  "tool_input": {
+    "command": "git commit -m \"feat: x Closes #579\""
+  },
+  "session_id": "task-clock-violation-10-commit-closes-with-no-card-map"
+}

@@ -972,5 +972,33 @@ class FixFlutterGitTests(Sandbox):
         self.assertIn(("fetch", "--depth", "1", "origin", "3.47.4"), seen)
 
 
+class EmulatorExitReportTests(unittest.TestCase):
+    """Sprint 86 7.7.1 M6: an emulator that exits at once shows WHY, not "did not appear within N s"."""
+
+    AVD = "s86-771-exit-report-test"
+
+    def tearDown(self):
+        with contextlib.suppress(OSError):
+            sup.emulator_log_path(self.AVD).unlink()
+
+    def test_a_process_that_exits_at_once_reports_its_code_and_its_own_error_text(self):
+        # A real process, not a mock: python rejects "-avd" with its own usage error on stderr and exits 2.
+        proc = sup.launch_emulator(sys.executable, self.AVD)
+        proc.wait(timeout=60)
+        report = sup.emulator_exit_report(proc)
+        self.assertIsNotNone(report)
+        self.assertIn(f"exit {proc.returncode}", report)
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertIn("-a", report)  # the interpreter's own message about the unknown option reached the log
+        self.assertIn(str(sup.emulator_log_path(self.AVD)), report)
+        # Does NOT catch: an emulator that keeps running but never registers with adb (the wait still times out).
+
+    def test_no_process_and_a_running_process_report_nothing(self):
+        self.assertIsNone(sup.emulator_exit_report(None))
+        running = mock.Mock()
+        running.poll.return_value = None
+        self.assertIsNone(sup.emulator_exit_report(running))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,11 @@
+{
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Edit",
+  "cwd": "D:/Data/Harold/github/spamfilter-multi/.claude/hooks/test-cases/fixtures/taskclock-phase4-orphan-agent",
+  "tool_input": {
+    "file_path": "D:/Data/Harold/github/spamfilter-multi/.claude/hooks/test-cases/fixtures/taskclock-phase4-orphan-agent/mobile-app/lib/a.dart",
+    "old_string": "a",
+    "new_string": "b"
+  },
+  "session_id": "task-clock-violation-11-main-edit-orphan-agent-segment"
+}

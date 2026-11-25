@@ -487,8 +487,8 @@ def list_avds(emulator_exe: str) -> list[str]:
     return names
 
 
-def launch_emulator(emulator_exe: str, name: str) -> None:
-    sup.launch_emulator(emulator_exe, name, minimized=True)
+def launch_emulator(emulator_exe: str, name: str):
+    return sup.launch_emulator(emulator_exe, name, minimized=True)
 
 
 def choose_avd(emulator_exe: str, requested: str) -> str | None:
@@ -512,13 +512,21 @@ def choose_avd(emulator_exe: str, requested: str) -> str | None:
     return None
 
 
-def wait_for_emulator(adb: Adb, seconds: int = 120) -> str | None:
+def wait_for_emulator(adb: Adb, seconds: int = 120, proc=None) -> str | None:
+    adb_error_shown = False
     for tick in range(seconds // 2):
         sleep(2)
-        serial = adb.online_emulator()
-        if serial:
-            say(f"  [OK] Emulator detected: {serial}")
-            return serial
+        serials, error = sup.online_emulators(adb.exe)
+        if serials:
+            say(f"  [OK] Emulator detected: {serials[0]}")
+            return serials[0]
+        exited = sup.emulator_exit_report(proc)
+        if exited:  # Sprint 86 7.7.1 M6: stop at once with the cause, not after the full wait
+            say(f"[ERROR] {exited}")
+            return None
+        if error and not adb_error_shown:  # 7.7.1 L10: a failing adb is not "no emulator yet"
+            say(f"[WARNING] adb devices failed: {error}")
+            adb_error_shown = True
         if tick % 5 == 0:
             say(f"  Still waiting... ({tick * 2}s elapsed)")
     return None
@@ -621,9 +629,9 @@ def get_emulator(adb: Adb, emulator_exe: str, start: bool, name: str) -> str:
     if not avd:
         raise BuildRefused("No AVDs found. Create one with Android Studio (Tools, Device Manager, Create Device).")
     say(f"[INFO] Launching emulator '{avd}'...")
-    launch_emulator(emulator_exe, avd)
+    proc = launch_emulator(emulator_exe, avd)
     say("[INFO] Waiting for emulator to start (this may take 30-60 seconds)...")
-    serial = wait_for_emulator(adb)
+    serial = wait_for_emulator(adb, proc=proc)
     if not serial:
         raise BuildRefused("Emulator still not detected after auto-start attempt.")
     return serial
@@ -703,8 +711,8 @@ def run_app(mobile_app: Path, flutter: str, args: argparse.Namespace, defines_ar
         avd = choose_avd(emulator_exe, args.emulator_name)
         if not avd:
             raise BuildRefused("No emulator available. Start one manually or use --install-to-emulator instead.")
-        launch_emulator(emulator_exe, avd)
-        serial = wait_for_emulator(adb)
+        proc = launch_emulator(emulator_exe, avd)
+        serial = wait_for_emulator(adb, proc=proc)
     if not serial:
         raise BuildRefused("No emulator available. Start one manually or use --install-to-emulator instead.")
     say(f"[INFO] Running on device: {serial}")

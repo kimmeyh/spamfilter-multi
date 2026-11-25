@@ -464,6 +464,15 @@ NOT_RECORDED = re.compile(r"\b0\s*min\b|not\s+recorded", I)
 REGISTER_DECISION = re.compile(r"\bregister\s+d\d+\b", I)
 
 
+def _register_has(cwd: str, decision_id: str) -> bool:
+    """True when docs/DECISION_REGISTER.md has a heading for this decision (`### d9.`). Unreadable = False."""
+    try:
+        text = (Path(cwd) / "docs" / "DECISION_REGISTER.md").read_text(encoding="utf-8")
+    except (OSError, ValueError):
+        return False
+    return re.search(rf"^#{{2,4}}\s+{re.escape(decision_id.lower())}\b", text, re.I | re.M) is not None
+
+
 def check_task_clock(status, cwd: str, sprint_num: int, violations: list):
     """3d-3 task clock (F363 R-6, Sprint 86+): every task card has a ledger entry with a start and a finish, and
     its Executed-by line names the ledger minutes. "0 min" and "not recorded" are refused unless the line names
@@ -480,7 +489,20 @@ def check_task_clock(status, cwd: str, sprint_num: int, violations: list):
                           "(F363 R-7: an unreadable ledger is not a pass).")
         return
     problems = []
-    for heading in task_clock.CARD_HEADING.finditer(plan_text):
+    headings = list(task_clock.CARD_HEADING.finditer(plan_text))
+    # Sprint 86 7.7.1 M3: a check that walks zero cards passes. No card, a heading in another shape, or a ledger
+    # task with no card is a violation, never a silent skip.
+    if not headings:
+        violations.append(f"3d-3 task clock did not run: no '### Task <N> -- <title>' card heading was found in "
+                          f"SPRINT_{sprint_num}_PLAN.md (an approved plan has at least one; zero matched is not a pass).")
+        return
+    for odd in task_clock.malformed_task_headings(plan_text):
+        problems.append(f"heading '{odd[:80]}' looks like a task card but is not '### Task <N> -- <title>', so it "
+                        "was not checked")
+    carded = {h.group(1) for h in headings}
+    for orphan in sorted(set(ledger["tasks"]) - carded):
+        problems.append(f"ledger Task {orphan} has no '### Task {orphan} --' card in the plan")
+    for heading in headings:
         task = heading.group(1)
         span = task_clock.card_section(plan_text, task)
         found = EXECUTED_BY.search(plan_text[span[0]:span[1]]) if span else None
@@ -494,10 +516,15 @@ def check_task_clock(status, cwd: str, sprint_num: int, violations: list):
             continue
         total = task_clock.minutes(entry)
         if NOT_RECORDED.search(value):
-            if REGISTER_DECISION.search(value):
+            decision = REGISTER_DECISION.search(value)
+            if decision and _register_has(cwd, decision.group(0).split()[-1]):
                 continue  # Harold accepted this gap in a register decision named on the line
-            problems.append(f"Task {task}: Executed-by says '0 min' or 'not recorded'")
-        elif not re.search(rf"(?<!\d){total}\s*min\b", value):
+            problems.append(f"Task {task}: Executed-by says '0 min' or 'not recorded'"
+                            + (f" and names {decision.group(0)}, which is not in docs/DECISION_REGISTER.md"
+                               if decision else ""))
+        elif not re.search(rf"(?<!\d){total} min \(task clock\b", value):
+            # Anchored to the shape task-clock.py writes (Sprint 86 7.7.1 L6: any "<total> min" on the line, such as
+            # an estimate, used to pass).
             problems.append(f"Task {task}: Executed-by does not name the ledger total ({total} min)")
     if problems:
         violations.append(

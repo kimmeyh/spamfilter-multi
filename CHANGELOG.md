@@ -26,6 +26,11 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-11-25 (Sprint 86 final reviews)
+
+- **fix**: When the default account cannot be read, Select Account now says so ("Your default account could not be read. Tap the star next to an account to set it again.") instead of only writing it to the diagnostic log (PR #577 review)
+- **fix**: The connect-failure diagnostic line names DNS when the connection's own name lookup failed, even if a later recheck succeeds; a background scan now waits up to 3 seconds for that line before it ends, so a failure on the last account is not lost; and the stop line reads the device state only while the diagnostic log is on (PR #577 review)
+
 ### 2026-11-24 (Sprint 86)
 
 - **fix**: A default account set on Select Account is used at once: Settings and the other account screens open on it without asking which account, with no restart needed (Sprint 86 Manual Validation, register q14)

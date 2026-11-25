@@ -183,7 +183,9 @@ def cmd_finish(root: Path, sprint: int, task: str, model: str, note: str | None,
         segment["end"] = stamp
     entry["finished"] = entry.get("finished") or stamp
     total = tc.minutes(entry)
-    tc.save(root, sprint, ledger)
+    # The ledger finish is saved LAST (Sprint 86 7.7.1 L5): the commit gate accepts `Closes #` on the ledger finish
+    # alone, so a failed plan, velocity or status write must leave the task unfinished. Every writer below replaces
+    # its own line, so running finish again repairs a partial write.
 
     heading = tc.CARD_HEADING.search(plan_text, span[0])
     title = re.sub(r"\s*\(Priority[^)]*\).*$", "", heading.group(2)).strip()
@@ -202,6 +204,7 @@ def cmd_finish(root: Path, sprint: int, task: str, model: str, note: str | None,
     write_velocity_row(root, sprint, task, title.replace("|", "/"), card_est(plan_text[span[0]:span[1]]), total,
                        notes.replace("|", "/"))
     write_status(root, task)
+    tc.save(root, sprint, ledger)
 
     failed = 0
     print(f"Task {task} finished: {total} min.")

@@ -6,7 +6,7 @@
 
 **Old name search**: `Future<void> loadOld()` -- hits: lib/core/a.dart:3 updated; none in docs.
 
-**Executed-by**: Sonnet agent ~20 min + lead ~10 = ~30 min
+**Executed-by**: Sonnet agent + lead -- 30 min (task clock 2026-11-24 01:00 to 2026-11-24 01:30, 2 segment(s))
 
 ## Phase 5 evidence
 

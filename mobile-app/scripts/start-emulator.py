@@ -96,6 +96,9 @@ def main(argv: list[str] | None = None) -> int:
         code = None
     if code is not None:
         sup.say(f"[ERROR] The emulator process exited at once (exit {code}). Try --cold-boot, and check ANDROID_HOME.")
+        report = sup.emulator_exit_report(proc)  # Sprint 86 7.7.1 M6: the emulator's own reason, from its log
+        if report:
+            sup.say(f"[ERROR] {report}")
         return 1
     sup.say("[emulator] Launched. Boot takes about 30-60 s; check with: adb devices")
     sup.say("[emulator] If a netsimd.exe crash dialog appears, click 'Close program'. It is benign.")

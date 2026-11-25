@@ -230,6 +230,26 @@ def hook_interpreter(settings_path) -> list | None:
     return found.pop().split()
 
 
+def interpreter_problem(argv: list, label: str) -> str:
+    """"" when `argv -c pass` exits 0; otherwise why the interpreter cannot run a hook.
+
+    Sprint 86 7.7.1 M1: `py -3.14` with no 3.14 installed exits 103 ("No suitable Python runtime found").
+    Claude Code blocks only on exit 2, so every gate would then allow everything. Finding the launcher on PATH
+    is not enough; this proves the version it names resolves."""
+    import subprocess
+
+    try:
+        probe = subprocess.run([*argv, "-c", "pass"], capture_output=True, text=True, timeout=30)
+    except (OSError, subprocess.SubprocessError) as exc:
+        return f"'{label}' could not be started ({exc.__class__.__name__}: {exc})"
+    if probe.returncode == 0:
+        return ""
+    detail = (probe.stderr or probe.stdout or "").strip().splitlines()
+    return (f"'{label}' (the interpreter .claude/settings.json runs hooks with) exits {probe.returncode}: "
+            f"{detail[0] if detail else 'no output'}. Every hook would fail OPEN (only exit 2 blocks). Install that "
+            "version or change settings.json.")
+
+
 def hook_python_argv(settings_path) -> tuple[list | None, str]:
     """The argv prefix that runs a hook the way Claude Code does, and a note to print ("" when none).
     Returns (None, reason) when it cannot. Off Windows (CI, which has no `py` launcher) a missing settings
@@ -241,6 +261,9 @@ def hook_python_argv(settings_path) -> tuple[list | None, str]:
                       "hooks do not all use one interpreter)")
     exe = find_tool(words[0])
     if exe:
+        problem = interpreter_problem([exe, *words[1:]], " ".join(words))
+        if problem:
+            return None, problem
         return [exe, *words[1:]], ""
     if os.name == "nt":
         return None, f"'{' '.join(words)}' (the interpreter .claude/settings.json runs hooks with) is not on PATH"

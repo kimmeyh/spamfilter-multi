@@ -196,10 +196,22 @@ class PrefixRuleTests(RunnerBase):
 
         with mock.patch.object(rtc, "run_hook", spy), \
                 mock.patch.object(common, "hook_interpreter", return_value=["py", "-3.14"]), \
+                mock.patch.object(common, "interpreter_problem", return_value=""), \
                 mock.patch.object(common, "find_tool", return_value="PY-FROM-PATH") as lookup:
             self.run_suite({"": "allow.py"})
         self.assertEqual(seen, [["PY-FROM-PATH", "-3.14"]], "not sys.executable")
         lookup.assert_called_once_with("py")
+
+    def test_an_interpreter_that_cannot_run_stops_the_suite(self):
+        """Sprint 86 7.7.1 M1: the launcher is on PATH but the version it names is not installed. A REAL process:
+        sys.executable given a flag it rejects exits non-zero, like `py -3.99` exits 103."""
+        self.hook("allow.py", EXIT0)
+        self.case("", "allow-1")
+        with mock.patch.object(common, "hook_interpreter", return_value=["py", "--no-such-flag"]), \
+                mock.patch.object(common, "find_tool", return_value=sys.executable):
+            with self.assertRaises(rtc.RunnerError) as caught:
+                self.run_suite({"": "allow.py"})
+        self.assertIn("fail OPEN", str(caught.exception))
 
     def test_real_settings_registers_one_interpreter_for_every_hook(self):
         words = common.hook_interpreter(rtc.SETTINGS)

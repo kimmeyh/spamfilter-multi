@@ -26,22 +26,28 @@ const Duration kDeviceStateReadTimeout = Duration(milliseconds: 500);
 /// Never throws and never takes longer than [kDeviceStateReadTimeout]: a read
 /// that fails, times out or returns an unexpected shape reads `unknown` for
 /// every value. A single value the phone cannot give reads `unknown` too; it
-/// is never left out. [reader] is the test seam.
+/// is never left out. A read that FAILED adds `read=<ExceptionType>` (for
+/// example `read=MissingPluginException` when the plugin did not register on
+/// the background engine), so a field log can tell that apart from a phone
+/// that cannot report a value (Sprint 86 7.7.1 L7). [reader] is the test seam.
 Future<String> describeDeviceState({
   Future<Object?> Function()? reader,
 }) async {
   Object? raw;
+  String? readFailure;
   try {
     raw = await (reader ?? _readChannel)().timeout(kDeviceStateReadTimeout);
-  } catch (_) {
+  } catch (e) {
     raw = null;
+    readFailure = e.runtimeType.toString();
   }
   final map = raw is Map ? raw : const <Object?, Object?>{};
   String boolText(Object? v) => v is bool ? '$v' : 'unknown';
   final thermal = map['thermal'];
   return 'powerSave=${boolText(map['powerSave'])} '
       'deviceIdle=${boolText(map['deviceIdle'])} '
-      'thermal=${thermal is String && thermal.isNotEmpty ? thermal : 'unknown'}';
+      'thermal=${thermal is String && thermal.isNotEmpty ? thermal : 'unknown'}'
+      '${readFailure == null ? '' : ' read=$readFailure'}';
 }
 
 Future<Object?> _readChannel() => kDeviceStateChannel.invokeMethod<Object?>('read');

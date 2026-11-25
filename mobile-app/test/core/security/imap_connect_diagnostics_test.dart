@@ -380,6 +380,101 @@ void main() {
       expect(lines.single, isNot(contains('Connection refused')));
     }); // What this does NOT catch: the adapter's own mapping to
     // ConnectionException (unchanged code, covered by adapter tests).
+
+    test('a lookup that failed IN the connect is phase=dns even when the '
+        'recheck passes (Sprint 86 7.7.1 M4)', () async {
+      // dart:io's own text (socket_patch.dart:620). The recheck (setUp)
+      // succeeds, as it does after a Wi-Fi to mobile-data switch.
+      const original = SocketException("Failed host lookup: 'imap.example'");
+      await expectLater(
+        ImapConnectDiagnostics.traceConnect<void>(
+          host: 'imap.example',
+          port: 993,
+          providerPath: true,
+          body: (_) async => throw original,
+        ),
+        throwsA(same(original)),
+      );
+      await ImapConnectDiagnostics.settleForTest();
+      expect(lines.single, contains('phase=dns '));
+      expect(lines.single, contains('dns=failed-in-connect'));
+      expect(lines.single, contains('dns-recheck=ok'));
+      expect(lines.single, isNot(contains('phase=tcp+tls')));
+    }); // What this does NOT catch: a platform whose lookup failure text is
+    // not "Failed host lookup" (checked only in the Flutter 3.47.4 SDK).
+
+    test('a refused connect is NOT blamed on DNS', () async {
+      expect(
+          ImapConnectDiagnostics.isLookupFailure(
+              const SocketException('Connection refused')),
+          isFalse);
+      expect(
+          ImapConnectDiagnostics.isLookupFailure(
+              const SocketException("Failed host lookup: 'h'")),
+          isTrue);
+    });
+  });
+
+  group('flush before the process ends (Sprint 86 7.7.1 M-2)', () {
+    test('flush lets a launched report reach the sink, with no settle',
+        () async {
+      final gate = Completer<List<InternetAddress>>();
+      ImapConnectDiagnostics.dnsLookup = (h) => gate.future;
+      Timer(const Duration(milliseconds: 50),
+          () => gate.complete([InternetAddress.loopbackIPv4]));
+      await expectLater(
+        ImapConnectDiagnostics.traceConnect<void>(
+          host: 'h',
+          port: 993,
+          providerPath: true,
+          body: (_) async => throw TimeoutException('t'),
+        ),
+        throwsA(isA<TimeoutException>()),
+      );
+      expect(lines, isEmpty, reason: 'the report runs in the background');
+      await ImapConnectDiagnostics.flush();
+      expect(lines.single, contains('phase=tcp+tls'));
+    }); // What this does NOT catch: a caller that forgets to call flush (the
+    // source gate below covers the two exit paths).
+
+    test('flush gives up after its bound and never throws', () async {
+      final stalled = Completer<List<InternetAddress>>();
+      ImapConnectDiagnostics.dnsLookup = (h) => stalled.future;
+      ImapConnectDiagnostics.dnsTimeout = const Duration(seconds: 30);
+      // Release the stalled report so no later test's settle waits on it.
+      addTearDown(() async {
+        stalled.complete([InternetAddress.loopbackIPv4]);
+        await ImapConnectDiagnostics.settleForTest();
+      });
+      await expectLater(
+        ImapConnectDiagnostics.traceConnect<void>(
+          host: 'h',
+          port: 993,
+          providerPath: true,
+          body: (_) async => throw TimeoutException('t'),
+        ),
+        throwsA(isA<TimeoutException>()),
+      );
+      final sw = Stopwatch()..start();
+      await ImapConnectDiagnostics.flush(
+          max: const Duration(milliseconds: 200));
+      expect(sw.elapsed, lessThan(const Duration(seconds: 2)));
+      expect(lines, isEmpty);
+    });
+
+    test('both background exit paths flush before they end', () {
+      final main = File('lib/main.dart').readAsStringSync();
+      expect(
+          main,
+          matches(RegExp(r'ImapConnectDiagnostics\.flush\(\);\s*'
+              r'(?://[^\n]*\n\s*)*exit\(success \? 0 : 1\);')));
+      final worker = File('lib/core/services/android_background_scan_worker.dart')
+          .readAsStringSync();
+      expect(
+          worker,
+          matches(RegExp(r'await ImapConnectDiagnostics\.flush\(\);\s*'
+              r'return result;\s*\}, onTaskStopped: onWorkerStopped\);')));
+    }); // What this does NOT catch: a new exit path added later.
   });
 
   test('the adapter source routes the provider connect through the trace', () {

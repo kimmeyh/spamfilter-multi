@@ -292,10 +292,28 @@ CARDS_LINE = re.compile(r"Task\s+(\d+)\s+#(\d+)")
 TASK_REF = re.compile(r"(?:\bSprint\s+(\d+)\s+)?\bTask\s+(\d+)\b", re.I)
 
 
+HEADING_CARD = re.compile(r"\(#(\d+)\b")
+LOOSE_TASK_HEADING = re.compile(r"^#{1,6}\s+Task\s+\S+.*$", re.M)
+
+
 def card_map(plan_text: str) -> dict:
-    """card number -> task number, from the plan header's `Task N #card` pairs."""
+    """card number -> task number, from the plan header's `Task N #card` pairs AND each `### Task N -- ... (#card`
+    heading (Sprint 86 7.7.1 M2: a card added mid-sprint is often written only in its heading). The header wins
+    when the two disagree."""
+    found = {}
+    for heading in CARD_HEADING.finditer(plan_text):
+        for card in HEADING_CARD.findall(heading.group(2)):
+            found.setdefault(card, heading.group(1))
     header = plan_text.split("\n## ", 1)[0]
-    return {card: task for task, card in CARDS_LINE.findall(header)}
+    found.update({card: task for task, card in CARDS_LINE.findall(header)})
+    return found
+
+
+def malformed_task_headings(plan_text: str) -> list:
+    """Headings that start like a task card (`#... Task <x>`) but do not match CARD_HEADING, so every check that
+    walks the cards would skip them (Sprint 86 7.7.1 M3: "green because nothing matched")."""
+    return [m.group(0).strip() for m in LOOSE_TASK_HEADING.finditer(plan_text)
+            if not CARD_HEADING.match(m.group(0))]
 
 
 def task_refs(text: str, sprint: int) -> list:

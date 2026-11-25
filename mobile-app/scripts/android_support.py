@@ -155,11 +155,19 @@ def emulator_env(sdk_root: str | None = None) -> dict[str, str]:
     return env
 
 
+def emulator_log_path(avd: str) -> Path:
+    """Where launch_emulator writes the emulator's own output: mobile-app/build/emulator-<avd>.log (gitignored)."""
+    return SCRIPTS.parent / "build" / f"emulator-{re.sub(r'[^A-Za-z0-9_.-]', '_', avd)}.log"
+
+
 def launch_emulator(emulator: str, avd: str, cold_boot: bool = False, sdk_root: str | None = None,
                     minimized: bool = False):
     """Start the emulator detached and return the Popen. Raises OSError when it cannot start.
 
     minimized: open the window minimized (Windows only; build-with-secrets.py uses it).
+    The emulator's stdout and stderr go to emulator_log_path(avd), not DEVNULL (Sprint 86 7.7.1 M6): an emulator
+    that exits at once (Sprint 67: an old SDK's "Can't find 'Linux version' string in kernel image") then has its
+    reason on disk, and emulator_exit_report() shows it. The path is on the returned Popen as `log_path`.
     """
     argv = [emulator, "-avd", avd]
     if cold_boot:
@@ -170,7 +178,39 @@ def launch_emulator(emulator: str, avd: str, cold_boot: bool = False, sdk_root: 
         info.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         info.wShowWindow = 6  # SW_MINIMIZE
         kwargs["startupinfo"] = info
-    return subprocess.Popen(argv, env=emulator_env(sdk_root), **kwargs)
+    log_path = emulator_log_path(avd)
+    log = None
+    try:
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        log = open(log_path, "wb")
+        kwargs["stdout"], kwargs["stderr"] = log, subprocess.STDOUT
+    except OSError as exc:
+        say(f"[WARNING] emulator output not logged ({log_path}: {exc.strerror}); an early exit will show no reason")
+        log_path = None
+    try:
+        proc = subprocess.Popen(argv, env=emulator_env(sdk_root), **kwargs)
+    finally:
+        if log is not None:
+            log.close()  # the child keeps its own handle
+    proc.log_path = log_path
+    return proc
+
+
+def emulator_exit_report(proc, lines: int = 20) -> str | None:
+    """None while the emulator process runs (or proc is None); once it has exited, its exit code and the last
+    `lines` lines of its log, so a wait loop can stop at once with the cause (Sprint 86 7.7.1 M6)."""
+    if proc is None or proc.poll() is None:
+        return None
+    text = f"The emulator process exited (exit {proc.returncode})."
+    log_path = getattr(proc, "log_path", None)
+    if log_path is None:
+        return text + " Its output was not logged."
+    try:
+        tail = log_path.read_text(encoding="utf-8", errors="replace").splitlines()[-lines:]
+    except OSError as exc:
+        return text + f" Its log {log_path} could not be read ({exc.strerror})."
+    body = "\n".join(f"    {line}" for line in tail) if tail else "    (the log is empty)"
+    return f"{text} Last lines of {log_path}:\n{body}"
 
 
 def wait_for_boot(adb: str, serial: str, seconds: int = 360, interval: float = 2.0) -> bool:
