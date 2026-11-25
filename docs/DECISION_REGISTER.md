@@ -20,7 +20,7 @@ here and not in `SPRINT_N_PLAN.md`. Source: Harold, 2026-11-22 and 2026-11-23 (d
 
 ### Open
 
-(none)
+- q15. F349 Task Scheduler test timeouts: fix in Sprint 86 or keep in the backlog
 
 ### Closed
 
@@ -249,6 +249,29 @@ here and not in `SPRINT_N_PLAN.md`. Source: Harold, 2026-11-22 and 2026-11-23 (d
   2. Retire `export-tokens-for-android.py` only; keep the fixed `setup-android-oauth.py`. Pro: keeps a working
      secrets-file writer. Con: a Windows-secret writer named "android" stays misleading.
   3. Keep both as they are now. Pro: no work. Con: one script that cannot work stays in the repo.
+
+### q15. F349 Task Scheduler test timeouts: fix in Sprint 86 or keep in the backlog
+
+- **Asked**: Sprint 86 Phase 7, 2026-11-25 00:31, after the full suite at 0a2c3235. **Status**: OPEN.
+- **What it decides**: whether the known F349 test timeouts (backlog Priority 44) are fixed in this sprint, which is
+  a sprint-scope decision. No Sprint 86 commit touches the service or its test.
+- **Evidence**: full suite 3,699 pass, 15 skipped, 3 fail; all 3 are `windows_task_scheduler_service_test`
+  "when task does not exist" tests timing out at 30 s. Run alone, 1 still fails (new; F349 said they pass alone).
+  After the 2026-11-23 reboot a missing-task `Get-ScheduledTask` still takes 7.9 s with a PowerShell start (bare
+  start 2.0 s). Each test deletes, then queries, the legacy name `SpamFilterBackgroundScan_Dev`, which does not
+  exist; the real per-account DEV tasks are not touched. CI (ubuntu) does not run these tests, so the PR's CI is
+  not affected. What the user sees: nothing; this is the local test suite only.
+- **Options**:
+  1. Keep in the backlog as F349 (card updated with this evidence). Pro: no scope change; Sprint 86 closes on plan.
+     Con: the local full suite stays red by 3 known tests until F349 runs, and each run costs about 90 s waiting.
+  2. Fix in Sprint 86 now, timeout only (Recommendation): give the 3 tests a 60 s timeout with the measurement in a
+     comment, as the F349 card allows. About 10 min, 1 test file, +0 to CI, +0 to suite time. Pro: the local suite
+     is green for the 7.7.5 gate; honest, measured. Con: the cause of the slow query stays unknown (F349 kept open
+     for that part).
+  3. Fix in Sprint 86 now, seam: replace the real PowerShell query in these tests with the existing test seam.
+     About 30-45 min, 1 test file. Pro: the tests become fast and no longer depend on this machine. Con: they no
+     longer prove the real query; more work in Phase 7.
+- **Recommendation**: 2.
 
 ### q14. Default account set during a session: apply it at once, backlog it, or keep "next start"?
 

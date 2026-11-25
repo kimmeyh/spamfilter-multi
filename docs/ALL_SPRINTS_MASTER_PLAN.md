@@ -668,6 +668,13 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   alone. Timed 2026-11-06 14:58: `Get-ScheduledTask` for a missing task takes 7.1 s in-process and 8 to 13 s with a
   PowerShell start; a bare PowerShell start takes 0.9 s. So the query is slow, not the process start. Last boot
   2026-10-30, so the Sprint 83 "re-time after a reboot" check has not run. Code and tests unchanged since b00669e4.
+- Evidence (Sprint 86 Phase 7, 2026-11-25 00:31): AFTER a reboot (last boot 2026-11-23 04:20) the query for a missing
+  task still takes 7.9 s with a PowerShell start (bare start 2.0 s), so the reboot check is done and the slowness
+  stays. The full suite at 0a2c3235 failed 3 of 3,717, all in `windows_task_scheduler_service_test` (getScheduleStatus,
+  getNextScheduledTime, taskExists "when task does not exist"), and run ALONE the file now also fails 1
+  (getScheduleStatus). Each of these tests deletes then queries the legacy name `SpamFilterBackgroundScan_Dev`, which
+  does not exist (the real DEV tasks are per account and were not touched: all 3 present and running at 00:28-00:31),
+  so each test makes two slow missing-task queries. Decision on when to fix: register q15.
 - Do: re-time after a reboot; if still slow, find why the query is slow (cause unknown), then either give these
   tests a timeout sized from the measurement with the reason in a comment, or replace the real query with the
   existing seam. Do not raise the timeout without the measurement.
