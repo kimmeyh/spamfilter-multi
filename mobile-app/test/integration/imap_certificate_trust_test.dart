@@ -38,6 +38,7 @@ import 'package:my_email_spam_filter/adapters/email_providers/email_provider.dar
 import 'package:my_email_spam_filter/adapters/email_providers/generic_imap_adapter.dart';
 import 'package:my_email_spam_filter/adapters/email_providers/spam_filter_platform.dart';
 import 'package:my_email_spam_filter/core/security/imap_certificate_trust.dart';
+import 'package:my_email_spam_filter/core/security/imap_connect_diagnostics.dart';
 import 'package:my_email_spam_filter/util/error_messages.dart';
 
 import '../helpers/database_test_helper.dart';
@@ -401,5 +402,36 @@ void main() {
     );
     expect(info.displayFingerprint.split(':'), hasLength(32));
     expect(info.displayFingerprint.replaceAll(':', '').toLowerCase(), fp2);
+  });
+
+  // F347 (Sprint 86) R-3 through the ADAPTER: a refused connect still maps to
+  // ConnectionException('Network connection failed: SocketException...'), and
+  // exactly one diagnostic line names the phase.
+  // What this does NOT catch: the provider (enough_mail connectToServer) call
+  // site, which has no local-server seam; the diagnostics test pins it by source.
+  test('F347: a refused Custom IMAP connect keeps its mapped exception and logs '
+      'one phase=tcp line', () async {
+    final probe = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+    final closedPort = probe.port;
+    await probe.close(); // nothing listens: connect fails at once
+    final lines = <String>[];
+    ImapConnectDiagnostics.resetForTest();
+    ImapConnectDiagnostics.logEnabled = () async => true;
+    ImapConnectDiagnostics.sink = (d) async => lines.add(d);
+    ImapConnectDiagnostics.networkTypeReader = () async => 'ethernet';
+    addTearDown(ImapConnectDiagnostics.resetForTest);
+
+    await expectLater(
+      GenericIMAPAdapter.custom().loadCredentials(
+          creds(closedPort, ImapEncryption.sslTls, host: '127.0.0.1')),
+      throwsA(isA<ConnectionException>().having((e) => e.toString(), 'message',
+          contains('Network connection failed: SocketException'))),
+    );
+    await ImapConnectDiagnostics.settleForTest(); // the report is background
+    expect(lines, hasLength(1));
+    expect(lines.single, contains('phase=tcp+tls'));
+    expect(lines.single, contains('network=ethernet'));
+    expect(lines.single, isNot(contains('me@example.test')));
+    expect(lines.single, isNot(contains(password)));
   });
 }

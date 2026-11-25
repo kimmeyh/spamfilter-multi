@@ -246,11 +246,11 @@ What does SCAN DIAGNOSTICS show?
 ### Quick Capture
 ```powershell
 cd mobile-app/scripts
-.\capture-diagnostic-logs.ps1 -Action Start
+python capture-diagnostic-logs.py --action start
 
 # (Run scan in app)
 
-.\capture-diagnostic-logs.ps1 -Action Stop
+python capture-diagnostic-logs.py --action stop
 ```
 
 ### Manual Analysis

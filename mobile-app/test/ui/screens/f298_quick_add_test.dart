@@ -1,53 +1,33 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:my_email_spam_filter/core/models/email_message.dart';
-import 'package:my_email_spam_filter/core/models/rule_set.dart' show Rule;
 import 'package:my_email_spam_filter/core/services/rule_quick_action_service.dart'
     show
         kReloadFailedSuffix,
-        kConflictingSafeSenderCheckFailedSuffix,
         kConflictingRuleCheckFailedSuffix;
 import 'package:my_email_spam_filter/core/storage/database_helper.dart'
     show RuleDatabaseProvider;
 import 'package:my_email_spam_filter/core/storage/rule_database_store.dart';
 import 'package:my_email_spam_filter/core/storage/safe_sender_database_store.dart';
-import 'package:my_email_spam_filter/ui/screens/rule_quick_add_screen.dart';
 import 'package:my_email_spam_filter/ui/screens/safe_sender_quick_add_screen.dart';
 
 import '../../helpers/database_test_helper.dart';
 import '../../helpers/f298_reload_harness.dart';
 
-/// F298 (Sprint 80, #496): the two quick-add screens write straight to the
+/// F298 (Sprint 80, #496): the quick-add screens write straight to the
 /// stores, so each must reload RuleSetProvider -- covering the new entry AND
-/// the conflicting entries it removes (rule quick add removes matching safe
-/// senders; safe sender quick add removes matching rules).
+/// the conflicting entries it removes (safe sender quick add removes matching
+/// rules). Sprint 86 (F307) removed the rule quick-add page; its reload cases
+/// went with it. Rule creation from the No Rule Review pop-up reloads through
+/// rule_quick_action_service.dart.
 ///
 /// What these tests do NOT catch: the RED-authentication warning dialog path
 /// of the safe sender screen (it only gates the save; the reload is after it),
 /// a save whose pop is ignored by the caller, a safe sender save that fails
 /// after it (nothing is removed then, so nothing needs reloading), or a
 /// reload after SEVERAL removals (each test uses one conflicting entry).
-/// T-3a/T-3b (PR #490 7.7.1) fail the REMOVAL; they do not fail the initial
+/// T-3b (PR #490 7.7.1) fails the REMOVAL; it does not fail the initial
 /// load of the conflict candidates (same catch, same warning).
-
-/// A rule store whose addRule always fails, to reach the catch path after the
-/// conflicting safe senders were already removed.
-class _AddFailsRuleStore extends RuleDatabaseStore {
-  _AddFailsRuleStore(RuleDatabaseProvider provider) : super(provider);
-
-  @override
-  Future<void> addRule(Rule rule) async =>
-      throw StateError('F298 test: simulated addRule failure');
-}
-
-/// PR #490 7.7.1: removing a conflicting safe sender fails.
-class _RemoveFailsSafeSenderStore extends SafeSenderDatabaseStore {
-  _RemoveFailsSafeSenderStore(RuleDatabaseProvider provider) : super(provider);
-
-  @override
-  Future<void> removeSafeSender(String pattern) async =>
-      throw StateError('simulated removeSafeSender failure');
-}
 
 /// PR #490 7.7.1: removing a conflicting rule fails.
 class _DeleteFailsRuleStore extends RuleDatabaseStore {
@@ -82,88 +62,6 @@ void main() {
   SafeSenderDatabaseStore safeStore() =>
       SafeSenderDatabaseStore(h.testHelper.dbHelper);
 
-  Future<void> saveRuleScreen(WidgetTester tester, bool failReload,
-      void Function(dynamic p) check) async {
-    useTallView(tester);
-    await tester.runAsync(() async {
-      await h.insertSafeSender(safePattern); // conflicts with the new rule
-      final provider = await h.loadedProvider(failReload: failReload);
-      expect(provider.rules.rules, isEmpty, reason: 'baseline');
-      expect(provider.safeSenders.safeSenders, [safePattern],
-          reason: 'baseline');
-      await tester.pumpWidget(h.wrapPushed(
-          provider,
-          () => RuleQuickAddScreen(
-              email: email(),
-              ruleStore: ruleStore(),
-              safeSenderStore: safeStore())));
-      await h.openPushed(tester);
-      await tester.pump(const Duration(milliseconds: 300));
-
-      final save = find.text('Save Rule');
-      await tester.ensureVisible(save);
-      await tester.pump();
-      await tapAndLetDbRun(tester, save,
-          until: () => shown('Rule Conflict Detected'));
-      // The seeded safe sender also trips the conflict WARNING; confirm it.
-      expect(find.text('Rule Conflict Detected'), findsOneWidget);
-      await tapAndLetDbRun(tester, find.text('Save Anyway'),
-          until: () => shown('Rule added') || shown('Failed to add rule'));
-      check(provider);
-    });
-  }
-
-  testWidgets('T-1a: rule quick add reaches the provider (rule added and '
-      'conflicting safe sender removed)', (tester) async {
-    await saveRuleScreen(tester, false, (p) {
-      expect(p.rules.rules.map((r) => r.name), ['AutoDeleteSpamCom']);
-      expect(p.safeSenders.safeSenders, isEmpty,
-          reason: 'the removed conflicting safe sender must also be reloaded');
-    });
-  });
-
-  testWidgets('T-2a: rule quick add says "saved, not yet in effect" when the '
-      'reload fails', (tester) async {
-    await saveRuleScreen(tester, true, (p) {
-      expect(find.textContaining(kReloadFailedSuffix.trim()), findsOneWidget);
-    });
-  });
-
-  testWidgets('T-1c: rule quick add whose rule save FAILS still reloads the '
-      'safe sender it already removed', (tester) async {
-    useTallView(tester);
-    await tester.runAsync(() async {
-      await h.insertSafeSender(safePattern);
-      final provider = await h.loadedProvider();
-      expect(provider.safeSenders.safeSenders, [safePattern],
-          reason: 'baseline');
-      await tester.pumpWidget(h.wrapPushed(
-          provider,
-          () => RuleQuickAddScreen(
-              email: email(),
-              ruleStore: _AddFailsRuleStore(h.testHelper.dbHelper),
-              safeSenderStore: safeStore())));
-      await h.openPushed(tester);
-      await tester.pump(const Duration(milliseconds: 300));
-
-      final save = find.text('Save Rule');
-      await tester.ensureVisible(save);
-      await tester.pump();
-      await tapAndLetDbRun(tester, save,
-          until: () => shown('Rule Conflict Detected'));
-      await tapAndLetDbRun(tester, find.text('Save Anyway'),
-          until: () => shown('Rule added') || shown('Failed to add rule'));
-
-      expect(find.textContaining('Failed to add rule'), findsOneWidget,
-          reason: 'the failed rule save is still reported');
-      final db = await h.testHelper.dbHelper.database;
-      expect(await db.query('safe_senders'), isEmpty,
-          reason: 'the conflicting safe sender was removed before the failure');
-      expect(provider.safeSenders.safeSenders, isEmpty,
-          reason: 'the provider must not keep a safe sender the database lost');
-    });
-  });
-
   Future<void> saveSafeSenderScreen(WidgetTester tester, bool failReload,
       void Function(dynamic p) check) async {
     useTallView(tester);
@@ -193,39 +91,6 @@ void main() {
       check(provider);
     });
   }
-
-  testWidgets('T-3a (PR #490 7.7.1): rule quick add whose conflicting safe '
-      'sender cannot be removed says so, and the rule is still added',
-      (tester) async {
-    useTallView(tester);
-    await tester.runAsync(() async {
-      await h.insertSafeSender(safePattern);
-      final provider = await h.loadedProvider();
-      await tester.pumpWidget(h.wrapPushed(
-          provider,
-          () => RuleQuickAddScreen(
-              email: email(),
-              ruleStore: ruleStore(),
-              safeSenderStore:
-                  _RemoveFailsSafeSenderStore(h.testHelper.dbHelper))));
-      await h.openPushed(tester);
-      await tester.pump(const Duration(milliseconds: 300));
-
-      final save = find.text('Save Rule');
-      await tester.ensureVisible(save);
-      await tester.pump();
-      await tapAndLetDbRun(tester, save,
-          until: () => shown('Rule Conflict Detected'));
-      await tapAndLetDbRun(tester, find.text('Save Anyway'),
-          until: () => shown('Rule added') || shown('Failed to add rule'));
-
-      expect(
-          find.textContaining(kConflictingSafeSenderCheckFailedSuffix.trim()),
-          findsOneWidget);
-      expect(find.textContaining('Rule added successfully'), findsOneWidget);
-      expect(provider.rules.rules.map((r) => r.name), ['AutoDeleteSpamCom']);
-    });
-  });
 
   testWidgets('T-3b (PR #490 7.7.1): safe sender quick add whose conflicting '
       'rule cannot be removed says so', (tester) async {

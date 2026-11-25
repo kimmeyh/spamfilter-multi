@@ -6,8 +6,8 @@
 
 1. The `SPI_SETSCREENREADER` flag must be enabled before winwright can see Flutter elements. CHECK FIRST, do not assume:
 ```powershell
-.\mobile-app\scripts\enable-screen-reader-flag.ps1 status   # must print True
-.\mobile-app\scripts\enable-screen-reader-flag.ps1 enable   # if False
+python mobile-app\scripts\enable-screen-reader-flag.py status   # must print True
+python mobile-app\scripts\enable-screen-reader-flag.py enable   # if False
 ```
    (Persistence across reboots is unverified -- it survived within-day sessions in Sprints 58-59, but a reboot may clear it. Always run `status`.)
 2. **Prime the semantics tree with one `ww_get_snapshot` immediately after `ww_attach`/`ww_launch`, before any other query.** Flutter builds its semantics tree lazily on the first *semantic* query: the first raw query (`ww_dump_tree`) after app launch returns only an opaque `FLUTTERVIEW` pane even with the flag on; after one `ww_get_snapshot`, every subsequent query (including `ww_dump_tree`) returns the full tree. Verified directly in F153's Sprint 59 re-test; this lazy init is the likely cause of F140's Sprint 54 "empty tree" measurements.
@@ -215,11 +215,11 @@ The flag persists across app restarts but resets on Windows reboot.
 
 ```powershell
 # Enable (required before winwright can see Flutter elements)
-.\mobile-app\scripts\enable-screen-reader-flag.ps1 enable
+python mobile-app\scripts\enable-screen-reader-flag.py enable
 
 # Check status
-.\mobile-app\scripts\enable-screen-reader-flag.ps1 status
+python mobile-app\scripts\enable-screen-reader-flag.py status
 
 # Disable (cleanup after testing)
-.\mobile-app\scripts\enable-screen-reader-flag.ps1 disable
+python mobile-app\scripts\enable-screen-reader-flag.py disable
 ```

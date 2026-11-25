@@ -182,7 +182,10 @@ class PrefixRuleTests(RunnerBase):
             with self.assertRaises(rtc.RunnerError):
                 self.run_suite({"": "allow.py"})
 
-    def test_default_interpreter_is_python_on_path(self):
+    def test_default_interpreter_is_the_one_settings_json_registers(self):
+        """F344: the suite runs hooks with the settings.json interpreter words (`py -3.14`), not sys.executable
+        and not a fixed "python". Does NOT catch a settings interpreter that exists but cannot run the hooks
+        (the suite itself then fails, which is the point)."""
         self.hook("allow.py", EXIT0)
         self.case("", "allow-1")
         seen = []
@@ -192,10 +195,38 @@ class PrefixRuleTests(RunnerBase):
             return 0, ""
 
         with mock.patch.object(rtc, "run_hook", spy), \
-                mock.patch.object(common, "find_tool", return_value="PYTHON-FROM-PATH") as lookup:
+                mock.patch.object(common, "hook_interpreter", return_value=["py", "-3.14"]), \
+                mock.patch.object(common, "interpreter_problem", return_value=""), \
+                mock.patch.object(common, "find_tool", return_value="PY-FROM-PATH") as lookup:
             self.run_suite({"": "allow.py"})
-        self.assertEqual(seen, ["PYTHON-FROM-PATH"], "not sys.executable")
-        lookup.assert_called_once_with("python", "python3")
+        self.assertEqual(seen, [["PY-FROM-PATH", "-3.14"]], "not sys.executable")
+        lookup.assert_called_once_with("py")
+
+    def test_an_interpreter_that_cannot_run_stops_the_suite(self):
+        """Sprint 86 7.7.1 M1: the launcher is on PATH but the version it names is not installed. A REAL process:
+        sys.executable given a flag it rejects exits non-zero, like `py -3.99` exits 103."""
+        self.hook("allow.py", EXIT0)
+        self.case("", "allow-1")
+        with mock.patch.object(common, "hook_interpreter", return_value=["py", "--no-such-flag"]), \
+                mock.patch.object(common, "find_tool", return_value=sys.executable):
+            with self.assertRaises(rtc.RunnerError) as caught:
+                self.run_suite({"": "allow.py"})
+        self.assertIn("fail OPEN", str(caught.exception))
+
+    def test_real_settings_registers_one_interpreter_for_every_hook(self):
+        words = common.hook_interpreter(rtc.SETTINGS)
+        self.assertEqual(words, ["py", "-3.14"], "register q8 = 1: every hook runs under py -3.14")
+
+    def test_mixed_or_unreadable_settings_has_no_interpreter(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "settings.json"
+            hook = ' "${CLAUDE_PROJECT_DIR}/.claude/hooks/a.py"'
+            mixed = {"hooks": {"Stop": [{"hooks": [{"command": "python" + hook}, {"command": "py -3.14" + hook}]}]}}
+            path.write_text(json.dumps(mixed), encoding="utf-8")
+            self.assertIsNone(common.hook_interpreter(path))
+            path.write_text("{broken", encoding="utf-8")
+            self.assertIsNone(common.hook_interpreter(path))
+            self.assertIsNone(common.hook_interpreter(Path(tmp) / "missing.json"))
 
     def test_hook_that_hangs_is_a_failure(self):
         self.hook("hang.py", HANG)

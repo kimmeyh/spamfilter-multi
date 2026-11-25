@@ -1,0 +1,9 @@
+{
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Bash",
+  "cwd": "D:/Data/Harold/github/spamfilter-multi/.claude/hooks/test-cases/fixtures/taskclock-phase4-corrupt-ledger",
+  "tool_input": {
+    "command": "git commit -m \"docs: x\""
+  },
+  "session_id": "task-clock-violation-6-commit-unreadable-ledger"
+}

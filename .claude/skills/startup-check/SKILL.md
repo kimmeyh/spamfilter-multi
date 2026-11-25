@@ -45,7 +45,7 @@ Execute these checks in parallel and report a summary:
 
 2. **GitHub CLI**: Run gh issue list --limit 1
 
-2.1. **Hook interpreter** (Sprint 83 5.1.2 F9, ADR-0051): Run `python -c "import sys; print(sys.version)"`. The Python hooks in `.claude/settings.json` call bare `python`; if it is missing, or resolves to the Microsoft Store stub (it prints a "Python was not found" message or opens the Store), every Python guard is OFF and nothing else reports it. Report it as failed and Ready = No.
+2.1. **Hook interpreter** (Sprint 83 5.1.2 F9, ADR-0051; updated Sprint 86 7.7.1 M1 for F344's `py -3.14`): Run the interpreter `.claude/settings.json` registers, exactly as the hooks call it: `py -3.14 -c "import sys; print(sys.version)"`. If it exits non-zero (for example 103, "No suitable Python runtime found", when 3.14 is not installed) or prints a "Python was not found" message, every Python guard is OFF: Claude Code blocks only on exit 2, so each gate fails OPEN with one stderr line per tool call and nothing else reports it. Report it as failed and Ready = No. (`run-test-cases.py` and `scripts/test-hook.py` refuse to run in the same state.)
 
 2.5. **Sprint Phase 3.7 Approval Verification Gate** (Sprint 36 retro IMP-3)
 

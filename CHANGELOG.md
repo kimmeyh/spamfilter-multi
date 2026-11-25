@@ -26,6 +26,19 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-11-25 (Sprint 86 final reviews)
+
+- **fix**: When the default account cannot be read, Select Account now says so ("Your default account could not be read. Tap the star next to an account to set it again.") instead of only writing it to the diagnostic log (PR #577 review)
+- **fix**: The connect-failure diagnostic line names DNS when the connection's own name lookup failed, even if a later recheck succeeds; a background scan now waits up to 3 seconds for that line before it ends, so a failure on the last account is not lost; and the stop line reads the device state only while the diagnostic log is on (PR #577 review)
+
+### 2026-11-24 (Sprint 86)
+
+- **fix**: A default account set on Select Account is used at once: Settings and the other account screens open on it without asking which account, with no restart needed (Sprint 86 Manual Validation, register q14)
+- **chore**: Removed the "Create rule" page; rules are made from the rule pop-up on Review No Rule Items (Issue #568)
+- **feat**: When Android stops a background scan before it finishes, the diagnostic log (when turned on) records whether the phone was in power-save mode, in idle (Doze) mode, and its thermal status (Issue #582)
+- **feat**: When an email server connection fails with a network error or times out, the diagnostic log (when turned on) names the network type and the step that did not finish where the app can tell: Custom IMAP accounts using STARTTLS report connect, STARTTLS, TLS or greeting separately; Custom IMAP accounts using SSL/TLS, and AOL, Gmail, Yahoo and iCloud, report the connect and TLS steps together; DNS is named only when a recheck of the server name fails (Issue #583)
+- **chore**: Seven Android helper scripts (run-emulator, start-emulator, setup-android-oauth, export-tokens-for-android, capture-diagnostic-logs, enable-screen-reader-flag, fix-flutter-git) ported from PowerShell to Python with a shared `android_support.py`; adb and the emulator resolve through ANDROID_HOME and only ever target an emulator; the ports fix unchecked exit codes, printed secret characters and a broken log-capture Stop (Issue #580)
+
 ### 2026-11-21 (Sprint 85)
 
 - **fix**: Windows development builds: when the start-up copy of the sign-ins into the development folder does not finish, Settings > General now says so in red ("DEV credential copy at start-up did not finish: ... Accounts may be missing until it succeeds; it is tried again at the next start."), and the copy is retried at the next start. Two starts at once no longer copy at the same time, and an earlier copy is kept under its own backup name (Issue #564)

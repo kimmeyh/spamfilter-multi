@@ -199,11 +199,14 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       final accounts = await _credStore.getSavedAccounts();
 
       // F352: an unreadable default shows as "no default" for this refresh
-      // and is logged; the list itself still loads.
+      // and is logged; the list itself still loads. Sprint 86 7.7.1 L9: the
+      // user is also told (a SnackBar below), not only the diagnostic log.
       String? defaultId;
+      var defaultUnreadable = false;
       try {
         defaultId = await SettingsStore().getDefaultAccountId();
       } catch (e) {
+        defaultUnreadable = true;
         _logger.w('F352: could not read the default account: $e');
         // Sprint 85 7.7.1 M-1: Logger is a no-op in release builds.
         await DiagnosticLogger.failure(
@@ -222,6 +225,14 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
         _isLoading = false;
         _error = null; // Clear any previous errors
       });
+      if (defaultUnreadable) {
+        // Tapping a star calls _toggleDefault, which saves the default again
+        // (and shows its own SnackBar if that save fails).
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(const SnackBar(
+          content: Text('Your default account could not be read. Tap the '
+              'star next to an account to set it again.'),
+        ));
+      }
       _logger.i('[OK] Loaded ${accounts.length} saved accounts');
     } catch (e) {
       _logger.e('[FAIL] Failed to load accounts: $e');
@@ -677,6 +688,8 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
   /// Harold's rule: the picker appears ONLY when (1) no account has been
   /// selected this session AND (2) the destination actually needs one. So:
   ///   - a session selection already exists -> return it, NO dialog
+  ///   - else a stored default that still exists -> select it, NO dialog
+  ///     (Sprint 86 Task 14)
   ///   - exactly one account is configured  -> use it, NO dialog (there is
   ///     nothing to choose, and prompting for a single option is pure friction)
   ///   - otherwise -> prompt once, and REMEMBER the answer so the next
@@ -702,6 +715,16 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
     }
     if (existing != null) {
       selectedAccount.clear(); // stale -> drop it and fall through to prompt
+    }
+
+    // (1b) Sprint 86 Task 14 (register q14 = 1, amends ADR-0052 decision 3):
+    // the stored default, when the session has no selection and that account
+    // still exists. Before this the default applied only at the next start, so
+    // the picker asked although a default was set (Harold, Store 0.25.0).
+    final defaultId = _defaultAccountId;
+    if (defaultId != null && _savedAccounts.contains(defaultId)) {
+      selectedAccount.select(defaultId);
+      return defaultId;
     }
 
     // (2) Single account -> nothing to choose.
@@ -844,8 +867,14 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
   }
 
   /// F352 (ADR-0052): make [accountId] the default account, or remove the
-  /// default when it already is. Changes only the stored default; the session
-  /// selection is untouched (it seeds from the default at the next start).
+  /// default when it already is.
+  ///
+  /// Sprint 86 Task 14 (register q14 = 1, amends ADR-0052 decision 3): setting
+  /// the default also makes it the session selection, so Settings, Review No
+  /// Rule Items, Scan History and Help use it at once. Before this the session
+  /// was untouched until the next start, and Settings showed the picker
+  /// although a default was set (Harold, Store 0.25.0, 2026-11-24). Removing
+  /// the default leaves the session selection unchanged.
   Future<void> _toggleDefault(String accountId) async {
     final remove = _defaultAccountId == accountId;
     try {
@@ -865,6 +894,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       return;
     }
     if (mounted) {
+      if (!remove) context.read<SelectedAccountProvider>().select(accountId);
       setState(() => _defaultAccountId = remove ? null : accountId);
     }
   }

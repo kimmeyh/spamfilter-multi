@@ -206,9 +206,184 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 **Sprint 74 scope -- COMPLETE 2026-09-29 (PR #440)** (Phase 8.4 pass 2, selected by Harold 2026-09-24): MV74-1 (#428), MV74-2 (#434), MV74-3 (#422, #433), F202 (#438), F222 (#437), F232 (#422), F206 (#439), F205 (#433). Plan: `docs/sprints/SPRINT_74_PLAN.md`.
 
-**Last Reviewed**: November 8, 2026 (Sprint 84 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #548 merged to develop (cc251012) and main (#558, 962a1b25), tagged v0.24.1; Sprint 85 branch opened from the Sprint 84 branch; #549-#557 closed by the merge and #509, #510, #523 stayed open as intended (Apple); Sprint 84 plan, retrospective and summary present; Sprint 85 stub present; shipped cards were pruned at close-out (F280, F326, F327, F328, F342, F345).) Previous: November 5, 2026 (Sprint 83 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #534 merged to develop (8bee2ce0) and main (#547, 0a65fd22), tagged v0.24.0; Sprint 84 branch opened from the Sprint 83 branch; #535-#546 closed by the merge and #509, #510, #523 stayed open as intended (Apple); Sprint 83 plan, retrospective and summary present; Sprint 84 stub present; shipped cards were pruned at close-out (F237, F270, F303, F305, F308-F310, F315, F321-F325).) Previous: October 31, 2026 (Sprint 82 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #521 merged to develop (f34be0d7) and main (#533, 8f588043), tagged v0.23.0; Sprint 83 branch opened from the Sprint 82 branch; #522, #525, #526, #528-#532 closed by the merge and #509, #510, #523, #524, #527 stayed open as intended (PR body "Part of"); Sprint 82 plan, retrospective and summary present; Sprint 83 stub present; shipped cards were pruned at close-out (F306, F312, F314, F317-F320); F67c and F67d targets corrected to "after Apple approval", because both need the F67b device check, which waits on enrollment `R6QG2A9SHS`.) Previous: October 27, 2026 (Sprint 81 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #507 merged to develop (b79fa361) and main (#520, 763753be); Sprint 82 branch opened from the Sprint 81 branch; #508 and #511-#519 closed by the merge and #509/#510 stayed open as intended (PR body "Part of"); Sprint 81 plan, retrospective and summary present; Sprint 82 stub present; shipped cards pruned: F302, F259, F278, F271, F300, F301; F303, F67a, F67b trimmed to their remainders.) Previous: October 23, 2026 (Sprint 80 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #490 merged to develop (f301cdee) and main (#506, 2d81264a), tagged v0.21.0; Sprint 81 branch opened from the Sprint 80 branch; only #491 closed on merge -- the PR body used 'Closes #491, #492, ...', and GitHub applies the keyword to the first issue only, so the template now uses one keyword per card and the other 18 are closed by hand; Sprint 80 plan, retrospective and summary present; Sprint 81 stub present; F205 pruned (classified in Sprint 80 Task 1 R-7); F300's acceptance criterion moved back from F301; F246 and F259 given effort, Phase and Platform.)
+**Last Reviewed**: November 22, 2026 (Sprint 85 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #559 merged to develop (328f6e29) and main (#576, 8f2e6f5c); Sprint 86 branch opened from the Sprint 85 branch; #560-#567 and #569-#575 closed by the merge and #568 (F307, Sprint 86 by Harold q1), #509, #510, #523 (Apple) stayed open as intended; Sprint 85 plan, retrospective and summary present; Sprint 86 stub present; CI run 2 green (44887869324) and the merges recorded in the plan and summary; shipped cards were pruned at close-out (F329-F335, F341, F350, F352, F354, F355, F357); F362 added (Harold, 2026-11-22).) Previous: November 8, 2026 (Sprint 84 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #548 merged to develop (cc251012) and main (#558, 962a1b25), tagged v0.24.1; Sprint 85 branch opened from the Sprint 84 branch; #549-#557 closed by the merge and #509, #510, #523 stayed open as intended (Apple); Sprint 84 plan, retrospective and summary present; Sprint 85 stub present; shipped cards were pruned at close-out (F280, F326, F327, F328, F342, F345).) Previous: November 5, 2026 (Sprint 83 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #534 merged to develop (8bee2ce0) and main (#547, 0a65fd22), tagged v0.24.0; Sprint 84 branch opened from the Sprint 83 branch; #535-#546 closed by the merge and #509, #510, #523 stayed open as intended (Apple); Sprint 83 plan, retrospective and summary present; Sprint 84 stub present; shipped cards were pruned at close-out (F237, F270, F303, F305, F308-F310, F315, F321-F325).) Previous: October 31, 2026 (Sprint 82 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #521 merged to develop (f34be0d7) and main (#533, 8f588043), tagged v0.23.0; Sprint 83 branch opened from the Sprint 82 branch; #522, #525, #526, #528-#532 closed by the merge and #509, #510, #523, #524, #527 stayed open as intended (PR body "Part of"); Sprint 82 plan, retrospective and summary present; Sprint 83 stub present; shipped cards were pruned at close-out (F306, F312, F314, F317-F320); F67c and F67d targets corrected to "after Apple approval", because both need the F67b device check, which waits on enrollment `R6QG2A9SHS`.) Previous: October 27, 2026 (Sprint 81 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #507 merged to develop (b79fa361) and main (#520, 763753be); Sprint 82 branch opened from the Sprint 81 branch; #508 and #511-#519 closed by the merge and #509/#510 stayed open as intended (PR body "Part of"); Sprint 81 plan, retrospective and summary present; Sprint 82 stub present; shipped cards pruned: F302, F259, F278, F271, F300, F301; F303, F67a, F67b trimmed to their remainders.) Previous: October 23, 2026 (Sprint 80 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #490 merged to develop (f301cdee) and main (#506, 2d81264a), tagged v0.21.0; Sprint 81 branch opened from the Sprint 80 branch; only #491 closed on merge -- the PR body used 'Closes #491, #492, ...', and GitHub applies the keyword to the first issue only, so the template now uses one keyword per card and the other 18 are closed by hand; Sprint 80 plan, retrospective and summary present; Sprint 81 stub present; F205 pruned (classified in Sprint 80 Task 1 R-7); F300's acceptance criterion moved back from F301; F246 and F259 given effort, Phase and Platform.)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
+
+### Backlog from the Sprint 86 Manual Validation decisions (Harold, 2026-11-24)
+
+Source for F365-F368: `docs/GOOGLE_PLAY_POLICY_2026-10-29_ANALYSIS.md` "Proposed cards" (F364, Sprint 86 Task 11);
+register q11 = 1 (keep NON-TRADER) and q12 = 1 (all four cards). F369: register q13 = 1.
+
+**F365. Trader status: confirm the Play Console declaration and gate EEA/UK distribution (~20-30m) Priority 22 -- NEW 2026-11-24 (Harold, register q12 = 1); DEADLINE 2027-02-01**
+- Phase: Release Readiness (Google Play)
+- Platform: Android (Play Console); no app code
+- Decided: stay NON-TRADER (register q11 = 1). Harold, 2026-11-24: "I am not charging for the app, therefore a
+  non-trader". On Google's page (answer/17594752) no charge meets the profit criterion; the condition the page
+  states for a non-trader is no distribution in the EEA or the UK.
+- R-1: Harold opens the Console declaration screen and the Play country list for every track; record both. The last
+  recorded list (US only) is from 0.14.1 and was not re-checked.
+- R-2: add a step to `docs/STORE_RELEASE_PROCESS.md` and the Play country-change procedure: adding an EEA or UK
+  country, a price, an in-app product or ads re-decides trader status first.
+- Windows and iPhone: no shared code. A Microsoft Store or Apple App Store trader equivalent is unverified.
+- Depends on: none.
+
+**F366. Android vitals memory check before February 2027 (~20-30m) Priority 42 -- NEW 2026-11-24 (Harold, register q12 = 1); DEADLINE before 2027-02-01**
+- Phase: Release Readiness (Google Play)
+- Platform: Android (Play Console); a fix, if one is needed, is shared Dart code
+- Harold opens Play Console > Android vitals > overview > "Memory", and the App bundle explorer. Record the
+  90th-percentile values per state and the optimization percentage, or "insufficient data". If a value is near a
+  threshold (answer/17492799), open a fix card.
+- Depends on: none.
+
+**F367. Fail the AAB check on a Play-restricted permission (~45-60m) Priority 44 -- NEW 2026-11-24 (Harold, register q12 = 1)**
+- Phase: Release Readiness (Google Play)
+- Platform: Android only by necessity (reads the Android bundle manifest)
+- Extend `mobile-app/scripts/verify-aab-play-requirements.py` (F204; it already parses `uses-permission`) to fail
+  when the bundle requests a permission that needs a Play declaration: ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION,
+  ACCESS_BACKGROUND_LOCATION, ACCESS_LOCAL_NETWORK, READ_CONTACTS, WRITE_CONTACTS, MANAGE_CONTACTS, the SMS and call
+  log groups, MANAGE_EXTERNAL_STORAGE, READ_MEDIA_IMAGES, READ_MEDIA_VIDEO, QUERY_ALL_PACKAGES, USE_EXACT_ALARM,
+  SCHEDULE_EXACT_ALARM, and an accessibility service. Today only AD_ID is caught; a plugin upgrade could add one
+  silently.
+- Effort for test time (F361, estimate): about 4-6 script unittests, under 1 s locally and in CI.
+- Depends on: none.
+
+**F368. targetSdk 37 readiness: Local Network access for a custom IMAP host (~60-120m, unverified) Priority 90 -- NEW 2026-11-24 (Harold, register q12 = 1)**
+- Phase: Core App Quality
+- Platform: Android; if the message route is chosen, shared UI on all three platforms
+- Android 17 blocks LAN TCP by default, which affects a custom IMAP host on a home network. Decision-class choice
+  for Harold: (a) request `ACCESS_LOCAL_NETWORK` with a Play declaration (core-use test, answer/16909972), or (b) a
+  user-visible message on the custom server screen when a LAN host is blocked.
+- Trigger: the Flutter release that raises `flutter.targetSdkVersion` to 37, or the Play target-API-37 date
+  (unverified), whichever comes first.
+- Depends on: none.
+
+**F369. Retire `setup-android-oauth.py` and `export-tokens-for-android.py` (~15-30m) Priority 46 -- NEW 2026-11-24 (Harold, register q13 = 1)**
+- Phase: Process
+- Platform: development scripts only; no app code
+- Delete both scripts from `mobile-app/scripts/`, their tests in `scripts/tests/test_android_helpers.py`, and every
+  reference (grep the repo; record the count). Move the useful printed guidance to a doc (for example
+  `docs/OAUTH_SETUP.md`).
+- Evidence (register q13): the export script looks in Windows Credential Manager, but the app stores tokens in a
+  DPAPI file (`flutter_secure_storage_windows` 4.1.0, `flutter_secure_storage_windows_ffi.dart:234`, `:388-404`);
+  the setup script writes a Windows-only secret, and its Android premise is stale since #575.
+- Keep the shared key constants in `android_support.py` and the test that every Gmail key in the secrets templates
+  is read by `lib/` (Sprint 86 Task 12).
+- Depends on: none.
+
+### Backlog from the Sprint 85 Phase 8 cycle (Harold, 2026-11-22)
+
+**F364. Analyze the Google Play policy and Console changes and their impact on this repository; then propose backlog cards to bring it into compliance (~60-120m analysis, estimate unverified) Priority 30 -- NEW 2026-11-23, SPRINT 86 (Harold, register d4: "add to backlog for next sprint")**
+- Phase: Release Readiness (Google Play)
+- Platform: Android (Play); no app code in this card
+- Source: Harold, 2026-11-23 (verbatim): "add to backlog for next sprint: analyze changes to google play
+  store/console and their impact on this repository. Follow-up analysis with suggested additions to the backlog to
+  bring the repository into compliance https://support.google.com/googleplay/android-developer/answer/18100766"
+- The page is "Policy announcement: October 29, 2026" (fetched 2026-11-23). It gives "at least 30 days from October
+  29, 2026" to comply. Topics it names (summary of the fetch, not yet checked against the app): new Local Network
+  and Manage Contacts permission policies (Play Console declaration for API 37+ / core use); AppFunctions API;
+  eligibility-based subscription discounts; Location permission rules mandatory 2027-01-27 (`ACCESS_FINE_LOCATION`
+  declaration); All Files Access; Accessibility API; Deceptive Behavior; SMS / Call Log (`READ_CALL_LOG` phone-call
+  verification ends 2027-01-27); Payments through AI or agentic flows; Play Age Signals API; Japan payments
+  authorization by 2026-12-01; trader status declaration in Play Console "Starting in November 2026"; app quality
+  memory and code-optimization thresholds by February 2027 (answer/17492799); car apps; Android XR.
+- R-1: for each topic, read the Google page it links (including answer/17594752 trader status and answer/17492799
+  app quality) and record the exact requirement, date and source link. Do not state a policy from memory.
+- R-2: check each requirement against the repo with evidence: the merged `AndroidManifest.xml` permissions,
+  `targetSdk` / `compileSdk` in `mobile-app/android/app/build.gradle.kts`, the plugins in `pubspec.lock` that add
+  permissions, `docs/GOOGLE_PLAY_ACCOUNT_SETUP.md` (declarations already submitted) and the Play Console state Harold
+  reports (the Console cannot be read from here; ask for a screenshot when a fact is only there).
+- R-3: classify each topic: applies (with the file:line or Console screen), does not apply (with the evidence), or
+  unknown (with what would settle it).
+- R-4: write the result to `docs/GOOGLE_PLAY_POLICY_2026-10-29_ANALYSIS.md` and propose one backlog card per gap
+  (F-number, effort, priority, deadline), presented to Harold as register items for a decision.
+- R-5: record the EU / trader-status position in `docs/GOOGLE_PLAY_ACCOUNT_SETUP.md` (Harold, 2026-11-23: "I have a
+  EU declared development account"). Declared status: non-trader (Harold, 2026-11-23, register q4 = 2). Check, with
+  a source, what a non-trader declaration requires or limits for this account.
+- AC-1: every topic on the page has a classification and a source link. AC-2: every "applies" topic has a proposed
+  card or a recorded reason none is needed. AC-3: no claim about a Google rule without a same-session source.
+- Depends on: none. Deadline pressure: the 30-day window from 2026-10-29 ends about 2026-11-28 (unverified how
+  Google counts it; the Policy Deadlines page settles it).
+
+**F363. Task clock: every task's start and finish are recorded by a script and enforced by gates, so no task ever ends with no minutes (~180-270m) Priority 32 -- NEW 2026-11-23, SPRINT 86 (Harold, register d2: "add to this sprint ... it should never fail for even one task")**
+- Phase: Process
+- Platform: development process (hooks and scripts; no app code)
+- Trigger: six of the sixteen Sprint 85 task cards (Tasks 1, 2, 4, 5, 7, 8) closed with "actual minutes not
+  recorded, 0 min logged". Open question q1 in `docs/DECISION_REGISTER.md` covers those six rows; this card stops
+  the miss from happening again.
+- Root causes (evidence read 2026-11-23):
+  - RC-1: close-out check 3d-3 accepted the text of the miss. `EXECUTED_BY_MINUTES`
+    (`.claude/hooks/verify-closeout-complete.py:74`) matches any `\d+ min`, so "0 min logged" passed.
+  - RC-2: nothing blocks at the time. `warn-commit-without-velocity.py` always exits 0 (warn only), and Sprint 85
+    retro i7 ("add the velocity row with `Started <date HH:MM>` when the task starts") is a document line with no gate.
+  - RC-3: a close-out check can only detect. By then the clock reading is gone and cannot be recovered.
+  - RC-4: the misses are main-session work. Five of the six involve the main session (Task 8 was a Haiku sub-agent
+    whose launch and handback times were not written down). The ten recorded rows are mostly sub-agent tasks, whose
+    launch and handback give a start and an end. A task with no commit (Task 7, decisions only) had no event at all.
+- R-1: `scripts/task-clock.py` with `start <task>`, `stop <task>` (end of one work segment, for interleaved tasks),
+  and `finish <task>`. The script reads the clock itself; Claude never types a time. It writes a per-sprint ledger
+  `docs/sprints/SPRINT_<N>_TASK_CLOCK.json` (committed), and at `finish` it writes the CODING_VELOCITY row (Started,
+  Finished, minutes) and the plan's `**Executed-by**` minutes from the ledger total.
+- R-2 handoff and handback (sub-agent tasks): a PreToolUse hook on the Agent tool records the task's start when
+  the prompt names `Task <N>` of the current sprint and no start exists. A PostToolUse hook records the handback
+  time for a foreground agent. For a background agent, the end comes from `finish` at handback; verify first
+  whether Claude Code's SubagentStop hook event carries enough to name the task (unverified 2026-11-23; read the
+  hooks reference before building).
+- R-3 main-session start: during Phases 4-5 (read from `sprint_status.json`), a PreToolUse hook on
+  Edit|Write|NotebookEdit BLOCKS an edit to a tracked file when no task clock is open. Exempt list: the sprint plan,
+  the ledger, `docs/CODING_VELOCITY.md`, `docs/DECISION_REGISTER.md`, `.claude/sprint_status.json`. The block text
+  gives the one command to run. This is the gate that would have caught Sprint 85 Tasks 1, 2, 4 and 5.
+- R-4 finish: a `git commit` whose message has `Closes #<card>` is BLOCKED unless that task's ledger has `finish`.
+  A commit naming `Task <N>` is BLOCKED unless that task has a start. The warn-only velocity hook is replaced by
+  this gate (or kept only for commits the gate does not cover).
+- R-5 end-of-task checklist: `finish` prints and checks the task's close lines: ledger start and finish present,
+  CODING_VELOCITY row complete, Executed-by line names the model and the ledger minutes, `sprint_status.json` task
+  status updated. A line that fails is printed as FAIL and the script exits non-zero.
+- R-6 close-out 3d-3 hardened: every task card needs a ledger entry with start and finish, and its Executed-by
+  minutes must equal the ledger total. "0 min" and "not recorded" are rejected. The only exception is a line that
+  names a register decision `d<n>` in which Harold accepted the gap.
+- R-7 fail closed: every gate that cannot read the ledger or `sprint_status.json` BLOCKS and says "the check did
+  not run", never passes in silence. Outside Phases 4-5 the gates do nothing (Phase 8 and refinement are free).
+- R-8 a task with no commit and no edit (a decisions-only task such as Sprint 85 Task 7) is covered by R-6: it
+  cannot close out without `start` and `finish`.
+- AC-1: a fixture plan with the exact Sprint 85 line "actual minutes not recorded, 0 min logged" BLOCKS 3d-3.
+- AC-2: an Edit to `mobile-app/lib/` in Phase 4 with no open task BLOCKS; the same edit after `start` passes.
+- AC-3: an Agent call naming `Task 3` writes a start to the ledger; a commit with `Closes #<card>` before `finish`
+  BLOCKS.
+- AC-4: an unreadable ledger BLOCKS with "the check did not run".
+- AC-5: Sprint 86 itself closes out with every task clocked by this mechanism (the card is built first in the
+  sprint, so the other Sprint 86 tasks are its first real use).
+- Effort for test time (F361 style, estimate, to be measured): about 12-15 new hook cases and unittests, +3-6 s to
+  `python .claude/hooks/run-test-cases.py` locally and +3-6 s to the CI hook unittest step; +0 to `flutter test`.
+  Runtime cost: one extra hook per Edit/Write in Phases 4-5, target under 100 ms.
+- Decided: register q2 = 1 (Harold, 2026-11-23): add all three gates -- new `.claude/settings.json` matchers for
+  Agent (PreToolUse and PostToolUse) and Edit|Write|NotebookEdit (PreToolUse), and the commit gate on Bash|PowerShell.
+- Depends on: F362 (the register that holds `d<n>` exceptions). Pairs with F362 (Priority 34).
+
+**F362. Store every question, decision and improvement in full, and re-ask an open one in full (~45-60m) Priority 34 -- NEW 2026-11-22 (Harold: "Add to backlog for next sprint")**
+- Phase: Process
+- Platform: N/A
+- Harold, 2026-11-22: *"please store all quesitons, decisions and Improvement in full. If you still need an answer
+  to one and it has scrolled off the screen, always re-ask with the full contents every time (it is to hard to
+  scroll back to find them)."* Trigger: the 7.7.5 announcement asked how to record six Executed-by lines with no
+  minutes; the question was in the terminal only, not in any file.
+- Harold, 2026-11-23 (register d1): the items live in a repository file OUTSIDE the sprint plan, because they cross
+  sprints and some are not plan items; easy to find by search or index; short ids (i1, q1, d1). Started
+  2026-11-23: `docs/DECISION_REGISTER.md` exists with an index, q1, q2, d1 and d2.
+- R-1: every question, decision and improvement put to Harold is written to `docs/DECISION_REGISTER.md` IN FULL at
+  the time it is asked: the id (q<n>, i<n>, d<n>; counters run across sprints, never reused), what it decides,
+  every option with its pros and cons, the recommendation, and later Harold's verbatim answer and the date. A
+  one-line summary or a reference to the chat is not enough.
+- R-2: the register's Index lists every open item. An item leaves Open only when Harold answers or withdraws it.
+- R-3: a message that needs an answer to an open item copies the FULL entry from the register, never a reference to
+  it (extends the existing "re-present, do not reference" rule in CLAUDE.md with a stored source to copy from).
+- R-4: decide with Harold whether a close-out check blocks on an open register entry with no answer (prevention by
+  gate, like check 3d-4) or whether the rule stays documentation only.
+- R-5: CLAUDE.md, `SPRINT_EXECUTION_WORKFLOW.md` 7.3 STEP 5 and the retrospective template name the register as the
+  place improvements and questions are written.
+- Effort for test time (F361): a close-out check adds about 3-4 hook cases, under 2 s locally and in CI; documentation
+  only adds +0.
+- Depends on: none. Pairs with F361 (both change how retrospective items are written).
 
 ### Backlog from the Sprint 85 retrospective (Harold, 2026-11-21)
 
@@ -241,7 +416,7 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Phase: Process / Testing
 - Platform: Windows Desktop
 - The runner turns the Windows screen-reader flag on (`run-winwright-tests.ps1:507`) and never turns it off; restore
-  the state it found when it ends (`enable-screen-reader-flag.ps1` has status, enable and disable).
+  the state it found when it ends (`enable-screen-reader-flag.py` has status, enable and disable).
 - `test_f124_rule_labels` failed 6 of 6 through the runner at step 2 ("No main window found") and passed 29 of 29
   eight times run directly on the same build (Sprint 85 5.1.5). Ruled out: a background scan, a second window with
   the same title, the window state, the flag, the script. Remaining suspect: WinWright does not retry the main-window
@@ -493,6 +668,13 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   alone. Timed 2026-11-06 14:58: `Get-ScheduledTask` for a missing task takes 7.1 s in-process and 8 to 13 s with a
   PowerShell start; a bare PowerShell start takes 0.9 s. So the query is slow, not the process start. Last boot
   2026-10-30, so the Sprint 83 "re-time after a reboot" check has not run. Code and tests unchanged since b00669e4.
+- Evidence (Sprint 86 Phase 7, 2026-11-25 00:31): AFTER a reboot (last boot 2026-11-23 04:20) the query for a missing
+  task still takes 7.9 s with a PowerShell start (bare start 2.0 s), so the reboot check is done and the slowness
+  stays. The full suite at 0a2c3235 failed 3 of 3,717, all in `windows_task_scheduler_service_test` (getScheduleStatus,
+  getNextScheduledTime, taskExists "when task does not exist"), and run ALONE the file now also fails 1
+  (getScheduleStatus). Each of these tests deletes then queries the legacy name `SpamFilterBackgroundScan_Dev`, which
+  does not exist (the real DEV tasks are per account and were not touched: all 3 present and running at 00:28-00:31),
+  so each test makes two slow missing-task queries. Decision on when to fix: register q15.
 - Do: re-time after a reboot; if still slow, find why the query is slow (cause unknown), then either give these
   tests a timeout sized from the measurement with the reason in a comment, or replace the real query with the
   existing seam. Do not raise the timeout without the measurement.

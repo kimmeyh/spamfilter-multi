@@ -43,7 +43,6 @@ void main() {
         HelpSection.manualScanSettings: 'manualScanSettings',
         HelpSection.backgroundScanning: 'backgroundScanning',
         HelpSection.manageRules: 'manageRules',
-        HelpSection.ruleQuickAdd: 'ruleQuickAdd',
         HelpSection.ruleTest: 'ruleTest',
         HelpSection.safeSenders: 'safeSenders',
         HelpSection.folderSelection: 'folderSelection',

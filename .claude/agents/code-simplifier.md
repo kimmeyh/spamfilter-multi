@@ -42,6 +42,5 @@ Review the recently modified files and look for opportunities to:
 1. Run `git diff HEAD~1` to see recent changes
 2. For each modified file in `mobile-app/lib/`, analyze for simplification opportunities
 3. Make the simplifications following Dart style guide and project conventions
-4. Run `flutter test` to verify behavior is unchanged
-5. Run `flutter analyze` to ensure no new warnings
-6. Report what was simplified and why
+4. Run `python scripts/quality-gate.py` from the repository root. It runs `flutter analyze` and `flutter test`; behavior is unchanged and there are no new warnings only when it ends with `RESULT: PASS`
+5. Report what was simplified and why

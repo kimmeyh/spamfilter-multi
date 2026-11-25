@@ -30,6 +30,7 @@ import '../../core/models/email_message.dart';
 import '../../core/models/evaluation_result.dart';
 import '../../core/security/auth_rate_limiter.dart';
 import '../../core/security/imap_certificate_trust.dart';
+import '../../core/security/imap_connect_diagnostics.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/settings_store.dart';
 import '../storage/secure_credentials_store.dart';
@@ -437,7 +438,23 @@ class GenericIMAPAdapter with BatchOperationsMixin
       // Always SSL/TLS here: the constructor refuses any other encryption for
       // a platform other than 'imap', and only 'imap' changes it later
       // (_resolveCustomServer). Never a cleartext connect.
-      await client.connectToServer(_imapHost, _imapPort, isSecure: true);
+      //
+      // F347 (Sprint 86): a TimeoutException or SocketException is logged with
+      // the phase and network type and rethrown unchanged. The library hides
+      // the TCP/TLS split, so the phase is the inferred `tcp+tls`. The 20 s
+      // limit is the library default (enough_mail 2.1.7 client_base.dart:103),
+      // not changed here. NOT caught (Sprint 86 7.7.1 L8, library behavior
+      // that predates F347): `connectToServer` then waits for the greeting
+      // with NO timeout (client_base.dart:117-121), and a connection that
+      // closes during it does not complete that wait (imap_client.dart:331-336),
+      // so a greeting stall gives no exception and no F347 line; `tcp+tls`
+      // also covers the greeting on this path.
+      await ImapConnectDiagnostics.traceConnect<Object?>(
+        host: _imapHost,
+        port: _imapPort,
+        providerPath: true,
+        body: (_) => client.connectToServer(_imapHost, _imapPort, isSecure: true),
+      );
     }
 
     _logger.i('[IMAP] IMAP login attempt for $displayName');

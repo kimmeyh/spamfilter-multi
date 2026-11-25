@@ -21,7 +21,7 @@
           "tool": "ww_window_state", "state": "restore" },
         { "_comment": "PROOF the app opened on Review No Rule Items (the default screen): this top-bar button exists on that screen. ww_focus presses nothing.",
           "tool": "ww_focus", "selector": "type=Button[name='Re-check the last scan (does not fetch new mail)']" },
-        { "_comment": "Open the first listed item. Only a row button has 'No rule' in its name (ASCII only: the runner drops the bullet character from a selector). The 'Create rule for' buttons and the top bar do not match.",
+        { "_comment": "Open the first listed item. Only a row button has 'No rule' in its name (ASCII only: the runner drops the bullet character from a selector). The top bar does not match.",
           "tool": "ww_invoke", "selector": "type=Button[name*='No rule']" },
         { "_comment": "PROOF the pop-up opened: Skip exists only inside it.",
           "tool": "ww_focus", "selector": "type=Button[name='Skip']" },

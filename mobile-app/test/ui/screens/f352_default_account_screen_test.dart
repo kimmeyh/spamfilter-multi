@@ -162,8 +162,25 @@ void main() {
       await drain(tester);
     });
 
+    testWidgets('an unreadable default tells the user, and the list still '
+        'loads (Sprint 86 7.7.1 L9)', (tester) async {
+      // Does NOT catch: a default that reads back as a wrong but valid id.
+      await seedAccounts(tester);
+      await tester.runAsync(() async {
+        final db = await DatabaseHelper().database;
+        await db.execute('DROP TABLE app_settings');
+      });
+      await mountSelect(tester, SelectedAccountProvider());
+
+      expect(find.textContaining('default account could not be read'),
+          findsOneWidget);
+      expect(toggleA, findsOneWidget, reason: 'the list still loads');
+      expect(markA, findsNothing);
+      await drain(tester);
+    });
+
     testWidgets('the control sets the default, marks that row, stores it, and '
-        'does not change the session selection', (tester) async {
+        'selects it for this session (Sprint 86 Task 14)', (tester) async {
       await seedAccounts(tester);
       final selected = SelectedAccountProvider();
       await mountSelect(tester, selected);
@@ -180,8 +197,26 @@ void main() {
       final stored = await tester
           .runAsync(() => SettingsStore().getDefaultAccountId());
       expect(stored, _a);
-      expect(selected.hasSelection, isFalse,
-          reason: 'setting a default does not select it for this session');
+      // Sprint 86 Task 14 (register q14 = 1, amends ADR-0052 decision 3).
+      expect(selected.accountId, _a,
+          reason: 'setting a default selects it for this session at once');
+      await drain(tester);
+    });
+
+    testWidgets('Remove default leaves the session selection unchanged '
+        '(Sprint 86 Task 14)', (tester) async {
+      await seedAccounts(tester);
+      await tester.runAsync(() => SettingsStore().setDefaultAccountId(_a));
+      final selected = SelectedAccountProvider()..select(_a);
+      await mountSelect(tester, selected);
+
+      await tapReal(tester, toggleA); // "Remove default"
+      await settle(tester, rounds: 1);
+
+      expect(await tester.runAsync(() => SettingsStore().getDefaultAccountId()),
+          isNull);
+      expect(selected.accountId, _a,
+          reason: 'removing the default does not clear the session pick');
       await drain(tester);
     });
 
@@ -297,8 +332,101 @@ void main() {
       await drain(tester);
     });
 
+    // Sprint 86 Task 14 (register q14 = 1): Harold's Store 0.25.0 report --
+    // a default set during the session still showed the picker on Settings.
+    testWidgets('a default set during this session: Settings opens on it with '
+        'NO picker (AC-1)', (tester) async {
+      await seedAccounts(tester);
+      final selected = SelectedAccountProvider();
+      await mountSelect(tester, selected);
+
+      await tapReal(tester, toggleA);
+      await settle(tester, rounds: 1);
+      await openSettings(tester);
+
+      expect(find.byType(AlertDialog), findsNothing,
+          reason: 'the default was just set; the app must not ask again');
+      final settings =
+          tester.widget<SettingsScreen>(find.byType(SettingsScreen));
+      expect(settings.accountId, _a);
+      await drain(tester);
+    });
+
+    testWidgets('a stored default with an EMPTY session (seed did not apply): '
+        'the resolver uses it, NO picker (AC-2)', (tester) async {
+      await seedAccounts(tester);
+      await tester.runAsync(() => SettingsStore().setDefaultAccountId(_b));
+      final selected = SelectedAccountProvider(); // not seeded
+      await mountSelect(tester, selected);
+
+      await openSettings(tester);
+
+      expect(find.byType(AlertDialog), findsNothing);
+      final settings =
+          tester.widget<SettingsScreen>(find.byType(SettingsScreen));
+      expect(settings.accountId, _b);
+      expect(selected.accountId, _b,
+          reason: 'the resolved default becomes the session selection');
+      await drain(tester);
+    });
+
     // Would NOT catch: Manual Scan and the other readers of the selection
     // (they read the same provider; the resolver is the shared gate).
+  });
+
+  group('Settings opened with no account: the lazy tab resolver (Sprint 86 '
+      'Task 14, AC-2)', () {
+    Future<void> mountSettingsNoAccount(
+        WidgetTester tester, SelectedAccountProvider selected) async {
+      tester.view.physicalSize = const Size(1400, 1000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.runAsync(() async {
+        await tester.pumpWidget(MaterialApp(
+          home: MultiProvider(
+            providers: [
+              ChangeNotifierProvider.value(value: selected),
+              ChangeNotifierProvider(create: (_) => EmailScanProvider()),
+              ChangeNotifierProvider(create: (_) => RuleSetProvider()),
+            ],
+            child: const SettingsScreen(),
+          ),
+        ));
+        await Future<void>.delayed(const Duration(milliseconds: 900));
+        await tester.pump();
+      });
+      await tester.runAsync(() async {
+        await tester.tap(find.text('Account'));
+        await Future<void>.delayed(const Duration(milliseconds: 900));
+      });
+      await settle(tester, rounds: 4);
+    }
+
+    testWidgets('a stored default opens the Account tab on it with NO picker',
+        (tester) async {
+      await seedAccounts(tester);
+      await tester.runAsync(() => SettingsStore().setDefaultAccountId(_b));
+      final selected = SelectedAccountProvider();
+      await mountSettingsNoAccount(tester, selected);
+
+      expect(find.byType(AlertDialog), findsNothing,
+          reason: 'a stored default means no account picker');
+      expect(find.textContaining(_b), findsWidgets);
+      expect(selected.accountId, _b);
+      await drain(tester);
+    });
+
+    testWidgets('no default: the picker IS shown (unchanged)', (tester) async {
+      await seedAccounts(tester);
+      await mountSettingsNoAccount(tester, SelectedAccountProvider());
+
+      expect(find.byType(AlertDialog), findsOneWidget);
+      await drain(tester);
+    });
+
+    // Would NOT catch: a keystore read failure of the default (logged, then
+    // the picker asks); no test injects that failure here.
   });
 
   group('Settings > Account label (AC-2)', () {

@@ -415,7 +415,6 @@ class EmailResultTile extends StatelessWidget {
     required this.onTap,
     this.accountLabel,
     this.heuristicCodes = const [],
-    this.onCreateRule,
   });
 
   final EmailActionResult result;
@@ -429,10 +428,6 @@ class EmailResultTile extends StatelessWidget {
   /// chips under the subtitle. Empty (the default, and every Results row)
   /// renders the row exactly as before.
   final List<String> heuristicCodes;
-
-  /// F271: when set, the row shows a "Create rule" button that calls this.
-  /// Only the No Rule Review screen passes it.
-  final VoidCallback? onCreateRule;
 
   @override
   Widget build(BuildContext context) {
@@ -499,34 +494,11 @@ class EmailResultTile extends StatelessWidget {
                   ),
                 ],
               ),
-        trailing: onCreateRule == null
-            ? trailing
-            : Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Semantics(
-                    button: true,
-                    label: 'Create rule for ${_senderDomain(title)}',
-                    excludeSemantics: true,
-                    child: TextButton(
-                      key: const ValueKey('create_rule_button'),
-                      onPressed: onCreateRule,
-                      child: const Text('Create rule'),
-                    ),
-                  ),
-                  trailing,
-                ],
-              ),
+        trailing: trailing,
         onTap: () => onTap(tileKey),
       ),
     );
   }
-}
-
-/// The domain part of a displayed sender, for a screen-reader label.
-String _senderDomain(String sender) {
-  final at = sender.lastIndexOf('@');
-  return at >= 0 && at < sender.length - 1 ? sender.substring(at + 1) : sender;
 }
 
 /// F271 (Sprint 81): one reason chip. The visible text is the plain-English

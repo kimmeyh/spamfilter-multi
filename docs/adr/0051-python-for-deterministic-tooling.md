@@ -38,9 +38,10 @@ prompt (skill, command or agent).
 Additions at acceptance (Harold, 2026-11-04):
 
 - **Interpreter**: Python 3.14 is the preferred version. On this machine the `py` launcher defaults to 3.14, while
-  `python` on PATH, which the hook registrations call, is 3.12.10 (both read 2026-11-04). Until the registrations
-  change, code must run on 3.12 as well; CI uses its runner's Python. Moving the hooks to 3.14 is a settings change
-  asked separately.
+  `python` on PATH is 3.12.10 (both read 2026-11-04). Since Sprint 86 (F344, register q8 = 1) every hook is
+  registered as `py -3.14 ...` (Python 3.14.10, read 2026-11-24), and the hook suite passes under it (230/230).
+  Scripts started as `python ...` still run under 3.12, so code must run on 3.12 as well; CI uses its runner's
+  Python.
 - **Prompts**: a prompt (skill, command or agent) whose steps can be written deterministically is rewritten as a tool.
   Only the parts that need judgment stay Markdown.
 - **Helper tools for prompts**: when several prompts need the same deterministic step (read a file's format, count
@@ -87,13 +88,16 @@ folders and line-ending helpers are NOT written yet; the batch that first needs 
 ### Registration form
 
 ```
-python "${CLAUDE_PROJECT_DIR}/.claude/hooks/<name>.py"
+py -3.14 "${CLAUDE_PROJECT_DIR}/.claude/hooks/<name>.py"
 ```
 
-Forward slashes only, double-quoted path, no shell operators. It runs unchanged under Git Bash and cmd on Windows and
-under sh on Linux and macOS, and it is the form the sibling repository uses. Requirements: `python` must be on PATH. On
-Linux that means the `python-is-python3` package or a `python` symlink; on a runner that has only `python3`, the
-CI step uses `python3` directly (the hooks are not registered in CI). No `python3 ... || python ...` fallback is
+Forward slashes only, double-quoted path, no shell operators, ONE interpreter for every hook (Sprint 86, F344; until
+then the word was `python`). It runs unchanged under Git Bash and cmd on Windows. Requirements: the Windows `py`
+launcher with Python 3.14 installed. `run-test-cases.py` and `scripts/test-hook.py` read the interpreter from
+`.claude/settings.json` (`common.hook_interpreter`), so they test the program the real hooks use; on Windows a
+missing one is an error, and off Windows (CI has no `py` launcher; the hooks are not registered in CI) they fall
+back to `python3` / `python` with a NOTE. A macOS or Linux developer machine would need its own registration.
+`.codex/hooks.json` still registers `python` (outside q8's `.claude/settings*.json` scope). No `python3 ... || python ...` fallback is
 used: the first run consumes stdin, so a second run would read an empty payload and allow.
 
 ### The mutation lock interface
@@ -176,10 +180,12 @@ Skills (`.claude/skills/`, 10):
 - Hybrid (a script gathers the facts, the model judges them; the skill stays `.md`): `phase-check`, `memory-save`
   (F339).
 - GenAI (stays `.md`, no card): `plan-sprint`, `backlog-refinement`, `first-principles`.
-- Retired: `memory-restore` (delete candidate, F340).
+- Retired: `memory-restore`. F340 (Sprint 86) KEPT it: it is the Sprint 51 tombstone Harold chose over deletion
+  (F130-S51), so an invocation lands on an explanation, not a missing command. It has no script to convert.
 
-`.claude/scripts/` (3 `.ps1`): `archive-memory`, `check-memory-on-startup`, `save-memory` are deterministic and look
-obsolete since the Sprint 51 retirement of `/memory-restore`; F340 audits them and deletes or converts.
+`.claude/scripts/` (3 `.ps1`): `archive-memory`, `check-memory-on-startup`, `save-memory` were DELETED by F340
+(Sprint 86): no hook, skill, setting or script calls them (grep 2026-11-24; the only hits were sprint history and two
+doc lines, updated), and they read and write the `.claude/memory/` files frozen since Sprint 39.
 
 `.claude/commands/` (5) and `.claude/agents/` (5) are prompts to a model and stay `.md`. The brief did not ask for them
 to be classified; they are listed here so the inventory is complete.

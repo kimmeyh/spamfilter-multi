@@ -154,15 +154,16 @@ class StandardAppBarActions {
       //    NET EFFECT (re-audited 2026-08-02 against this guard, PR #292
       //    re-review -- the previous "9 of 15" figure here was WRONG and
       //    survived two fix rounds; it omitted three screens and its arithmetic
-      //    never matched the guard). Across the 15 screens (16 call sites)
-      //    using this builder, the icon can appear on at most SIX:
-      //      - always (3): folder_selection, results_display (non-nullable
+      //    never matched the guard). Counts are deliberately NOT written here:
+      //    they went stale when a screen was removed (F307). Across the
+      //    screens using this builder, the icon can appear only on:
+      //      - always: folder_selection, results_display (non-nullable
       //        accountId) and no_rule_review (always passes onManualScan);
-      //      - only when an account is resolvable (3): help_screen,
+      //      - only when an account is resolvable: help_screen,
       //        scan_history and settings (nullable accountId).
-      //    Never on the other nine: scan_progress (includeManualScan: false --
-      //    it IS Manual Scan); the five Help-only editors (rules_management,
-      //    safe_senders_management, rule_test, rule_quick_add,
+      //    Never on the rest: scan_progress (includeManualScan: false --
+      //    it IS Manual Scan); the Help-only editors (rules_management,
+      //    safe_senders_management, rule_test,
       //    yaml_import_export); and account_selection, account_setup (both call
       //    sites) and platform_selection, which pass no accountId and no
       //    handler. The editor and account-flow screens are deliberate: showing

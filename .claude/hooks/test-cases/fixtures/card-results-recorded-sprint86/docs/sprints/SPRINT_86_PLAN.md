@@ -9,7 +9,7 @@
 
 **Old name search**: `old-tool.ps1` -- hits: docs/TESTING_STRATEGY.md:120 updated; docs/adr/0017-tooling.md:33 dated note naming the port.
 
-**Executed-by**: Sonnet agent ~20 min + lead ~10 = ~30 min
+**Executed-by**: Sonnet agent + lead -- 30 min (task clock 2026-11-24 01:00 to 2026-11-24 01:30, 2 segment(s))
 
 ### Task 2 -- Rename a screen
 
@@ -17,7 +17,7 @@
 
 **Old name search**: `OldScreen` -- none found outside the renamed file.
 
-**Executed-by**: Haiku agent ~12 min
+**Executed-by**: Haiku agent -- 12 min (task clock 2026-11-24 02:00 to 2026-11-24 02:12, 1 segment(s))
 
 ## Phase 5 evidence
 

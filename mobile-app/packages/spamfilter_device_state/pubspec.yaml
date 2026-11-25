@@ -1,0 +1,19 @@
+name: spamfilter_device_state
+description: Android-only local plugin (F346, Sprint 86) that reports power-save, device-idle and thermal state. It exists so the channel is registered on EVERY Flutter engine, including the WorkManager background engine.
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+  flutter: ">=3.10.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.myemailspamfilter.devicestate
+        pluginClass: DeviceStatePlugin

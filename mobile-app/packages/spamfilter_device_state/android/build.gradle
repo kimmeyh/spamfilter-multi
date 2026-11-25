@@ -1,0 +1,30 @@
+group = "com.myemailspamfilter.devicestate"
+version = "1.0-SNAPSHOT"
+
+// F346 (Sprint 86): no buildscript block. The app's settings.gradle.kts already
+// puts AGP 8.11.1 and Kotlin 2.2.20 on the build classpath; a second classpath
+// here could pick a different version.
+apply plugin: "com.android.library"
+apply plugin: "kotlin-android"
+
+android {
+    namespace = "com.myemailspamfilter.devicestate"
+    compileSdk = 36
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_17.toString()
+    }
+
+    sourceSets {
+        main.java.srcDirs += "src/main/kotlin"
+    }
+
+    defaultConfig {
+        minSdk = 23
+    }
+}

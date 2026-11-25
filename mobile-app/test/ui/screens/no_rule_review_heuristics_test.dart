@@ -1,17 +1,17 @@
-/// F271 (Sprint 81): reason chips and the "Create rule" action on the No Rule
-/// Review screen.
+/// F271 (Sprint 81): reason chips on the No Rule Review screen. Sprint 86
+/// (F307) removed the "Create rule" action; a row now opens the F306 rule
+/// pop-up, which makes the rule.
 ///
 /// Drives the real screen on the real database (same harness as
 /// no_rule_review_screen_test.dart): a stored row with codes shows its chips,
-/// a row without codes shows none, and tapping Create rule opens the existing
-/// quick-add screen with that sender's domain filled in.
+/// a row without codes shows none, and a row has no "Create rule" action while
+/// its rule pop-up still opens.
 ///
 /// What these tests do NOT catch (one line each):
 ///   - chips: how a wrapped second line looks on a real 360 px phone (the
 ///     narrow-width test only proves no overflow exception, not the visual);
-///   - Create rule: saving the rule from the quick-add screen and the row then
-///     leaving the list (the save path is the quick-add screen's own, covered
-///     by its tests; here the screen is only opened);
+///   - the pop-up's rule save and the row then leaving the list (covered by
+///     the pop-up and quick-action tests; here the pop-up is only opened);
 ///   - semantics: what TalkBack or Narrator actually speaks.
 library;
 
@@ -26,7 +26,6 @@ import 'package:my_email_spam_filter/core/storage/rule_database_store.dart';
 import 'package:my_email_spam_filter/core/storage/safe_sender_database_store.dart';
 import 'package:my_email_spam_filter/core/storage/unmatched_email_store.dart';
 import 'package:my_email_spam_filter/ui/screens/no_rule_review_screen.dart';
-import 'package:my_email_spam_filter/ui/screens/rule_quick_add_screen.dart';
 
 import '../../helpers/database_test_helper.dart';
 import '../../helpers/db_widget_test_harness.dart';
@@ -191,31 +190,28 @@ void main() {
     expect(tops.length, greaterThan(1), reason: 'chips flow onto a second line');
   });
 
-  testWidgets('Create rule opens the quick-add screen with the sender domain '
-      'filled in', (tester) async {
+  testWidgets('no Create rule action on a row; the rule pop-up still opens '
+      '(F307 T-1)', (tester) async {
     bigScreen(tester);
     await tester.runAsync(() async {
       await seed({'flagged@spam.example': 'reply_to_differs'});
       await mount(tester);
     });
 
-    expect(find.byType(RuleQuickAddScreen), findsNothing);
+    // The Create rule page and its row button are gone.
+    expect(find.text('Create rule'), findsNothing);
+    expect(find.byKey(const ValueKey('create_rule_button')), findsNothing);
+
+    // Tapping the row opens the F306 rule pop-up, which makes the rule.
     await tester.runAsync(() async {
-      await tester.tap(find.byKey(const ValueKey('create_rule_button')));
+      await tester.tap(find.text('flagged@spam.example').first);
       await tester.pump();
       await Future<void>.delayed(const Duration(milliseconds: 300));
       await tester.pump(const Duration(milliseconds: 500));
     });
 
-    expect(find.byType(RuleQuickAddScreen), findsOneWidget);
-    final fieldTexts = [
-      for (final e in find.byType(EditableText).evaluate())
-        (e.widget as EditableText).controller.text
-    ];
-    // The screen builds its fields lazily; the rule-name field is on screen
-    // and is derived from the sender domain (the From pattern field below it
-    // is derived from the same normalized address).
-    expect(fieldTexts, contains('AutoDeleteSpamExample'),
-        reason: 'the quick-add form is prefilled from the sender domain');
+    expect(find.text('Block Email'), findsOneWidget,
+        reason: 'the rule pop-up opens with its block quick actions');
+    expect(find.text('Create rule'), findsNothing);
   });
 }

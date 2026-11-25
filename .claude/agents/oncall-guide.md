@@ -34,7 +34,7 @@ For critical issues, consider:
 
 - Review recent commits affecting the reported feature
 - Check error logs (Android: `flutter logs`, Windows: debug console)
-- Analyze test results (run `flutter test` to identify regressions)
+- Analyze test results (run `python scripts/quality-gate.py` to identify regressions; it ends with `RESULT: PASS` or `RESULT: FAIL (<steps>)`)
 - Review code changes in `lib/adapters/` if provider-related
 - Check `lib/core/services/` if rule evaluation or scanning issue
 - Reproduce issue locally on affected platform
@@ -43,7 +43,7 @@ For critical issues, consider:
 ### 5. Resolution
 
 - Implement fix (assign to appropriate model via sprint planning)
-- Run full test suite: `flutter test` (must pass)
+- Run `python scripts/quality-gate.py` (must end with `RESULT: PASS`)
 - Test on affected platform(s) with real credentials
 - Create PR with detailed description and testing notes
 - Merge to `develop` for validation, then to `main` for release
@@ -59,11 +59,8 @@ git show <commit-hash>
 # View Flutter app logs (Android)
 flutter logs
 
-# Run tests to identify regressions
-flutter test
-
-# Analyze code
-flutter analyze
+# Analyze and run all tests, one verdict (from the repository root)
+python scripts/quality-gate.py
 
 # Check current branch and status
 git status

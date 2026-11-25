@@ -7,8 +7,7 @@ Follow these steps in order for the spamfilter-multi project:
 1. **Review changes**: Run `git status` and `git diff` to see what files have changed
 
 2. **Verify project standards**:
-   - Run `flutter analyze` (must report 0 issues)
-   - Run `flutter test` (all 138+ tests must pass)
+   - Run `python scripts/quality-gate.py` from the repository root (it runs `flutter analyze` and `flutter test`; it must end with `RESULT: PASS`, exit 0)
    - Ensure code follows CLAUDE.md standards (no contractions, use Logger not print)
 
 3. **Stage files**: Run `git add` for appropriate files (or `git add -A` if all changes are valid)

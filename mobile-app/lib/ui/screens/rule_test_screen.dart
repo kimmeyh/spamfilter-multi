@@ -16,7 +16,7 @@ import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 ///
 /// Users can enter a regex pattern, select a condition type (from, subject,
 /// body, header), and see which sample emails from recent scans would match.
-/// Accessible from Rule Quick Add and Manage Rules screens.
+/// Accessible from the Manage Rules screen.
 class RuleTestScreen extends StatefulWidget {
   /// Optional pre-filled pattern to test.
   final String? initialPattern;

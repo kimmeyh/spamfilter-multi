@@ -14,6 +14,25 @@
   See `LEGAL_ENTITY.md`. Note this is a PERSONAL account whose developer NAME is the LLC.
   Those are two different facts, and Google permits the combination: "Your developer name
   does not need to match the organization name."
+- **EU declaration (Harold, 2026-11-23, verbatim)**: "I have a EU declared development account." Recorded from
+  Harold's statement with a Play Console home screenshot (Kimmey Consulting LLC, Personal account, Account ID as
+  above, MyEmailSpamFilter in Closed testing, 5 monthly active devices). The screenshot does not show the EU
+  declaration itself. **Declared status: NON-TRADER** (Harold, 2026-11-23, register q4 = 2). Context: Google's
+  2026-10-29 policy announcement says "Starting in November 2026, you must declare your trader status in Play
+  Console". Card F364 checks what a non-trader declaration means for this account (source required).
+  - **What NON-TRADER requires and limits (F364, Sprint 86; source: Google, "Trader status declaration",
+    https://support.google.com/googleplay/android-developer/answer/17594752?hl=en, fetched 2026-11-24)**: every
+    active account declares by 2027-02-01. The only permissive condition the page gives is "If you don't distribute
+    apps in the European Economic Area or the United Kingdom, you can declare as a non-trader". The page does not
+    bar a non-trader from the EEA or UK; there, Google tells consumers that consumer-protection rights do not apply.
+    The last recorded country list is United States only (the Release table below, recorded at 0.14.1; the current
+    Console list was not checked). The trader criteria are profit motive (paid apps, in-app purchases, ads),
+    transaction volume, business setup and legal status (for example a D-U-N-S number); "a personal hobby or other
+    non-commercial activity is unlikely to make you a trader". Adding a paid feature or ads meets the profit
+    criterion. Misdeclaring can lead to global account suspension. The page cites the EU UCPD and UK DMCCA, not the
+    DSA. **Proposed (F365, not yet decided by Harold)**: re-decide trader status before adding any EEA or UK
+    country, a price, an in-app product or ads. Open question for Harold: the developer name is an LLC (business
+    setup). Full analysis: `docs/GOOGLE_PLAY_POLICY_2026-10-29_ANALYSIS.md`.
 - **Legal name and address (held by Google, NOT shown on Play)**: Harold's personal name and
   home address. A Personal account does not publish these. An Organization account WOULD
   publish the legal address plus a phone number on every listing -- one of the costs weighed
@@ -623,7 +642,12 @@ Record ROLES and dates only. **No names, no email addresses** -- this file is in
 **On the official Play tester list**: **8 of 12** as of 2026-09-10 (Harold added 3 that day,
 up from 3). FOUR SHORT.
 
-**Confirmed opt-ins**: UNKNOWN -- not yet reconciled against the console.
+**Confirmed opt-ins**: **5 of 12** as of 2026-11-23 (Harold's Play Console screenshot, app Dashboard,
+"Apply for access to production": "Have at least 12 testers opted-in to your closed test -- 5 testers
+currently opted-in"; "Run your closed test with at least 12 testers, for at least 14 days" not checked;
+"Publish a closed testing release" checked; "Apply for production" disabled). SEVEN SHORT. The Dashboard
+shows no day count and no per-tester opt-in date, so the 14-day clock cannot be read there; it cannot
+start to count toward production until 12 testers are opted in at the same time.
 
 **These are two different numbers and only the second one gates production access.** Being on
 the tester list makes someone ELIGIBLE; the 14-day clock starts for that person when they

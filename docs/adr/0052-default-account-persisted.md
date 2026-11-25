@@ -32,6 +32,11 @@ The start screen is Review No Rule Items when accounts exist (`main_navigation_s
    remove the default. Settings > Account shows a read-only label when the shown account is the default.
 3. **Startup (q5 = a).** The start screen does not change. At startup, the default seeds `SelectedAccountProvider`
    once, so Settings > Account, Manual Scan and Background open on that account without the picker.
+   **Amended 2026-11-24 (Sprint 86 Task 14, register q14 = 1):** the default also applies during the session.
+   Setting the default on Select Account makes it the session selection at once, and both account resolvers
+   (Select Account and the Settings tabs) use the stored default when the session has no selection. Before this, a
+   default set during a session had no effect until the next start, and Settings showed the picker (Harold, Store
+   0.25.0). Removing the default leaves the session selection unchanged.
 4. **The session selection stays unpersisted.** Picking another account changes only the session; it is forgotten when
    the app closes. The next start uses the default again.
 5. **Deleting the default account clears the default**, in the same operation, so no stale id remains.

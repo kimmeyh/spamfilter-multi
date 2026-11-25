@@ -317,7 +317,7 @@ class PilotHookProcessTests(unittest.TestCase):
         for hook in self.HOOK_FILES:
             matching = [c for c in commands if hook in c]
             self.assertEqual(len(matching), 1, f"{hook} must be registered exactly once")
-            self.assertTrue(matching[0].startswith('python "${CLAUDE_PROJECT_DIR}/.claude/hooks/'), matching[0])
+            self.assertTrue(matching[0].startswith('py -3.14 "${CLAUDE_PROJECT_DIR}/.claude/hooks/'), matching[0])
             self.assertNotIn("\\", matching[0])
             self.assertTrue((HOOKS / hook).exists())
         self.assertFalse([c for c in commands if "block-blind-staging.ps1" in c
@@ -1357,7 +1357,7 @@ class PortedHookTests(unittest.TestCase):
         settings = json.loads((REPO / ".claude" / "settings.json").read_text(encoding="utf-8"))
         commands = [h["command"] for group in settings["hooks"]["Stop"] for h in group["hooks"]]
         matching = [c for c in commands if "verify-closeout-complete" in c]
-        self.assertEqual(matching, ['python "${CLAUDE_PROJECT_DIR}/.claude/hooks/verify-closeout-complete.py"'])
+        self.assertEqual(matching, ['py -3.14 "${CLAUDE_PROJECT_DIR}/.claude/hooks/verify-closeout-complete.py"'])
 
 
 FOOTERS = ("11/06/2026 12:40pm | Sprint 84 Phase 4 Execution",   # current format (Sprint 70 and later)
@@ -1617,7 +1617,7 @@ class AutoAdvanceTests(unittest.TestCase):
         settings = json.loads((REPO / ".claude" / "settings.json").read_text(encoding="utf-8"))
         entries = [h for group in settings["hooks"]["Stop"] for h in group["hooks"] if "sprint-auto-advance" in h["command"]]
         self.assertEqual([e["command"] for e in entries],
-                         ['python "${CLAUDE_PROJECT_DIR}/.claude/hooks/sprint-auto-advance.py"'])
+                         ['py -3.14 "${CLAUDE_PROJECT_DIR}/.claude/hooks/sprint-auto-advance.py"'])
         self.assertEqual(entries[0]["timeout"], 15)
 
 
@@ -1625,7 +1625,8 @@ class AutoAdvanceTests(unittest.TestCase):
 
 # Every hook registered in .claude/settings.json is in exactly one of these two sets, so a new hook cannot
 # slip past the fault-injection test: classifying it here is the price of registering it.
-HOOKS_THAT_CALL_GIT_OR_GH = ("sprint-auto-advance.py", "verify-closeout-complete.py", "warn-commit-without-velocity.py")
+HOOKS_THAT_CALL_GIT_OR_GH = ("sprint-auto-advance.py", "verify-closeout-complete.py", "warn-commit-without-velocity.py",
+                             "task-clock-gate.py")
 HOOKS_WITHOUT_GIT_OR_GH = ("block-carry-forward-stash.py", "require-sprint-cards.py", "block-heredoc-python-backslash.py",
                            "block-blind-staging.py", "block-commit-during-mutation.py")
 FAILURE_MODES = {
@@ -1693,6 +1694,20 @@ class FaultInjectionTests(unittest.TestCase):
         for name in HOOKS_THAT_CALL_GIT_OR_GH:
             source = (HOOKS / name).read_text(encoding="utf-8")
             self.assertIsNotNone(pattern.search(source), f"{name} no longer calls git or gh: move it to the other set")
+
+    def test_task_clock_edit_gate_blocks_when_git_check_ignore_fails(self):
+        """F363: the edit gate asks `git check-ignore` whether a file is exempt. A git that is missing, fails or
+        times out must leave the file GATED (blocked with no task open), never treated as ignored and allowed.
+        Does NOT catch a git that answers "ignored" wrongly (only whole-program failure is injected)."""
+        module = load_hook("task-clock-gate.py")
+        fixture = CASES / "fixtures" / "taskclock-phase4-no-ledger"
+        payload = {"hook_event_name": "PreToolUse", "tool_name": "Edit", "cwd": str(fixture),
+                   "tool_input": {"file_path": str(fixture / "mobile-app" / "lib" / "a.dart")}}
+        for mode, how in FAILURE_MODES.items():
+            with self.subTest(mode=mode):
+                with self.failing(("git",), how):
+                    verdict = module.decide(payload)
+                self.assertEqual(verdict.code, 2, "a failed git must not exempt the file")
 
     def test_stop_hooks_report_a_failed_branch_lookup_in_every_failure_mode(self):
         for hook, words in (("sprint-auto-advance.py", "sprint-auto-advance gate skipped"),

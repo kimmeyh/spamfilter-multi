@@ -314,8 +314,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   /// is a genuine choice to make (F133-S52 R-10).
   ///
   /// Mirrors `_resolveAccountForScopedDestination()` on the account-selection
-  /// screen: session selection -> single configured account -> prompt. The
-  /// picker is the LAST resort, not the first step.
+  /// screen: session selection -> stored default account (ADR-0052, Sprint 86
+  /// Task 14) -> single configured account -> prompt. The picker is the LAST
+  /// resort, not the first step.
   Future<void> _resolveAccountForScopedTab() async {
     _accountResolutionAttempted = true;
     try {
@@ -348,6 +349,33 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         // Provider absent (widget-test harness) -- fall through. Narrowed from
         // a bare catch (Copilot, PR #292) so a real error from a present
         // provider surfaces instead of being silently eaten.
+      }
+
+      // 1b. Sprint 86 Task 14 (register q14 = 1, amends ADR-0052 decision 3):
+      // the stored default, when it still exists. An unreadable default is
+      // treated as none (the picker then asks) and is logged.
+      if (resolved == null) {
+        String? defaultId;
+        try {
+          defaultId = await _settingsStore.getDefaultAccountId();
+        } catch (e) {
+          _logger.w('Task 14: could not read the default account: $e');
+          await DiagnosticLogger.failure(
+            context: 'F352/settings-resolve',
+            kind: DiagnosticLogger.kindException,
+            reason: 'default account could not be read (picker shown): '
+                '${DiagnosticLogger.describeError(e)}',
+          );
+        }
+        if (!mounted) return;
+        if (defaultId != null && accounts.contains(defaultId)) {
+          resolved = defaultId;
+          try {
+            context.read<SelectedAccountProvider>().select(defaultId);
+          } on ProviderNotFoundException {
+            // Provider absent (widget-test harness) -- local resolution only.
+          }
+        }
       }
 
       // 2. Exactly one account: nothing to choose.

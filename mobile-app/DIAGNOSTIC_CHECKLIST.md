@@ -8,9 +8,10 @@
 ## Pre-Test Checklist
 
 ### Setup (5 minutes)
-- [ ] Have PowerShell window open in `mobile-app/scripts/` directory
-- [ ] Android device or emulator connected (or will connect it now)
-- [ ] `adb devices` shows your device (if not, it will wait for it)
+- [ ] Have a terminal open in the repository folder (`capture-diagnostic-logs.py` runs from any folder)
+- [ ] The Android EMULATOR is running (the Python script works on the emulator only; it exits 1 when no
+      emulator is online, and never on a phone: adb on a phone is not available)
+- [ ] `adb devices` shows the emulator (the script does not wait for one)
 - [ ] Android app built and installed with latest diagnostic code
 
 ### Latest Code (Important!)
@@ -28,7 +29,7 @@
 ### Step 1: Start Log Capture
 ```powershell
 cd mobile-app/scripts
-.\capture-diagnostic-logs.ps1 -Action Start
+python capture-diagnostic-logs.py --action start
 ```
 
 **Expected output**:
@@ -43,7 +44,7 @@ Next Steps:
 2. Click 'Start Live Scan' (NOT Demo Scan)
 3. Select 'Bulk Mail Testing' folder
 4. Wait for scan to complete or process ~20 emails
-5. Once done, run: .\capture-diagnostic-logs.ps1 -Action Stop
+5. Once done, run: python capture-diagnostic-logs.py --action stop
 ```
 
 - [ ] Log capture started successfully
@@ -67,7 +68,7 @@ In your Android app:
 ### Step 3: Stop Log Capture
 Once scan is done, in PowerShell:
 ```powershell
-.\capture-diagnostic-logs.ps1 -Action Stop
+python capture-diagnostic-logs.py --action stop
 ```
 
 **Expected output**:
@@ -158,14 +159,14 @@ After running the test:
 Just paste the terminal output from Step 3 (the "DIAGNOSTIC SUMMARY" section)
 
 ### Option B: Share the Raw Log File (Most Detailed)
-The log file is created in `mobile-app/scripts/`:
+The log file is created in `mobile-app/build/diagnostic-logs/`:
 - File pattern: `diagnostic_bulk_mail_YYYYMMDD_HHMMSS.log`
 - Example: `diagnostic_bulk_mail_20260128_143022.log`
 
 ### Option C: Run Custom Analysis
 If you want to look deeper yourself:
 ```powershell
-.\capture-diagnostic-logs.ps1 -Action Analyze -LogFile "diagnostic_bulk_mail_20260128_143022.log"
+python capture-diagnostic-logs.py --action analyze --log-file "..\build\diagnostic-logs\diagnostic_bulk_mail_20260128_143022.log"
 ```
 
 ---

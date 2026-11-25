@@ -21,8 +21,6 @@ import '../../core/services/popup_body_fetcher.dart'; // F323
 import '../../core/services/rule_evaluator.dart';
 import '../../core/services/rule_quick_action_service.dart';
 import '../../core/storage/database_helper.dart';
-import '../../core/storage/rule_database_store.dart';
-import '../../core/storage/safe_sender_database_store.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/storage/unmatched_email_store.dart';
 import '../../core/utils/pattern_normalization.dart';
@@ -39,7 +37,6 @@ import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/standard_app_bar_actions.dart';
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 import 'help_screen.dart' show HelpSection;
-import 'rule_quick_add_screen.dart';
 
 /// F39 (Sprint 46): cross-account "No rule" review screen.
 ///
@@ -590,28 +587,6 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen>
     );
   }
 
-  /// F271: opens the existing [RuleQuickAddScreen] for [item]. The screen
-  /// prefills the sender's domain pattern from the message's From address, so
-  /// nothing is passed beyond the same message shape the pop-up uses. It writes
-  /// through the stores directly (as from the email detail view), so when it
-  /// reports a saved rule this screen reloads: the sweep then drops every row
-  /// the new rule covers.
-  Future<void> _openCreateRule(_NoRuleItem item) async {
-    final saved = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => RuleQuickAddScreen(
-          email: item.result.email,
-          ruleStore: RuleDatabaseStore(_dbHelper),
-          safeSenderStore: SafeSenderDatabaseStore(_dbHelper),
-        ),
-      ),
-    );
-    if (saved == true && mounted) {
-      await _loadItems(showSpinner: false);
-    }
-  }
-
   /// Results' auto-advance, on this screen: choose the next row the action
   /// does NOT cover BEFORE running it, run the action in the background, and
   /// open the next row's pop-up at once in the same place. [request] null is
@@ -1051,10 +1026,9 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen>
           result: item.result,
           ruleName: '',
           accountLabel: showAccount ? item.accountEmail : null,
-          // F271: the scan-time reason codes, and a one-tap path into the
-          // existing quick-add screen. Neither acts on mail.
+          // F271: the scan-time reason codes. The row does not act on mail;
+          // rules are made from the pop-up (F306).
           heuristicCodes: HeuristicSignal.decode(item.email.heuristicSignals),
-          onCreateRule: () => _openCreateRule(item),
           onTap: (tileKey) => _openPopup(item, itemKey: tileKey),
         );
     return ListView.builder(

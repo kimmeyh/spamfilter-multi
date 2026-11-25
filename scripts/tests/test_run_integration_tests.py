@@ -19,6 +19,13 @@ Test list and what each does NOT catch:
       but cannot run tests (its exit code is then the signal).
   test_log_holds_all_files_output: the full output of each file is in the log file. NOT caught: output that
       flutter writes to a file of its own rather than stdout.
+
+F359 (Sprint 86) adds AndroidEmulatorTests for --android-emulator (AC-2: non-zero exit when a case fails):
+  test_parse_case_results_reads_names_and_results, test_a_failing_case_makes_the_run_exit_one_and_is_named,
+  test_all_cases_passing_exits_zero_and_targets_the_emulator, test_zero_cases_is_not_a_pass,
+  test_only_skipped_cases_is_not_a_pass, test_no_emulator_exits_one_without_running_flutter,
+  test_a_real_failing_command_exits_one (no fake: the real Python interpreter stands in for flutter and fails).
+  NOT caught: the emulator step itself (ensure_android_emulator is patched; run-emulator.py has its own tests).
 """
 from __future__ import annotations
 
@@ -136,6 +143,101 @@ class MainTests(unittest.TestCase):
         text = self.log.read_text(encoding="utf-8")
         self.assertIn("== flutter test integration_test/", text)
         self.assertIn("All tests passed!", text)
+
+
+def _json_events(*cases: tuple[str, str]) -> str:
+    """package:test JSON reporter lines for (name, result) cases, plus a build line that is not JSON."""
+    import json
+
+    lines = ["Running Gradle task 'assembleDevDebug'..."]
+    for i, (name, result) in enumerate(cases, start=1):
+        lines.append(json.dumps({"type": "testStart", "test": {"id": i, "name": name}}))
+        lines.append(json.dumps({"type": "testDone", "testID": i, "result": result, "hidden": False,
+                                 "skipped": result == "skipped"}))
+    return "\n".join(lines) + "\n"
+
+
+class AndroidEmulatorTests(unittest.TestCase):
+    """F359 AC-2: --android-emulator exits non-zero when a case fails.
+
+    What these would NOT catch: an emulator that is up but cannot install the app (flutter's exit code is then the
+    signal), and the real package:test JSON shape changing (the parser tests use the documented events).
+    """
+
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._tmp.name)
+        fake_flutter.install(self.tmp / "bin")
+        self.log = self.tmp / "it.log"
+        self._env = mock.patch.dict(os.environ, {
+            "PATH": str(self.tmp / "bin") + os.pathsep + os.environ.get("PATH", ""),
+            "FAKE_FLUTTER_CALLS": str(self.tmp / "calls.jsonl"),
+            "FAKE_FLUTTER_RC": "0",
+        })
+        self._env.start()
+        self._emu = mock.patch.object(tool, "ensure_android_emulator", return_value="emulator-5554")
+        self.emu = self._emu.start()
+
+    def tearDown(self) -> None:
+        self._emu.stop()
+        self._env.stop()
+        self._tmp.cleanup()
+
+    def run_main(self, *argv: str) -> tuple[int, str]:
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            code = tool.main(["--android-emulator", *argv, "--log", str(self.log)])
+        return code, buf.getvalue()
+
+    def test_parse_case_results_reads_names_and_results(self) -> None:
+        text = _json_events(("a", "success"), ("b", "failure"), ("c", "skipped"), ("d", "error"))
+        self.assertEqual(tool.parse_case_results(text),
+                         [("a", "passed"), ("b", "failed"), ("c", "skipped"), ("d", "failed")])
+        self.assertEqual(tool.parse_case_results("no json here\n"), [])
+
+    def test_a_failing_case_makes_the_run_exit_one_and_is_named(self) -> None:
+        out_text = _json_events(("lock case", "success"), ("worker case", "failure"))
+        with mock.patch.dict(os.environ, {"FAKE_FLUTTER_OUT": out_text, "FAKE_FLUTTER_RC": "1"}):
+            code, out = self.run_main()
+        self.assertEqual(code, 1)
+        self.assertIn("[PASSED] lock case", out)
+        self.assertIn("[FAILED] worker case", out)
+        self.assertIn("android_phone_paths_test.dart: worker case", out)
+
+    def test_all_cases_passing_exits_zero_and_targets_the_emulator(self) -> None:
+        out_text = _json_events(("lock case", "success"), ("worker case", "skipped"))
+        with mock.patch.dict(os.environ, {"FAKE_FLUTTER_OUT": out_text}):
+            code, out = self.run_main()
+        self.assertEqual(code, 0)
+        self.assertIn("[OK] all Android emulator cases passed.", out)
+        argv = fake_flutter.read_calls(self.tmp / "calls.jsonl")[0]["argv"]
+        self.assertEqual(argv[:4], ["test", "integration_test/android_phone_paths_test.dart", "-d", "emulator-5554"])
+
+    def test_zero_cases_is_not_a_pass(self) -> None:
+        with mock.patch.dict(os.environ, {"FAKE_FLUTTER_OUT": "all quiet\n"}):
+            code, out = self.run_main()
+        self.assertEqual(code, 1)
+        self.assertIn("no case ran", out)
+
+    def test_only_skipped_cases_is_not_a_pass(self) -> None:
+        with mock.patch.dict(os.environ, {"FAKE_FLUTTER_OUT": _json_events(("x", "skipped"))}):
+            code, _out = self.run_main()
+        self.assertEqual(code, 1)
+
+    def test_no_emulator_exits_one_without_running_flutter(self) -> None:
+        self.emu.return_value = None
+        code, out = self.run_main()
+        self.assertEqual(code, 1)
+        self.assertIn("No emulator is available", out)
+        self.assertEqual(fake_flutter.read_calls(self.tmp / "calls.jsonl"), [])
+
+    def test_a_real_failing_command_exits_one(self) -> None:
+        # No fake flutter here: the "flutter" is the real Python interpreter, which fails for real
+        # (it cannot run the "test" folder, exit 1) through the same run_flutter code path.
+        with mock.patch.object(tool.fs, "find_flutter", return_value=sys.executable):
+            code, out = self.run_main()
+        self.assertEqual(code, 1)
+        self.assertIn("with no failed case", out)
 
 
 if __name__ == "__main__":

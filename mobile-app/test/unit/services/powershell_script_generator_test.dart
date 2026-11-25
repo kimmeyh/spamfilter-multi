@@ -231,7 +231,12 @@ void main() {
           expect((result.stdout as String).trim(), 'PAST',
               reason: '$interval minutes: ${result.stdout} ${result.stderr}');
         }
-      }, skip: !Platform.isWindows ? 'needs Windows Task Scheduler cmdlets' : false);
+      },
+          // Three powershell.exe starts, each loading the ScheduledTasks module,
+          // take 5-9 s apiece on the dev machine (measured 2026-11-24), so the
+          // default 30 s limit was exceeded under full-suite CPU load.
+          timeout: const Timeout(Duration(minutes: 2)),
+          skip: !Platform.isWindows ? 'needs Windows Task Scheduler cmdlets' : false);
 
       test('script includes error handling', () async {
         // Act

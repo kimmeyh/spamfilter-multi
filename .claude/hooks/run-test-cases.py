@@ -16,6 +16,7 @@ Hook routing is by DIRECTORY (F130-S51 R-2):
     test-cases/staging-guard/*.json -> block-blind-staging.py          (PreToolUse)
     test-cases/commit-lock/*.json   -> block-commit-during-mutation.py (PreToolUse)
     test-cases/velocity-warn/*.json -> warn-commit-without-velocity.py (PreToolUse)
+    test-cases/task-clock/*.json    -> task-clock-gate.py              (PreToolUse; F363, Sprint 86)
 
 Prints a PASS/FAIL line per case and a summary. Exit 0 when every case passes, 1 when any fails, 2 when the
 runner itself could not run (a missing hook or python, a fixture that would not build, an unknown --only-route, or
@@ -24,8 +25,10 @@ a run in which no case ran: "0 total" is never a pass).
 Port review (docs/sprints/SPRINT_85_PLAN.md Task 9; progress folder port_review.md). Differences from the
 PowerShell runner: an unknown case prefix and a missing route folder are FAIL (they were a SKIP or silent);
 fixture git failures stop the run; a case that runs past 120 seconds is a FAIL; case files are read as UTF-8; a
-route folder with no cases is a FAIL. The hooks run under `python` on PATH (python3 if there is no python), as the
-PowerShell runner did, not under whatever interpreter runs this file.
+route folder with no cases is a FAIL. The hooks run under the interpreter `.claude/settings.json` registers them
+with (`py -3.14` since Sprint 86, F344), read from that file, not under whatever interpreter runs this file. Off
+Windows (CI has no `py` launcher) it falls back to python3 or python and prints a NOTE; on Windows a missing
+interpreter is a runner error, because the real hooks could not run either.
 
 Test cases must be DETERMINISTIC: use "branch_override" and point "cwd" at a fixture under test-cases/fixtures/.
 Three placeholders are filled in at run time (real git state / real lock folders are needed):
@@ -57,6 +60,7 @@ import common  # noqa: E402
 import mutation_lock  # noqa: E402
 
 CASES_DIR = HERE / "test-cases"
+SETTINGS = HERE.parent / "settings.json"
 CASE_TIMEOUT_SECONDS = 120
 
 # subdirectory name ('' = the top level) -> hook script
@@ -69,6 +73,7 @@ ROUTES = {
     "staging-guard": "block-blind-staging.py",
     "commit-lock": "block-commit-during-mutation.py",
     "velocity-warn": "warn-commit-without-velocity.py",
+    "task-clock": "task-clock-gate.py",
 }
 
 
@@ -157,14 +162,14 @@ def expected_exit(name: str) -> int | None:
     return None
 
 
-def run_hook(python: str, hook: Path, payload: str, clear_project_dir: bool) -> tuple[int | None, str]:
+def run_hook(python: list, hook: Path, payload: str, clear_project_dir: bool) -> tuple[int | None, str]:
     """Run one hook as a child process. Returns (exit code, stdout); (None, reason) when it ran too long."""
     env = dict(os.environ)
     if clear_project_dir:
         # commit-lock cases: the hook must find its lock folder from the payload cwd, and CLAUDE_PROJECT_DIR wins.
         env.pop("CLAUDE_PROJECT_DIR", None)
     try:
-        done = subprocess.run([python, str(hook)], input=payload.encode("utf-8"), capture_output=True,
+        done = subprocess.run([*python, str(hook)], input=payload.encode("utf-8"), capture_output=True,
                               env=env, timeout=CASE_TIMEOUT_SECONDS)
     except subprocess.TimeoutExpired:
         return None, f"timed out after {CASE_TIMEOUT_SECONDS} seconds"
@@ -174,11 +179,18 @@ def run_hook(python: str, hook: Path, payload: str, clear_project_dir: bool) -> 
 def run_all(only_routes: list | None = None, python: str | None = None, cases_dir: Path = CASES_DIR,
             hooks_dir: Path = HERE, routes: dict | None = None, out=print) -> tuple[int, int]:
     """Run the suite. Returns (passed, failed). `out` receives each report line."""
-    # The interpreter .claude/settings.json runs every hook with: "python" on PATH (as the PowerShell runner
-    # did, which also accepted python3); sys.executable is NOT assumed to be the same program.
-    python = python or common.find_tool("python", "python3")
-    if not python:
-        raise RunnerError("python not found on PATH (needed to run the hooks).")
+    # The interpreter .claude/settings.json runs every hook with, READ from that file (F344, register q8: it is
+    # `py -3.14` since Sprint 86), so the suite tests the program the real hooks use; sys.executable is NOT
+    # assumed to be the same program. --python overrides it with one executable path.
+    if python:
+        argv = [python]
+    else:
+        argv, note = common.hook_python_argv(SETTINGS)
+        if argv is None:
+            raise RunnerError(f"{note} (needed to run the hooks).")
+        if note:
+            print(note, file=sys.stderr)  # stderr: visible in the run, and not one of the per-case report lines
+    python = argv
     routes = routes if routes is not None else ROUTES
     if not cases_dir.is_dir():
         raise RunnerError(f"Cases dir not found: {cases_dir}")
@@ -244,7 +256,7 @@ def main(argv: list | None = None) -> int:
     common.configure_stdio()
     parser = argparse.ArgumentParser(description="Run the recorded hook test cases.")
     parser.add_argument("--only-route", nargs="+", default=None, metavar="ROUTE")
-    parser.add_argument("--python", default=None, help="interpreter that runs each hook (default: python on PATH)")
+    parser.add_argument("--python", default=None, help="interpreter that runs each hook (default: the one .claude/settings.json registers)")
     args = parser.parse_args(argv)
     try:
         passed, failed = run_all(args.only_route, args.python, out=lambda line: print(line, flush=True))

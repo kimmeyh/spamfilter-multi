@@ -36,6 +36,12 @@ ECHO = ("import sys\nd = sys.stdin.buffer.read().decode('utf-8')\nprint('GOT ' +
 PYTHON_ON_PATH = bool(shutil.which("python"))
 
 
+def settings_with(interpreter: str) -> dict:
+    """A minimal .claude/settings.json registering one hook under `interpreter`."""
+    command = interpreter + ' "${CLAUDE_PROJECT_DIR}/.claude/hooks/h.py"'
+    return {"hooks": {"PreToolUse": [{"matcher": "Bash", "hooks": [{"type": "command", "command": command}]}]}}
+
+
 # Locally a missing `python` skips. On CI (GitHub sets CI=true) it FAILS instead (Sprint 85 5.1.2 L6): a skip
 # there would let the workflow go green without one of these tests having run.
 @unittest.skipUnless(PYTHON_ON_PATH or os.environ.get("CI"),
@@ -51,6 +57,8 @@ class ProbeTests(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.repo = Path(self.tmp.name)
         (self.repo / ".claude" / "hooks").mkdir(parents=True)
+        # test-hook.py reads the hook interpreter from the repo's settings.json (F344); this repo registers python.
+        (self.repo / ".claude" / "settings.json").write_text(json.dumps(settings_with("python")), encoding="utf-8")
 
     def hook(self, name: str, code: int = 0, body: str | None = None) -> None:
         (self.repo / ".claude" / "hooks" / name).write_text(body or ECHO.format(code=code), encoding="utf-8")
@@ -153,10 +161,35 @@ class ProbeTests(unittest.TestCase):
 
     def test_python_missing_from_path_is_exit_2(self):
         self.hook("h.py", 0)
-        with mock.patch.object(th.shutil, "which", return_value=None):
+        with mock.patch.object(th.common, "find_tool", return_value=None):
             code, out = self.probe("h.py", "--command", "x")
         self.assertEqual(code, 2)
-        self.assertIn('runs hooks with "python"', out)
+        self.assertIn("so the real hook cannot run either", out)
+
+    def test_unreadable_settings_is_exit_2(self):
+        """F344: the interpreter comes from settings.json; without it the probe refuses rather than guessing."""
+        self.hook("h.py", 0)
+        (self.repo / ".claude" / "settings.json").write_text("{not json", encoding="utf-8")
+        code, out = self.probe("h.py", "--command", "x")
+        self.assertEqual(code, 2)
+        self.assertIn("could not be read", out)
+
+    def test_hook_runs_under_the_settings_interpreter_words(self):
+        """F344: `py -3.14`-style registrations keep their arguments; the probe runs [exe, *args, hook]."""
+        self.hook("h.py", 0)
+        (self.repo / ".claude" / "settings.json").write_text(json.dumps(settings_with("python -I")),
+                                                              encoding="utf-8")
+        seen = []
+        real = th.run_probe
+
+        def spy(resolved, payload, python):
+            seen.append(python)
+            return real(resolved, payload, python)
+
+        with mock.patch.object(th, "run_probe", spy):
+            code, _out = self.probe("h.py", "--command", "x", "--expect-allow")
+        self.assertEqual(code, 0)
+        self.assertEqual(seen[0][1:], ["-I"])
 
     def test_a_real_hook_blocks_through_the_probe(self):
         real = io.StringIO()

@@ -65,7 +65,6 @@ void main() {
       'Manual Scan Settings',
       'Background Scanning',
       'Manage Rules',
-      'Rule Quick Add',
       'Rule Test',
       'Manage Safe Senders',
       'Folder Selection',
@@ -202,6 +201,7 @@ void main() {
     // Sprint 39 F74: added faq -> 21.
     // Sprint 40 F75: added walkthrough -> 22.
     // Sprint 59 F154: added reviewNoRuleItems -> 23.
-    expect(HelpSection.values, hasLength(23));
+    // Sprint 86 F307: removed ruleQuickAdd (the Create rule page) -> 22.
+    expect(HelpSection.values, hasLength(22));
   });
 }

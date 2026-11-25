@@ -27,11 +27,13 @@ import '../../adapters/storage/secure_credentials_store.dart';
 import '../../util/redact.dart';
 import '../providers/rule_set_provider.dart';
 import '../storage/database_helper.dart';
+import '../security/imap_connect_diagnostics.dart';
 import '../storage/scan_result_store.dart';
 import '../storage/settings_store.dart';
 import 'background_mode_service.dart';
 import 'background_scan_core.dart';
 import 'background_scan_trigger.dart';
+import 'android_device_state.dart';
 import 'diagnostic_logger.dart';
 import 'f264_upgrade_migration.dart';
 import 'notification_account_filter.dart';
@@ -78,7 +80,7 @@ void androidBackgroundScanDispatcher() {
     _runningWork =
         '${accountId != null ? Redact.accountId(accountId) : '(all accounts)'} '
         '$trigger';
-    return AndroidBackgroundScanWorker.executeScan(
+    final result = await AndroidBackgroundScanWorker.executeScan(
       accountId: accountId,
       isTest: isTest,
       retryOnFailure: retryOnFailureFor(inputData),
@@ -86,6 +88,11 @@ void androidBackgroundScanDispatcher() {
       dozeAlarm: inputData?[kTriggerSourceKey] == 'doze-alarm',
       trigger: trigger,
     );
+    // Sprint 86 7.7.1 M-2: the engine can be torn down once this returns, so
+    // an F347 connect-failure line still in flight would be lost. Bounded at
+    // 3 s and never throws.
+    await ImapConnectDiagnostics.flush();
+    return result;
   }, onTaskStopped: onWorkerStopped);
 }
 
@@ -95,7 +102,8 @@ void androidBackgroundScanDispatcher() {
 /// worker, and the log could not say what. WorkManager tells the worker why
 /// (Android 12+; `unknown` before). Bounded: the plugin tears the engine down
 /// when this returns, so a slow write must not hold it. [write] is the test
-/// seam; production writes to the diagnostic log.
+/// seam; production writes to the diagnostic log. [readDeviceState] is the seam
+/// for the F346 device-state read.
 ///
 /// Needs workmanager_android 0.10.9 or later. Up to 0.10.6 the plugin's
 /// `onStopped` sent this call from WorkManager's own thread (`WM.task-N`);
@@ -109,6 +117,8 @@ Future<void> onWorkerStopped(
   StopReason reason, {
   Future<void> Function(String detail)? write,
   Future<int> Function()? closeScans,
+  Future<Object?> Function()? readDeviceState,
+  Future<bool> Function()? logEnabled,
 }) async {
   final detail = describeWorkerStop(running: _runningWork, reason: reason);
   Future<void> report(String line) => (write ??
@@ -126,10 +136,31 @@ Future<void> onWorkerStopped(
   // about 50 ms after the stop (docs/research/F342_FOLD_BACKGROUND_ERRORS_S84.md
   // group 4), and a stop for memory pressure can end the process in that
   // window. The close keeps its own 2 s bound.
+  // F346 (Sprint 86): which device state stopped the scan. The read STARTS
+  // beside the row close (Sprint 86 7.7.1 M5: awaited after it, the read added
+  // up to 500 ms before the stop line reached the log file). The close is
+  // still awaited first. `describeDeviceState` never throws and gives up
+  // after 500 ms; every value it cannot read is `unknown`, never left out.
+  // Sprint 86 PR #577 Copilot: with the diagnostic log OFF the read is
+  // skipped, the same short-circuit F347 uses (DiagnosticLogger.isEnabled
+  // never throws and reads OFF on a failure). The line would reach only
+  // logcat, and adb is not available on the test phones.
+  Future<String> readState() async {
+    var on = true; // a check that fails reads the state: never lose it silently
+    try {
+      on = await (logEnabled ?? DiagnosticLogger.isEnabled)();
+    } catch (_) {}
+    if (!on) return 'deviceState=not-read (diagnostic log off)';
+    return describeDeviceState(reader: readDeviceState);
+  }
+
+  final deviceStateRead = readState();
   final closedLine =
       await _closeStoppedScanRows(reason: reason, closeScans: closeScans);
+  final deviceState = await deviceStateRead;
+  AndroidBackgroundScanWorker._logger.w('[worker/android] $deviceState');
   try {
-    await report(detail);
+    await report('$detail $deviceState');
   } catch (_) {
     // Nothing to report to: the log write itself is what failed. In practice
     // only the 2 s TimeoutException lands here -- `DiagnosticLogger.log`

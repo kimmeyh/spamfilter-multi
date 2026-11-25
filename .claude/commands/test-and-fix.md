@@ -6,10 +6,10 @@ For spamfilter-multi, follow this process to run and fix tests:
 
 1. **Run full test suite**:
    ```powershell
-   cd mobile-app
-   flutter test
+   python scripts/quality-gate.py --skip-analyze     # from the repository root
    ```
-   - Expected: 138+ tests pass
+   - Expected: `RESULT: PASS` (exit 0). Exit 1 is a failed test or a missing summary (a compile error); exit 2 means flutter is missing.
+   - The script names a log file with the full output; read the failing test names there.
    - Check for: Test failures, timeouts, or flaky tests
 
 2. **If all tests pass**:
@@ -27,7 +27,7 @@ For spamfilter-multi, follow this process to run and fix tests:
      - If test is incorrect: Fix the test (rare)
      - If implementation is wrong: Fix the code being tested (common)
      - Identify the root cause before fixing (what went wrong?)
-   - **Re-run tests**: `flutter test`
+   - **Re-run tests**: `python scripts/quality-gate.py --skip-analyze` (or `--test-file <path>` for one file)
    - **Verify fix**: Confirm the same test now passes
    - **Repeat**: Move to next failing test
 
@@ -44,8 +44,7 @@ For spamfilter-multi, follow this process to run and fix tests:
    - Verify mock data is correct
 
 6. **Report when complete**:
-   - All tests pass: `flutter test` (138+ tests) ✅
-   - No analysis warnings: `flutter analyze` (0 issues) ✅
+   - `python scripts/quality-gate.py` (analyze and tests) ends with `RESULT: PASS` ✅
    - Ready for commit
 
 **Methodology**: Be systematic - fix one test at a time, verify it passes, then move to next. Do not try to fix multiple tests simultaneously.

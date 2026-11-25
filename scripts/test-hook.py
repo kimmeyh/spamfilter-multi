@@ -13,9 +13,10 @@ Usage:
     python scripts/test-hook.py HOOK [--command TEXT | --message TEXT | --json TEXT] [--cwd DIR]
                                 [--expect-block] [--expect-allow]
 
-HOOK is absolute, repo-relative, or a bare name under .claude/hooks/. A `.py` hook runs under `python` (the
-interpreter .claude/settings.json runs every hook with; there is deliberately no python3 or py fallback, so
-this check cannot pass on a machine where Claude Code itself cannot start the hook). Any other file runs
+HOOK is absolute, repo-relative, or a bare name under .claude/hooks/. A `.py` hook runs under the interpreter
+.claude/settings.json registers every hook with (`py -3.14` since Sprint 86, F344), read from that file. On
+Windows there is deliberately no fallback, so this check cannot pass on a machine where Claude Code itself
+cannot start the hook; off Windows (CI) it falls back to python3 / python with a NOTE. Any other file runs
 under PowerShell. A bare name without an extension is not guessed.
 
 Exit codes: 0 the probe ran and every assertion held; 1 an assertion failed OR the hook crashed (any exit
@@ -41,7 +42,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -82,11 +82,11 @@ def verdict_of(code: int) -> str:
     return f"HOOK ERROR (exit {code}, the command is ALLOWED)"
 
 
-def run_probe(resolved: Path, payload: str, python: str | None) -> tuple[int, str]:
+def run_probe(resolved: Path, payload: str, python: list | None) -> tuple[int, str]:
     """Run the hook with the payload on stdin. Returns (exit code, stderr and stdout merged, in order).
     Raises subprocess.TimeoutExpired when the hook runs past the limit."""
     if resolved.suffix.lower() == ".py":
-        argv = [python, str(resolved)]
+        argv = [*python, str(resolved)]
     else:
         shell = common.find_tool("powershell", "pwsh")
         if not shell:
@@ -132,12 +132,14 @@ def main(argv: list | None = None, repo_root: Path | None = None) -> int:
 
     python = None
     if resolved.suffix.lower() == ".py":
-        # Sprint 83 7.7.1 (Copilot PR #534): ONLY "python", the interpreter .claude/settings.json runs hooks with.
-        python = shutil.which("python")
-        if not python:
-            print('python not found on PATH. .claude/settings.json runs hooks with "python", '
-                  "so the real hook cannot run either.")
+        # Sprint 83 7.7.1 (Copilot PR #534): ONLY the interpreter .claude/settings.json runs hooks with, read
+        # from that file (F344: `py -3.14` since Sprint 86).
+        python, note = common.hook_python_argv(root / ".claude" / "settings.json")
+        if python is None:
+            print(f"{note}, so the real hook cannot run either.")
             return 2
+        if note:
+            print(note)
 
     try:
         code, output = run_probe(resolved, payload, python)

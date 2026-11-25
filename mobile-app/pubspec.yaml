@@ -1,6 +1,6 @@
 name: my_email_spam_filter
 description: Cross-platform email spam filter app
-version: 0.25.0+23
+version: 0.26.0+24
 publish_to: 'none'
 
 environment:
@@ -78,6 +78,12 @@ dependencies:
   # whose Dart readiness handshake fixes "tasks fail ~30 s after start" (#738).
   workmanager: ^0.10.10
 
+  # F346 (Sprint 86): local Android-only plugin. The stop handler runs in the
+  # WorkManager background engine, where MainActivity's channels do not exist;
+  # a plugin is registered on every engine. No pub.dev dependency is added.
+  spamfilter_device_state:
+    path: packages/spamfilter_device_state
+
   # Phase 2+ - UI Enhancement
   # flutter_svg: ^2.0.9
 
@@ -126,7 +132,6 @@ flutter:
     - assets/content/help/manual_scan_settings.md
     - assets/content/help/background_scanning.md
     - assets/content/help/manage_rules.md
-    - assets/content/help/rule_quick_add.md
     - assets/content/help/rule_test.md
     - assets/content/help/safe_senders.md
     - assets/content/help/folder_selection.md
@@ -150,7 +155,7 @@ msix_config:
   publisher_display_name: Kimmey Consulting - Ohio
   identity_name: KimmeyConsulting-Ohio.MyEmailSpamFilter
   publisher: CN=84EA8722-0CA5-4EC0-9B10-07EE79B66062
-  msix_version: 0.25.0.0
+  msix_version: 0.26.0.0
   logo_path: assets/icon/icon.png
   capabilities: internetClient, internetClientServer, privateNetworkClientServer
   # F148 (Sprint 56): stable App Execution Alias so background-scan scheduled

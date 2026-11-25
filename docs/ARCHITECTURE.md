@@ -342,6 +342,19 @@ EXPUNGE; UID SEARCH and UID FETCH get the limit per call through `GenericIMAPAda
 `GenericIMAPAdapter._uidMove` applies `kImapResponseTimeout` as a Dart `.timeout` on the call (7.7.1 Q1). A failure
 in the full-fetch path reaches the scanner's per-folder handler, which counts it as a folder error (7.7.1 H-1).
 
+**Sprint 86 F347 connect-failure line**: both connect paths go through `ImapConnectDiagnostics.traceConnect`
+(`lib/core/security/imap_connect_diagnostics.dart`): the provider path wraps `connectToServer`
+(`generic_imap_adapter.dart`, one 20 s enough_mail timer, so its step is the combined `tcp+tls`), and the Custom
+IMAP path (`ImapTlsConnector`) marks `tcp`, `starttls`, `tls` and `greeting` separately for STARTTLS; for SSL/TLS
+(the Custom IMAP default) it marks `tcp+tls` (one `SecureSocket.connect`, `imap_certificate_trust.dart:452-467`)
+and then `greeting` (corrected 2026-11-24 from the Task 15 emulator run, which logged `phase=tcp+tls`). On a network error or
+timeout it writes one diagnostic-log line with the in-flight step, the network type (`connectivity_plus`) and a DNS
+recheck of the host; `phase=dns` only when that recheck fails, `dns-recheck=timeout` when it could not finish. The
+report runs in the background AFTER the original exception is rethrown unchanged, so the caller's error and its
+timing do not depend on the diagnostic; with the diagnostic log off (`DiagnosticLogger.isEnabled()`) nothing is
+looked up. A process that dies right after the failure can lose the line. A TLS handshake failure on the provider
+path and a greeting hang that ends in the provider's own timer are not split from `tcp+tls`.
+
 **One timeout ends the session** (7.7.1 Q2 and Q1, Harold): every command with a limit (SELECT, UID SEARCH, UID
 FETCH, UID STORE, LIST, UID MOVE) goes through `GenericIMAPAdapter._endSessionOnTimeout`. A response timeout (`ImapException('timeout')`)
 or a write timeout (`TimeoutException`) discards the client (`_discardClient`, socket close bounded at 10 s) and
@@ -530,7 +543,11 @@ optional default account, stored once as `default_account_id` in `SettingsStore`
 Account (each row has a star control and the default row is marked; Settings > Account shows a read-only "Default
 account" label). At startup `main()` calls `SelectedAccountProvider.createSeeded`, which copies the default into the
 provider once, before the first screen is built, only when that account still exists (a stale id is cleared). The
-start screen does not change; picking another account changes only the session; `DataDeletionService.deleteAccountData`
+start screen does not change; picking another account changes only the session. Since Sprint 86 Task 14 (ADR-0052
+decision 3 amended, register q14 = 1) the default also applies during the session: setting it on Select Account
+makes it the session selection, and both resolvers (`_resolveAccountForScopedDestination` on Select Account,
+`_resolveAccountForScopedTab` in Settings) use the stored default when the session has no selection, before the
+single-account rule and the picker. `DataDeletionService.deleteAccountData`
 clears the default in the same transaction that deletes the account; there is no automatic default for a single
 account; background scans do not read it. All platforms use the same shared code (ADR-0042; no platform exception).
 
@@ -694,7 +711,17 @@ diagnostic log (Sprint 84 7.7.1: the log write can hold its lock for 2 seconds a
 process may die). The reason shown in Scan History is "The phone stopped this
 background scan before it finished. The next scan will try again.", or, for the
 AndroidX raw stop reason 1 (`CANCELLED_BY_APP`: background scanning turned off),
-"Background scanning was turned off while this scan ran." The raw value is used
+"Background scanning was turned off while this scan ran." F346 (Sprint 86): after the
+row close and before the log write, the handler reads the device state and the stop
+line ends `powerSave=<v> deviceIdle=<v> thermal=<v>` (`unknown` when a value cannot be
+read; the read is bounded to 500 ms and never throws). The read goes through a LOCAL
+plugin, `mobile-app/packages/spamfilter_device_state/` (Kotlin `DeviceStatePlugin`,
+channel `com.myemailspamfilter/device_state`), not through MainActivity: the stop
+handler runs in the WorkManager background engine, which the plugin creates itself
+(`BackgroundWorker.kt:132`, workmanager_android 0.10.9) and which never sees
+MainActivity's channels; a plugin is registered on every engine. iPhone has no stop
+event (`workmanager_apple` 0.9.11 never calls `onTaskStopped`), a declared ADR-0042
+exception. The raw value is used
 because the plugin's Dart `StopReason` enum numbers the reasons differently
 (`workmanager_platform_interface` 0.10.5 `stop_reason.dart:21`). The write is bounded
 to 2 seconds and is conditional on `in_progress`
@@ -798,7 +825,6 @@ RuleEvaluator.evaluate(EmailMessage)
 | **background_scan_log_screen.dart** | Background scan execution logs |
 | **background_scan_progress_screen.dart** | Background scan progress display |
 | **rules_management_screen.dart** | View/edit/delete rules |
-| **rule_quick_add_screen.dart** | Quick-add rule from email |
 | **safe_senders_management_screen.dart** | View/edit/delete whitelist |
 | **safe_sender_quick_add_screen.dart** | Quick-add safe sender from email |
 | **email_detail_view.dart** | Full email details display |
