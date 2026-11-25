@@ -20,7 +20,7 @@ here and not in `SPRINT_N_PLAN.md`. Source: Harold, 2026-11-22 and 2026-11-23 (d
 
 ### Open
 
-(none)
+- q14. Default account set during a session: apply it at once (Sprint 86 fix), backlog it, or keep "next start"? (asked at Sprint 86 Manual Validation)
 
 ### Closed
 
@@ -248,6 +248,30 @@ here and not in `SPRINT_N_PLAN.md`. Source: Harold, 2026-11-22 and 2026-11-23 (d
   2. Retire `export-tokens-for-android.py` only; keep the fixed `setup-android-oauth.py`. Pro: keeps a working
      secrets-file writer. Con: a Windows-secret writer named "android" stays misleading.
   3. Keep both as they are now. Pro: no work. Con: one script that cannot work stays in the repo.
+
+### q14. Default account set during a session: apply it at once, backlog it, or keep "next start"?
+
+- **Asked**: Sprint 86 Manual Validation, 2026-11-24, after Harold's Store 0.25.0 report (verbatim: "noting repeat of
+  bug reported in Dev before rollout - even after default account selected, when going to Settings it pops up screen
+  to select account - but it should know which is the default"). **Status**: OPEN.
+- **What it decides**: whether a default account set on Select Account is used at once, and when that ships. This
+  changes ADR-0052 decision 3 ("At startup, the default seeds `SelectedAccountProvider` once"), so it is an
+  architecture and sprint-scope decision.
+- **Evidence (code read 2026-11-24)**: `_toggleDefault` saves only the stored default; its comment says "the session
+  selection is untouched (it seeds from the default at the next start)" (`account_selection_screen.dart:846-848`).
+  Both resolvers check the session selection, then a single account, then show the picker; neither reads the stored
+  default (`account_selection_screen.dart:686-719`, `settings_screen.dart:319-366`). So a default set in a session
+  has no effect until the app restarts. Sprint 85 MV-1 (a) saw the same pop-up on DEV (2026-11-17) and I classified
+  it as "a rehearsal gap, not an F352 defect" (`SPRINT_85_PLAN.md:1200-1205`); that classification missed this case.
+  Workaround today: close and restart the app; the default then applies.
+- **Options**:
+  1. Fix in Sprint 86 as Task 14, ships in 0.26.0 (Recommendation). Both resolvers use the stored default when the
+     session has no selection; setting the default also makes it the session selection. ADR-0052 decision 3
+     amended. About 30-60 min, 2 code files plus widget tests and a mutation check; a new DEV build and an MV step.
+     Pro: the release that goes to the closed test and the Store is fixed. Con: Phase 5 runs again for the change
+     (sweep and rehearsal), about 30 min more before the reviews.
+  2. Backlog card for Sprint 87 (same fix). Pro: Sprint 86 closes now. Con: 0.26.0 ships with the pop-up.
+  3. Keep as designed: the default applies at the next start. Pro: no work. Con: the pop-up you reported stays.
 
 ### q10. Sprint 86 version: 0.25.1 or 0.26.0
 
