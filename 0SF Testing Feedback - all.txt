@@ -7,6 +7,26 @@ Manual Validation complete
 Sprint 8n Manual Validation Feedback 
 
 ---------------------------------------------------------------------------------------------------------
+Sprint 86 Manual Validation Feedback 
+  - MV-1 (Windows DEV, Task 2): do this on the DEV app, not the Store app. "MyEmailSpamFilter [DEV]" is still running from 8:16 (PID 45380), on the final code build (743ffab0).
+    a. Look at Review No Rule Items, the screen the app opens on. No email row should have a "Create rule" button at its right edge.
+OK
+    b. Tap any row. The rule pop-up should open with "Add to Safe Senders" (Exact Email, Exact Domain, Entire Domain) and "Create Block Rule" (Block Email, Block Exact Domain, Block
+       Entire Domain, Block Subject).
+ok
+    c. Press Escape to close it. Do not create a rule.
+    - Before you start: you need at least one email on that screen. On this build the WinWright sweep found one.
+    - I rehearsed this step on this build with a widget test and with WinWright. Both passed.
+OK
+  - MV-2 (Android Fold, Tasks 5 and 6), only after 0.26.0 reaches the closed test:
+    - Before you start, turn on Settings > Write a diagnostic log.
+    - After Android stops a background scan, the log should have a stop line ending powerSave=... deviceIdle=... thermal=....
+    - After an email server connection fails, the log should have a line with phase=.
+Can't be tried on the Android emulator? otherwise table to next sprint
+  - MV-3 (iPhone): nothing to do. Evidence is Simulator CI only.
+  - If you choose q14 = 1, I will add an MV step for the fix and rehearse it on a new DEV build first.
+
+---------------------------------------------------------------------------------------------------------
 Sprint 85 Manual Validation Feedback 
   - MV-1 (Windows DEV, default account). No default is set now.
     - a. Open Settings (gear icon, top right) and the Account tab. The header reads "Account Settings - kimmeyh@gmail.com", with no "Default account" line.

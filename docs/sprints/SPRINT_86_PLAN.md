@@ -714,7 +714,13 @@ Windows and Android builds are never run at the same time.
   test_s75_new_controls; the two f56 scripts stay excluded as documented in the runner), 3 PASS / 0 FAIL (63 steps),
   tray icon PASS, dev DB no drift. Workstation locked: 6 cursor steps skipped by the runner (F291), named in its log.
   Also run at 5f96420d (same result) before the Task 12 `lib/ui` comment change.
-  sweep-head: 743ffab0
+  Run again 2026-11-24 23:49 to 2026-11-25 00:07 on the Task 14 DEV build (0a2c3235, `lib/ui` changed): 3 PASS / 0
+  FAIL, tray icon PASS, dev DB no drift, workstation unlocked (0 mouse steps skipped). test_f124_rule_labels and
+  test_s75_new_controls passed ON RETRY: the first attempt of each failed at step 2 with "No main window found",
+  although the launch reported the window present and settled 8 s (`Ensure-FreshAppAtHome ok=True`). The runner
+  documents this symptom as a startup race (`run-winwright-tests.ps1:239-247`); that this run's launch reported the
+  window ready means the documented cause does not fully explain it. Cause not established (retrospective input).
+  sweep-head: 0a2c3235
 - **5.1.9 MV rehearsal**: 2026-11-24, on the DEV build of 743ffab0 (launched 08:16 and left running). MV-1 rehearsed
   by the widget test `no Create rule action on a row; the rule pop-up still opens (F307 T-1)`
   (`no_rule_review_heuristics_test.dart:193`, in the 3697-pass full run) and on the real window by WinWright
@@ -723,6 +729,14 @@ Windows and Android builds are never run at the same time.
   its emulator equivalent passed: F359 case 3 wrote `powerSave=false deviceIdle=false thermal=none`, and the F347
   line is covered by `imap_connect_diagnostics_test.dart`. Guard tests with mutation verdicts: C6-1 log-off KILLED,
   C7-1 order KILLED (emulator), F346 plugin-notImplemented KILLED (emulator), template key guard KILLED.
+  MV-4 rehearsed 2026-11-25 00:10-00:15 on the DEV build of 0a2c3235 (PID 8248), as written, by WinWright on the
+  real window (unlocked): Select Account showed "Set as default" on all 4 rows (no default); starred
+  kimmeyh@yahoo.com (third row, so a first-account fallback cannot pass); Settings from Select Account opened with no
+  account pop-up; Account tab "Account Settings - kimmeyh@yahoo.com" and "Default account" (screenshot
+  `mv4_rehearsal_account_tab.png`, session scratchpad). Restored: default removed (DEV DB read WITH its WAL file: no
+  `default_account_id` row; a first read without the WAL file missed a fresh write), app restarted for a clean
+  session (PID 28368, 00:15). Also proved by `f352_default_account_screen_test.dart` (mutants KILLED 3/3). MV-2
+  `phase=` line: emulator case added in Task 15 (PASS, mutant KILLED).
 
 ### MV steps
 
@@ -739,6 +753,9 @@ Windows and Android builds are never run at the same time.
   Not rehearsable before release. Precondition: the diagnostic log setting is on (Harold's phone; not readable by
   Claude); background scanning notification access is on (standing fact).
 - **MV-3 (iPhone)**: Simulator CI evidence only until Apple approves enrollment. Nothing to do.
+- **MV-4 (Windows DEV, Task 14, default account used at once)**: precondition: the DEV app freshly started with no
+  default account. Select Account: star an account; Settings from Select Account opens with no "Select Account"
+  pop-up; the Account tab shows that account and "Default account". Rehearsed 2026-11-25 on 0a2c3235, PASS.
 
 ### MV results (Harold, 2026-11-24)
 
@@ -747,6 +764,10 @@ Windows and Android builds are never run at the same time.
   was proved on the emulator in Task 7 (F359 case 1); Task 15 adds the F347 `phase=` line on the emulator.
 - Store 0.25.0 report (not an MV step): the default account was not used in the session it was set; register q14 = 1,
   fixed in Task 14 (new MV-4).
+- MV-2 (emulator part): PASS. Stop line (Task 7, F359 case 1) and both F347 `phase=` lines (Task 15) written by the
+  real code on emulator-5554. The Fold check stays after the 0.26.0 closed-test release, per the approved plan.
+- MV-4: PASS (Harold, 2026-11-25, verbatim: "MV-4: working as expected in updated 0.26.0 [dev]").
+- Manual Validation complete 2026-11-25; Phase 7.7.1 final reviews and the retrospective prompt follow.
 
 ## Standing facts (Harold)
 
